@@ -9,21 +9,24 @@ using UnityEngine.InputSystem.UI;
 /// <summary>
 /// Construye el menú principal de SEEN como una escena nueva (Assets/Scenes/MainMenu.unity)
 /// con Canvas en Screen Space Overlay: título, botones JUGAR / AJUSTES / SALIR y un
-/// panel de Ajustes con calidad gráfica, resolución, pantalla completa, volumen y
-/// sensibilidad del ratón. Además registra las escenas en Build Settings.
+/// panel de Ajustes con calidad gráfica (Alta/Media/Baja), resolución (de mayor a
+/// menor), pantalla completa, volumen y sensibilidad del ratón.
 ///
 /// Menú: <b>SEEN → Construir Menú Principal</b>
+/// Reparar sin reconstruir: <b>SEEN → Reparar Input del Menú</b>
 /// </summary>
 public static class UIMenuBuilder
 {
     // Paleta distópica
-    static readonly Color colFondo      = new Color(0.030f, 0.035f, 0.050f);
-    static readonly Color colAcento     = new Color(0.150f, 0.750f, 0.950f); // cyan
-    static readonly Color colMagenta    = new Color(1.000f, 0.180f, 0.620f);
-    static readonly Color colBoton      = new Color(0.090f, 0.100f, 0.130f);
-    static readonly Color colBotonHover = new Color(0.150f, 0.180f, 0.230f);
-    static readonly Color colTexto      = new Color(0.900f, 0.940f, 1.000f);
-    static readonly Color colTextoSec   = new Color(0.550f, 0.620f, 0.700f);
+    static readonly Color colFondo        = new Color(0.030f, 0.035f, 0.050f);
+    static readonly Color colAcento       = new Color(0.150f, 0.750f, 0.950f); // cyan
+    static readonly Color colMagenta      = new Color(1.000f, 0.180f, 0.620f);
+    static readonly Color colBoton        = new Color(0.075f, 0.085f, 0.110f);
+    static readonly Color colBotonHover   = new Color(0.130f, 0.400f, 0.530f); // cyan marcado
+    static readonly Color colBotonHover2  = new Color(0.600f, 0.200f, 0.500f); // magenta (botón salir)
+    static readonly Color colTexto        = new Color(0.900f, 0.940f, 1.000f);
+    static readonly Color colTextoSec     = new Color(0.550f, 0.620f, 0.700f);
+    static readonly Color colControl      = new Color(0.090f, 0.100f, 0.130f);
 
     static Font _font;
     static Font Font
@@ -43,16 +46,28 @@ public static class UIMenuBuilder
                 "Se creará una escena nueva <b>MainMenu</b> con:\n\n" +
                 "• Título del juego\n• Botones JUGAR / AJUSTES / SALIR\n" +
                 "• Panel de Ajustes (gráficos, resolución, volumen, sensibilidad)\n\n" +
-                "ADVERTENCIA: se reemplazará la escena abierta actual.\n¿Continuar?",
-                "Sí, construir", "Cancelar")) return;
+                "ADVERTENCIA: se reemplazará la escena abierta actual\n" +
+                "(si personalizaste textos del menú, tendrás que rehacerlos).\n\n" +
+                "¿Continuar?", "Sí, construir", "Cancelar")) return;
 
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
 
-        // EventSystem (módulo del nuevo Input System, obligatorio para la UI)
+        // EventSystem con el módulo NUEVO de Input System.
+        // NO se usa StandaloneInputModule: lee el Input clásico y revienta con
+        // "Active Input Handling = Input System Package".
         var es = new GameObject("EventSystem");
         es.AddComponent<EventSystem>();
-        es.AddComponent<StandaloneInputModule>()?.gameObject.SetActive(true);
         var inputModule = es.AddComponent<InputSystemUIInputModule>();
+
+        // Cámara de fondo (el Canvas Overlay se dibuja encima igual)
+        if (Camera.main == null)
+        {
+            var camGO = new GameObject("MenuCamera");
+            var cam = camGO.AddComponent<Camera>();
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = new Color(0.030f, 0.035f, 0.050f);
+            camGO.AddComponent<AudioListener>();
+        }
 
         // ── Canvas ──
         var canvasGO = new GameObject("Canvas");
@@ -82,17 +97,16 @@ public static class UIMenuBuilder
 
         CrearLinea(panelMenu.transform, new Vector2(0f, 110f), new Vector2(560f, 3f), colMagenta);
 
-        var btnJugar = CrearBoton(panelMenu.transform, "BotonJugar", "JUGAR",
-                                  new Vector2(0f, 20f), new Vector2(340f, 68f));
+        var btnJugar   = CrearBoton(panelMenu.transform, "BotonJugar",   "JUGAR",
+                                    new Vector2(0f, 20f),  new Vector2(340f, 68f), colAcento);
         var btnAjustes = CrearBoton(panelMenu.transform, "BotonAjustes", "AJUSTES",
-                                    new Vector2(0f, -70f), new Vector2(340f, 68f));
-        var btnSalir = CrearBoton(panelMenu.transform, "BotonSalir", "SALIR",
-                                  new Vector2(0f, -160f), new Vector2(340f, 68f));
+                                    new Vector2(0f, -70f), new Vector2(340f, 68f), colAcento);
+        var btnSalir   = CrearBoton(panelMenu.transform, "BotonSalir",   "SALIR",
+                                    new Vector2(0f, -160f), new Vector2(340f, 68f), colMagenta);
 
         CrearTexto(panelMenu.transform, "Version", "v0.1 — Prototipo jugable", 18,
                    TextAnchor.MiddleCenter, new Vector2(0f, -320f), new Vector2(600f, 30f), colTextoSec);
 
-        // Listeners persistentes (sobreviven al guardar la escena)
         UnityEditor.Events.UnityEventTools.AddPersistentListener(btnJugar.onClick, menu.Jugar);
         UnityEditor.Events.UnityEventTools.AddPersistentListener(btnAjustes.onClick, menu.MostrarAjustes);
         UnityEditor.Events.UnityEventTools.AddPersistentListener(btnSalir.onClick, menu.SalirDelJuego);
@@ -105,52 +119,53 @@ public static class UIMenuBuilder
                    new Vector2(0f, 280f), new Vector2(900f, 70f), colTexto);
         CrearLinea(panelAjustes.transform, new Vector2(0f, 240f), new Vector2(420f, 2f), colAcento);
 
-        // Fila: Calidad gráfica
+        // Calidad gráfica (Alta / Media / Baja)
         CrearTexto(panelAjustes.transform, "LblCalidad", "CALIDAD GRÁFICA", 24, TextAnchor.MiddleLeft,
                    new Vector2(-210f, 185f), new Vector2(330f, 40f), colTexto);
         var ddCalidad = CrearDropdown(panelAjustes.transform, "DropdownCalidad",
                                       new Vector2(170f, 185f), new Vector2(340f, 54f));
+        ddCalidad.ClearOptions();
+        ddCalidad.AddOptions(new System.Collections.Generic.List<string> { "Alta", "Media", "Baja" });
+        ddCalidad.value = 0;
+        ddCalidad.RefreshShownValue();
 
-        // Fila: Resolución
+        // Resolución (se rellena en orden descendente desde SettingsManager)
         CrearTexto(panelAjustes.transform, "LblResolucion", "RESOLUCIÓN", 24, TextAnchor.MiddleLeft,
                    new Vector2(-210f, 115f), new Vector2(330f, 40f), colTexto);
         var ddResolucion = CrearDropdown(panelAjustes.transform, "DropdownResolucion",
                                          new Vector2(170f, 115f), new Vector2(340f, 54f));
 
-        // Fila: Pantalla completa
+        // Pantalla completa
         CrearTexto(panelAjustes.transform, "LblPantalla", "PANTALLA COMPLETA", 24, TextAnchor.MiddleLeft,
                    new Vector2(-210f, 45f), new Vector2(330f, 40f), colTexto);
         var tgPantalla = CrearToggle(panelAjustes.transform, "TogglePantallaCompleta",
                                      new Vector2(280f, 45f), new Vector2(48f, 48f));
 
-        // Fila: Volumen
+        // Volumen
         CrearTexto(panelAjustes.transform, "LblVolumen", "VOLUMEN MAESTRO", 24, TextAnchor.MiddleLeft,
                    new Vector2(-210f, -25f), new Vector2(330f, 40f), colTexto);
         var slVolumen = CrearSlider(panelAjustes.transform, "SliderVolumen",
-                                    new Vector2(170f, -25f), new Vector2(340f, 34f), 0f, 1f, 1f);
+                                    new Vector2(170f, -25f), new Vector2(340f, 40f), 0f, 1f, 1f);
 
-        // Fila: Sensibilidad
+        // Sensibilidad
         CrearTexto(panelAjustes.transform, "LblSensibilidad", "SENSIBILIDAD RATÓN", 24, TextAnchor.MiddleLeft,
                    new Vector2(-210f, -95f), new Vector2(330f, 40f), colTexto);
         var slSens = CrearSlider(panelAjustes.transform, "SliderSensibilidad",
-                                 new Vector2(170f, -95f), new Vector2(340f, 34f), 0.02f, 0.5f, 0.15f);
+                                 new Vector2(170f, -95f), new Vector2(340f, 40f), 0.02f, 0.5f, 0.15f);
 
-        // Botón volver
         var btnVolver = CrearBoton(panelAjustes.transform, "BotonVolver", "VOLVER",
-                                   new Vector2(0f, -230f), new Vector2(280f, 62f));
+                                   new Vector2(0f, -230f), new Vector2(280f, 62f), colAcento);
         UnityEditor.Events.UnityEventTools.AddPersistentListener(btnVolver.onClick, menu.MostrarMenuPrincipal);
 
         CrearTexto(panelAjustes.transform, "NotaAjustes", "Los cambios se guardan automáticamente", 18,
                    TextAnchor.MiddleCenter, new Vector2(0f, -290f), new Vector2(600f, 30f), colTextoSec);
 
-        // Conectar ajustes
         ajustes.calidadDropdown = ddCalidad;
         ajustes.resolucionDropdown = ddResolucion;
         ajustes.pantallaCompletaToggle = tgPantalla;
         ajustes.volumenSlider = slVolumen;
         ajustes.sensibilidadSlider = slSens;
 
-        // Empezar mostrando el menú principal
         panelAjustes.SetActive(false);
 
         // ── Guardar escena y Build Settings ──
@@ -162,11 +177,68 @@ public static class UIMenuBuilder
             new EditorBuildSettingsScene("Assets/Scenes/Juego.unity", true)
         };
         EditorBuildSettings.scenes = buildScenes;
+
+        // Play siempre arranca en el menú
+        var menuAsset = AssetDatabase.LoadAssetAtPath<SceneAsset>("Assets/Scenes/MainMenu.unity");
+        if (menuAsset != null)
+            EditorSceneManager.playModeStartScene = menuAsset;
+
         AssetDatabase.SaveAssets();
 
         Selection.activeObject = AssetDatabase.LoadAssetAtPath<Object>("Assets/Scenes/MainMenu.unity");
-        Debug.Log("[UIMenuBuilder] ¡Menú construido! Escena 'MainMenu' guardada y añadida al Build Settings. " +
-                  "Presioná Play y usá el ratón (el EventSystem usa el nuevo Input System).");
+        Debug.Log("[UIMenuBuilder] ¡Menú construido! Play arranca en el menú y usa el nuevo Input System.");
+    }
+
+    // ── Reparación del menú existente ────────────────────────────
+
+    /// <summary>
+    /// Repara la escena del menú SIN reconstruirla (conserva tus personalizaciones):
+    /// elimina el StandaloneInputModule (input clásico, incompatible con el proyecto),
+    /// asegura el InputSystemUIInputModule y añade una cámara si falta.
+    /// </summary>
+    [MenuItem("SEEN/Reparar Input del Menú")]
+    static void FixMenuInput()
+    {
+        if (!AssetDatabase.LoadAssetAtPath<Object>("Assets/Scenes/MainMenu.unity"))
+        {
+            Debug.LogError("[SEENFix] No existe la escena MainMenu. Ejecutá primero 'Construir Menú Principal'.");
+            return;
+        }
+
+        var scene = EditorSceneManager.OpenScene("Assets/Scenes/MainMenu.unity", OpenSceneMode.Single);
+
+        int eliminados = 0;
+        foreach (var legacy in Object.FindObjectsByType<StandaloneInputModule>(FindObjectsSortMode.None))
+        {
+            Undo.DestroyObjectImmediate(legacy);
+            eliminados++;
+        }
+        if (eliminados > 0)
+            Debug.Log($"[SEENFix] {eliminados} StandaloneInputModule eliminado(s) (eran la causa de los errores).");
+
+        var es = Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>();
+        if (es == null)
+        {
+            var esGO = new GameObject("EventSystem");
+            es = esGO.AddComponent<UnityEngine.EventSystems.EventSystem>();
+        }
+        if (es.GetComponent<InputSystemUIInputModule>() == null)
+            Undo.AddComponent<InputSystemUIInputModule>(es.gameObject);
+
+        var cam = Camera.main;
+        if (cam == null)
+        {
+            var camGO = new GameObject("MenuCamera");
+            cam = camGO.AddComponent<Camera>();
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = new Color(0.030f, 0.035f, 0.050f);
+            camGO.AddComponent<AudioListener>();
+            Debug.Log("[SEENFix] Cámara del menú creada.");
+        }
+
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene);
+        Debug.Log("[SEENFix] ¡Menú reparado! Volvé a dar Play.");
     }
 
     // ───────────────────────────────────────────────────────── Helpers
@@ -220,7 +292,7 @@ public static class UIMenuBuilder
         return txt;
     }
 
-    static Button CrearBoton(Transform parent, string nombre, string etiqueta, Vector2 pos, Vector2 size)
+    static Button CrearBoton(Transform parent, string nombre, string etiqueta, Vector2 pos, Vector2 size, Color colorHighlight)
     {
         var go = new GameObject(nombre, typeof(RectTransform));
         go.transform.SetParent(parent, false);
@@ -237,13 +309,17 @@ public static class UIMenuBuilder
         btn.transition = Selectable.Transition.ColorTint;
         var colors = btn.colors;
         colors.normalColor = colBoton;
-        colors.highlightedColor = colBotonHover;
-        colors.pressedColor = new Color(0.10f, 0.55f, 0.75f);
-        colors.selectedColor = colBotonHover;
+        colors.highlightedColor = colorHighlight;      // hover bien visible
+        colors.pressedColor = Color.Lerp(colorHighlight, Color.black, 0.35f);
+        colors.selectedColor = colorHighlight;
         colors.disabledColor = new Color(0.15f, 0.15f, 0.15f);
-        colors.fadeDuration = 0.08f;
         colors.colorMultiplier = 1f;
+        colors.fadeDuration = 0.06f;
         btn.colors = colors;
+
+        var nav = btn.navigation;
+        nav.mode = Navigation.Mode.None;              // el ratón manda, sin auto-selección rara
+        btn.navigation = nav;
 
         var txt = CrearTexto(btn.transform, "Texto", etiqueta, 30, TextAnchor.MiddleCenter,
                              Vector2.zero, size, colTexto);
@@ -261,7 +337,7 @@ public static class UIMenuBuilder
         rt.anchoredPosition = pos;
 
         var img = go.AddComponent<Image>();
-        img.color = colBoton;
+        img.color = colControl;
 
         var tgl = go.AddComponent<Toggle>();
         tgl.targetGraphic = img;
@@ -277,11 +353,16 @@ public static class UIMenuBuilder
         mRt.offsetMax = new Vector2(-10f, -10f);
         var mImg = mark.AddComponent<Image>();
         mImg.color = colAcento;
+        mImg.raycastTarget = false;
         tgl.graphic = mImg;
 
         return tgl;
     }
 
+    /// <summary>
+    /// Slider con línea FIJA y perilla móvil: la pista no crece, solo se mueve el handle.
+    /// Toda la barra es cliqueable/arrastrable.
+    /// </summary>
     static Slider CrearSlider(Transform parent, string nombre, Vector2 pos, Vector2 size,
                               float min, float max, float value)
     {
@@ -292,53 +373,69 @@ public static class UIMenuBuilder
         rt.sizeDelta = size;
         rt.anchoredPosition = pos;
 
-        var img = go.AddComponent<Image>();
-        img.color = new Color(0.09f, 0.10f, 0.13f);
+        // Zona de arrastre: transparente pero interactiva
+        var zona = go.AddComponent<Image>();
+        zona.color = new Color(0f, 0f, 0f, 0f);
+        zona.raycastTarget = true;
 
         var slider = go.AddComponent<Slider>();
         slider.transition = Selectable.Transition.None;
-        slider.targetGraphic = img;
+        slider.targetGraphic = zona;
         slider.direction = Slider.Direction.LeftToRight;
         slider.minValue = min;
         slider.maxValue = max;
         slider.value = value;
 
-        // Fill (barra de progreso)
-        var fill = new GameObject("Fill", typeof(RectTransform));
+        // Fill oculto (solo para que Slider no haga NRE; no se ve)
+        var fill = new GameObject("FillHidden", typeof(RectTransform));
         fill.transform.SetParent(go.transform, false);
         var fRt = (RectTransform)fill.transform;
         fRt.anchorMin = new Vector2(0f, 0.5f);
         fRt.anchorMax = new Vector2(0f, 0.5f);
-        fRt.pivot = new Vector2(0f, 0.5f);
-        fRt.sizeDelta = new Vector2(size.x, size.y * 0.75f);
-        fRt.anchoredPosition = Vector2.zero;
+        fRt.sizeDelta = Vector2.zero;
         var fImg = fill.AddComponent<Image>();
-        fImg.color = colAcento;
+        fImg.color = new Color(0f, 0f, 0f, 0f);
         fImg.raycastTarget = false;
         slider.fillRect = fRt;
 
-        // Handle (perilla)
+        // Línea fija (la pista, visible)
+        var linea = new GameObject("Linea", typeof(RectTransform));
+        linea.transform.SetParent(go.transform, false);
+        var lRt = (RectTransform)linea.transform;
+        lRt.anchorMin = new Vector2(0f, 0.5f);
+        lRt.anchorMax = new Vector2(1f, 0.5f);
+        lRt.pivot = new Vector2(0.5f, 0.5f);
+        lRt.sizeDelta = new Vector2(0f, 5f);
+        lRt.anchoredPosition = Vector2.zero;
+        var lImg = linea.AddComponent<Image>();
+        lImg.color = new Color(0.30f, 0.36f, 0.42f);   // gris fija, NO crece
+        lImg.raycastTarget = false;
+
+        // Perilla (se mueve con el valor)
         var handle = new GameObject("Handle", typeof(RectTransform));
         handle.transform.SetParent(go.transform, false);
         var hRt = (RectTransform)handle.transform;
-        hRt.anchorMin = new Vector2(0.5f, 0.5f);
-        hRt.anchorMax = new Vector2(0.5f, 0.5f);
+        hRt.anchorMin = new Vector2(0f, 0.5f);
+        hRt.anchorMax = new Vector2(0f, 0.5f);
         hRt.pivot = new Vector2(0.5f, 0.5f);
-        hRt.sizeDelta = new Vector2(26f, size.y + 10f);
+        hRt.sizeDelta = new Vector2(26f, size.y);
         hRt.anchoredPosition = Vector2.zero;
         var hImg = handle.AddComponent<Image>();
-        hImg.color = new Color(0.85f, 0.95f, 1f);
+        hImg.color = colAcento;
         hImg.raycastTarget = false;
         slider.handleRect = hRt;
 
-        // Navegación para que el ratón lo tome
         var nav = slider.navigation;
-        nav.mode = Navigation.Mode.Automatic;
+        nav.mode = Navigation.Mode.None;
         slider.navigation = nav;
 
         return slider;
     }
 
+    /// <summary>
+    /// Dropdown con la lista saliendo PEGADA a la caja (sin espacio fantasma)
+    /// y con VerticalLayoutGroup para que las opciones se apilen correctamente.
+    /// </summary>
     static Dropdown CrearDropdown(Transform parent, string nombre, Vector2 pos, Vector2 size)
     {
         var go = new GameObject(nombre, typeof(RectTransform));
@@ -349,36 +446,39 @@ public static class UIMenuBuilder
         rt.anchoredPosition = pos;
 
         var img = go.AddComponent<Image>();
-        img.color = new Color(0.09f, 0.10f, 0.13f);
+        img.color = colControl;
 
         var dd = go.AddComponent<Dropdown>();
         dd.targetGraphic = img;
         dd.transition = Selectable.Transition.ColorTint;
 
-        // Valor actual
         var label = CrearTexto(dd.transform, "Label", "—", 24, TextAnchor.MiddleLeft,
-                               new Vector2(14f, 0f), new Vector2(size.x - 40f, size.y), colTexto);
+                               new Vector2(14f, 0f), new Vector2(size.x - 44f, size.y), colTexto);
         dd.captionText = label;
 
-        // Flecha
         CrearTexto(dd.transform, "Arrow", "▼", 16, TextAnchor.MiddleRight,
                    new Vector2(-12f, 0f), new Vector2(28f, size.y), colAcento);
 
-        // Template
+        // ── Template (pegado abajo, pivote arriba) ──
         var templateGO = new GameObject("Template", typeof(RectTransform));
         templateGO.transform.SetParent(go.transform, false);
         var tRt = (RectTransform)templateGO.transform;
         tRt.anchorMin = new Vector2(0f, 0f);
         tRt.anchorMax = new Vector2(1f, 0f);
         tRt.pivot = new Vector2(0.5f, 1f);
-        tRt.anchoredPosition = new Vector2(0f, 4f);
-        tRt.sizeDelta = new Vector2(0f, 180f);
+        tRt.anchoredPosition = new Vector2(0f, 2f);    // 2px de separación, sin hueco grande
+        tRt.sizeDelta = new Vector2(0f, 220f);
         var tImg = templateGO.AddComponent<Image>();
         tImg.color = new Color(0.07f, 0.08f, 0.11f);
         tImg.raycastTarget = false;
-        var scroll = templateGO.AddComponent<ScrollRect>();
 
-        // Viewport
+        var scroll = templateGO.AddComponent<ScrollRect>();
+        scroll.horizontal = false;
+        scroll.vertical = true;
+        scroll.movementType = ScrollRect.MovementType.Clamped;
+        scroll.scrollSensitivity = 30f;
+
+        // Viewport (stretch)
         var viewport = new GameObject("Viewport", typeof(RectTransform));
         viewport.transform.SetParent(templateGO.transform, false);
         var vRt = (RectTransform)viewport.transform;
@@ -389,24 +489,41 @@ public static class UIMenuBuilder
         viewport.AddComponent<RectMask2D>();
         scroll.viewport = vRt;
 
-        // Content
+        // Content (anclado arriba, auto-altura)
         var content = new GameObject("Content", typeof(RectTransform));
         content.transform.SetParent(viewport.transform, false);
         var cRt = (RectTransform)content.transform;
         cRt.anchorMin = new Vector2(0f, 1f);
         cRt.anchorMax = new Vector2(1f, 1f);
         cRt.pivot = new Vector2(0.5f, 1f);
-        cRt.sizeDelta = new Vector2(0f, 180f);
+        cRt.sizeDelta = new Vector2(0f, 40f);
+
+        var layout = content.AddComponent<VerticalLayoutGroup>();
+        layout.padding = new RectOffset(6, 6, 6, 6);
+        layout.spacing = 3f;
+        layout.childControlWidth = true;
+        layout.childControlHeight = true;
+        layout.childForceExpandWidth = true;
+        layout.childForceExpandHeight = false;
+
+        var fitter = content.AddComponent<ContentSizeFitter>();
+        fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
         scroll.content = cRt;
 
         // Item
         var itemGO = new GameObject("Item", typeof(RectTransform));
         itemGO.transform.SetParent(content.transform, false);
         var iRt = (RectTransform)itemGO.transform;
-        iRt.anchorMin = new Vector2(0f, 0.5f);
-        iRt.anchorMax = new Vector2(1f, 0.5f);
-        iRt.pivot = new Vector2(0.5f, 0.5f);
-        iRt.sizeDelta = new Vector2(0f, 44f);
+        iRt.anchorMin = new Vector2(0f, 1f);
+        iRt.anchorMax = new Vector2(1f, 1f);
+        iRt.pivot = new Vector2(0.5f, 1f);
+        iRt.sizeDelta = new Vector2(0f, 42f);
+
+        var iElem = itemGO.AddComponent<LayoutElement>();
+        iElem.preferredHeight = 42f;
+        iElem.minHeight = 42f;
+
         var iImg = itemGO.AddComponent<Image>();
         iImg.color = new Color(0.12f, 0.13f, 0.17f);
         var iToggle = itemGO.AddComponent<Toggle>();
@@ -422,19 +539,19 @@ public static class UIMenuBuilder
         ibRt.offsetMax = Vector2.zero;
         var ibImg = itemBg.AddComponent<Image>();
         ibImg.color = colAcento;
+        ibImg.raycastTarget = false;
         iToggle.graphic = ibImg;
 
         var itemLabel = CrearTexto(itemGO.transform, "Item Label", "—", 22, TextAnchor.MiddleLeft,
-                                   new Vector2(12f, 0f), new Vector2(size.x - 30f, 44f), colTexto);
+                                   new Vector2(12f, 0f), new Vector2(size.x - 30f, 42f), colTexto);
         dd.itemText = itemLabel;
 
         dd.template = tRt;
         dd.value = 0;
         dd.RefreshShownValue();
 
-        // Navegación automática con ratón
         var nav = dd.navigation;
-        nav.mode = Navigation.Mode.Automatic;
+        nav.mode = Navigation.Mode.None;
         dd.navigation = nav;
 
         return dd;

@@ -3,14 +3,17 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// Ajustes del juego: calidad gráfica, resolución, pantalla completa,
-/// volumen maestro y sensibilidad del ratón. Los valores se guardan en PlayerPrefs.
-/// La sensibilidad la aplica el PlayerController leyendo la misma clave.
+/// Ajustes del juego. Todo se guarda en PlayerPrefs.
+///  · Calidad gráfica: Alta / Media / Baja (afecta sombras, cascadas, VSync, AA
+///    y el nivel de calidad general de Unity).
+///  · Resolución: lista de mayor a menor.
+///  · Pantalla completa, volumen maestro y sensibilidad del ratón (la lee el
+///    PlayerController desde la clave "sensibilidad").
 /// </summary>
 public class SettingsManager : MonoBehaviour
 {
     [Header("UI — Controles")]
-    public Dropdown calidadDropdown;
+    public Dropdown calidadDropdown;      // 0 = Alta, 1 = Media, 2 = Baja
     public Dropdown resolucionDropdown;
     public Toggle pantallaCompletaToggle;
     public Slider volumenSlider;
@@ -43,81 +46,63 @@ public class SettingsManager : MonoBehaviour
         }
     }
 
-    // ── Calidad ───────────────────────────────────────────────────
+    // ── Calidad gráfica: Alta / Media / Baja ─────────────────────
 
     private void ConfigurarCalidad()
     {
         if (calidadDropdown == null) return;
 
         calidadDropdown.ClearOptions();
-        var opciones = new List<string>(QualitySettings.names);
-        calidadDropdown.AddOptions(opciones);
+        calidadDropdown.AddOptions(new List<string> { "Alta", "Media", "Baja" });
 
-        int guardada = PlayerPrefs.GetInt("calidad", QualitySettings.GetQualityLevel());
-        guardada = Mathf.Clamp(guardada, 0, opciones.Count - 1);
-        calidadDropdown.value = guardada;
+        calidadDropdown.value = AjustesJuego.PerfilGuardado; // 0 = Alta
         calidadDropdown.RefreshShownValue();
-        calidadDropdown.onValueChanged.AddListener(CambiarCalidad);
+        calidadDropdown.onValueChanged.AddListener(CambiarPerfilGrafico);
+
+        CambiarPerfilGrafico(calidadDropdown.value);
     }
 
-    public void CambiarCalidad(int indice)
+    /// <summary>0 = Alta, 1 = Media, 2 = Baja.</summary>
+    public void CambiarPerfilGrafico(int perfil)
     {
-        QualitySettings.SetQualityLevel(indice);
-        PlayerPrefs.SetInt("calidad", indice);
+        AjustesJuego.AplicarPerfilGrafico(perfil);
     }
 
-    // ── Resolución ────────────────────────────────────────────────
+    // ── Resoluciones (de mayor a menor) ───────────────────────────
 
     private void ConfigurarResoluciones()
     {
         if (resolucionDropdown == null) return;
 
         resoluciones = Screen.resolutions;
-        if (resoluciones.Length == 0) return;
+        if (resoluciones == null || resoluciones.Length == 0) return;
 
         resolucionDropdown.ClearOptions();
-
-        var opciones = new List<string>();
-        int actual = 0;
-        for (int i = 0; i < resoluciones.Length; i++)
-        {
-            opciones.Add($"{resoluciones[i].width} x {resoluciones[i].height}");
-            if (resoluciones[i].width == Screen.currentResolution.width &&
-                resoluciones[i].height == Screen.currentResolution.height)
-                actual = i;
-        }
-
-        resolucionDropdown.AddOptions(opciones);
-        resolucionDropdown.value = PlayerPrefs.GetInt("resolucion", actual);
+        resolucionDropdown.AddOptions(new List<string>(AjustesJuego.ListaResoluciones()));
+        resolucionDropdown.value = AjustesJuego.IndiceResolucionGuardado;
         resolucionDropdown.RefreshShownValue();
         resolucionDropdown.onValueChanged.AddListener(CambiarResolucion);
     }
 
     public void CambiarResolucion(int indice)
     {
-        if (resoluciones == null || indice < 0 || indice >= resoluciones.Length) return;
-
-        Resolution r = resoluciones[indice];
-        Screen.SetResolution(r.width, r.height, Screen.fullScreen);
-        PlayerPrefs.SetInt("resolucion", indice);
+        AjustesJuego.AplicarResolucion(indice);
     }
 
     public void CambiarPantallaCompleta(bool activa)
     {
-        Screen.fullScreen = activa;
-        PlayerPrefs.SetInt("pantallaCompleta", activa ? 1 : 0);
+        AjustesJuego.AplicarPantallaCompleta(activa);
     }
 
     // ── Volumen y sensibilidad ────────────────────────────────────
 
     public void CambiarVolumen(float valor)
     {
-        AudioListener.volume = valor;
-        PlayerPrefs.SetFloat("volumen", valor);
+        AjustesJuego.AplicarVolumen(valor);
     }
 
     public void CambiarSensibilidad(float valor)
     {
-        PlayerPrefs.SetFloat("sensibilidad", valor);
+        AjustesJuego.AplicarSensibilidad(valor);
     }
 }

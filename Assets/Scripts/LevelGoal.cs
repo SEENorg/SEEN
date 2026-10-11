@@ -1,12 +1,12 @@
 using UnityEngine;
 
 /// <summary>
-/// Meta del nivel de pruebas: al tocarla el jugador completa el recorrido.
-/// Más adelante cargará la siguiente escena / registrará el progreso.
+/// Meta del nivel: al tocarla se muestra la pantalla de NIVEL COMPLETADO
+/// (GameFeedback se encarga de pausar el juego y ofrecer reintentar/menú).
 /// </summary>
 public class LevelGoal : MonoBehaviour
 {
-    /// <summary>Evento estático: se dispara al alcanzar la meta.</summary>
+    /// <summary>Evento estático: lo usan las ayudas en pantalla para ocultarse.</summary>
     public static event System.Action OnGoalReached;
 
     private bool completed;
@@ -18,6 +18,6 @@ public class LevelGoal : MonoBehaviour
 
         completed = true;
         OnGoalReached?.Invoke();
-        Debug.Log("<color=green>[LevelGoal] ¡META ALCANZADA! Todas las mecánicas dominadas.</color>");
+        GameFeedback.NivelCompletado();
     }
 }

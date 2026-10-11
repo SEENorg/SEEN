@@ -38,18 +38,22 @@ public class TestLevelHints : MonoBehaviour
         {
             style = new GUIStyle(GUI.skin.box)
             {
-                fontSize = 16,
+                fontSize = 14,
                 alignment = TextAnchor.MiddleLeft,
-                padding = new RectOffset(12, 12, 10, 10)
+                wordWrap = true,
+                padding = new RectOffset(14, 14, 12, 12)
             };
             style.normal.textColor = Color.white;
         }
 
-        GUI.Box(new Rect(12, 12, 330, 96),
+        string contenido =
             "<b>SEEN — Nivel de pruebas</b>\n" +
-            "WASD / Flechas  →  Moverse\n" +
-            "Mouse  →  Mirar   |   Esc libera el mouse\n" +
-            "Espacio  →  Saltar (doble salto)\n" +
-            "Shift / Clic der  →  Dash", style);
+            "WASD / Flechas   →   Moverse\n" +
+            "Mouse   →   Mirar      (Esc libera el ratón)\n" +
+            "Espacio   →   Saltar (doble salto)\n" +
+            "Shift / Clic der   →   Dash";
+
+        // Caja lo suficientemente grande para 5 líneas a 14pt (no se recorta)
+        GUI.Box(new Rect(12f, 12f, 470f, 132f), contenido, style);
     }
 }

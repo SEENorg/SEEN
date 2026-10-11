@@ -51,6 +51,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float minPitch = -80f;
     [SerializeField] private float maxPitch = 80f;
     [SerializeField] private float cameraHeight = 0.65f;
+    [SerializeField] private float rotationSpeed = 10f;
 
     [Header("Detección de suelo")]
     [Tooltip("Capas de suelo. Si lo dejás en Nothing, detecta contra todo.")]
@@ -70,6 +71,7 @@ public class PlayerController : MonoBehaviour
 
     private bool isGrounded;
     private bool wasGrounded;
+    private MovingPlatform groundPlatform;
     private int jumpsLeft;
     private float jumpBufferTimer;
     private float groundGuardTimer;
@@ -98,7 +100,14 @@ public class PlayerController : MonoBehaviour
         Physics.defaultSolverIterations = 12;
         Physics.defaultSolverVelocityIterations = 6;
 
-        // 2) Fricción baja en la cápsula: al rozar un borde, desliza
+        // 2) CONGELAR TODA la rotación (los 3 ejes). Antes dejaba Y libre
+        //    para el ratón, y las colisiones imprimían un giro residual que
+        //    seguía vibrando DESPUÉS de soltar el objeto. El yaw ahora lo
+        //    asigna directamente este script en transform.rotation.
+        rb.constraints = RigidbodyConstraints.FreezeRotation;
+        rb.angularDamping = 1f;
+
+        // 3) Fricción baja en la cápsula: al rozar un borde, desliza
         //    en vez de trabarse (stick-slip)
         if (_playerPhysMat == null)
         {
@@ -112,8 +121,6 @@ public class PlayerController : MonoBehaviour
         capsule.material = _playerPhysMat;
         // ────────────────────────────────────────────────────────
 
-        // Congelar inclinación (X/Z) pero permitir el yaw (Y) que maneja el mouse
-        rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
         rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
 
@@ -211,8 +218,14 @@ public class PlayerController : MonoBehaviour
         UpdateDash();
         ApplyGravity();
 
-        // El yaw del cuerpo se aplica por física (como en Jueguinho)
-        rb.MoveRotation(Quaternion.Euler(0f, yaw, 0f));
+        // El yaw lo asigna directamente este script. La rotación está 100%
+        // congelada para la física, así ninguna colisión puede girar el cuerpo.
+        transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+
+        // Red de seguridad: si la física logró acumular velocidad angular
+        // (no debería con la rotación congelada), la anulamos igual.
+        if (rb.angularVelocity.sqrMagnitude > 0f)
+            rb.angularVelocity = Vector3.zero;
 
         wasGrounded = isGrounded;
     }
@@ -228,8 +241,33 @@ public class PlayerController : MonoBehaviour
         if (move.sqrMagnitude > 1f) move.Normalize();
         move *= moveSpeed;
 
+        // ── Transporte con plataforma móvil ──
+        // Sin input, el jugador debe quedarse parado y viajar con la plataforma:
+        // sumamos la velocidad horizontal de la plataforma al movimiento deseado.
+        Vector3 platformVel = Vector3.zero;
+        if (groundPlatform != null)
+        {
+            platformVel = groundPlatform.Velocity;
+            move.x += platformVel.x;
+            move.z += platformVel.z;
+        }
+
         // Se mantiene la velocidad vertical (gravedad / salto activos)
         rb.linearVelocity = new Vector3(move.x, rb.linearVelocity.y, move.z);
+
+        // ── Anti-lanzamiento (plataforma vertical) ──
+        // La plataforma subiendo empuja al jugador; limitamos su velocidad
+        // vertical a la de la plataforma para que NO salga propulsado.
+        if (groundPlatform != null && platformVel.y > 0f && rb.linearVelocity.y > platformVel.y)
+            rb.linearVelocity = new Vector3(rb.linearVelocity.x, platformVel.y, rb.linearVelocity.z);
+
+        // Girar al jugador hacia donde camina
+        if (move.sqrMagnitude > 0.01f)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(move);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation,
+                                                  Time.fixedDeltaTime * rotationSpeed);
+        }
     }
 
     private void ApplyGravity()
@@ -255,7 +293,13 @@ public class PlayerController : MonoBehaviour
         float dist = capsule.radius + groundSkin;
 
         int mask = groundMask.value != 0 ? groundMask.value : ~0;
-        isGrounded = Physics.Raycast(origin, Vector3.down, dist, mask, QueryTriggerInteraction.Ignore);
+        isGrounded = Physics.Raycast(origin, Vector3.down, out RaycastHit hit, dist, mask, QueryTriggerInteraction.Ignore);
+
+        // ¿Estoy parado sobre una plataforma móvil?
+        if (isGrounded && hit.collider != null)
+            groundPlatform = hit.collider.GetComponentInParent<MovingPlatform>();
+        else
+            groundPlatform = null;
     }
 
     private void UpdateJumpsLeft()

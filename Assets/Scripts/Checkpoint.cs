@@ -2,11 +2,14 @@ using UnityEngine;
 
 /// <summary>
 /// Punto de control: al tocarlo, el jugador reaparecerá aquí si muere.
-/// Muestra un faro emisivo como referencia visual.
+/// Muestra un faro emisivo y un mensaje en pantalla ("Checkpoint N alcanzado").
 /// </summary>
 [RequireComponent(typeof(Collider))]
 public class Checkpoint : MonoBehaviour
 {
+    [Tooltip("Número de checkpoint (para el mensaje en pantalla)")]
+    public int numero = 1;
+
     [Tooltip("Faro emisivo (decoración). Se pone verde al activarse.")]
     public Renderer beaconRenderer;
 
@@ -32,6 +35,6 @@ public class Checkpoint : MonoBehaviour
         if (beaconRenderer != null)
             beaconRenderer.material.SetColor("_EmissionColor", Color.green);
 
-        Debug.Log("[Checkpoint] Punto de control activado: " + name);
+        GameFeedback.Mensaje($"Checkpoint {numero} alcanzado");
     }
 }
