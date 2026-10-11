@@ -1,62 +1,54 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
+/// <summary>
+/// Menú principal de SEEN. Conecta con el Canvas construido por UIMenuBuilder
+/// (menú: SEEN → Construir Menú Principal).
+/// </summary>
 public class MainMenuManager : MonoBehaviour
 {
-    [Header("Paneles de UI")]
-    [SerializeField] private GameObject menuPrincipal;
-    [SerializeField] private GameObject menuAjustes;
+    [Header("Paneles")]
+    public GameObject panelMenu;
+    public GameObject panelAjustes;
+
+    [Header("Ajustes")]
+    public SettingsManager ajustes;
 
     private void Start()
     {
-        // Asegurarse de que al inicio se muestre el menú principal y no los ajustes
         MostrarMenuPrincipal();
+
+        // En el menú el ratón debe estar libre y visible
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 
-    /// <summary>
-    /// Se llama desde el botón "Jugar"
-    /// </summary>
+    /// <summary>Botón JUGAR: carga la escena del juego.</summary>
     public void Jugar()
     {
-        // Carga la siguiente escena en la lista (Build Settings). 
-        // Normalmente el Menú es el índice 0, y el Nivel 1 es el índice 1.
-        Debug.Log("Cargando el nivel del juego...");
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
+        Time.timeScale = 1f; // por si se vuelve de una partida pausada
+        SceneManager.LoadScene("Juego");
     }
 
-    /// <summary>
-    /// Se llama desde el botón "Ajustes" o "Gráficos"
-    /// </summary>
     public void MostrarAjustes()
     {
-        if (menuPrincipal != null) menuPrincipal.SetActive(false);
-        if (menuAjustes != null) menuAjustes.SetActive(true);
+        if (panelMenu != null) panelMenu.SetActive(false);
+        if (panelAjustes != null) panelAjustes.SetActive(true);
     }
 
-    /// <summary>
-    /// Se llama desde el botón "Volver" en la pantalla de ajustes
-    /// </summary>
     public void MostrarMenuPrincipal()
     {
-        if (menuAjustes != null) menuAjustes.SetActive(false);
-        if (menuPrincipal != null) menuPrincipal.SetActive(true);
+        if (panelMenu != null) panelMenu.SetActive(true);
+        if (panelAjustes != null) panelAjustes.SetActive(false);
     }
 
-    /// <summary>
-    /// Se llama desde el botón "Salir"
-    /// </summary>
     public void SalirDelJuego()
     {
-        Debug.Log("Saliendo de SEEN...");
+        Debug.Log("[MainMenu] Saliendo de SEEN...");
         Application.Quit();
-    }
 
-    // --- FUNCIONES EXTRA PARA AJUSTES (Opcional) ---
-
-    public void CambiarCalidadGrafica(int indiceCalidad)
-    {
-        // El dropdown debe pasar valores como 0 (Bajo), 1 (Medio), 2 (Alto)
-        QualitySettings.SetQualityLevel(indiceCalidad);
-        Debug.Log("Calidad gráfica cambiada a: " + QualitySettings.names[indiceCalidad]);
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#endif
     }
 }
