@@ -17,6 +17,13 @@ public class HackManager : MonoBehaviour
     public static HackManager Instancia { get; private set; }
     public static bool Abierto => Instancia != null && Instancia.activo;
 
+    /// <summary>
+    /// Dificultad base de los puzzles según el nivel:
+    /// 0 = Nivel 1 (tutorial, fácil), 1 = Nivel 2, 2 = Nivel 3 (difícil).
+    /// La escribe LevelInfo al cargar el nivel.
+    /// </summary>
+    public static int DificultadBase { get; set; }
+
     // Estado del puzzle actual
     private Canvas canvas;
     private GameObject panel;
@@ -36,6 +43,7 @@ public class HackManager : MonoBehaviour
     private bool activo;
     private bool esTutorial;
     private bool finalizando;
+    private float bloqueoInput;            // ignora clics un instante tras abrir un módulo
     private float tiempoTransicion;   // para avance entre módulos (tiempo real)
 
     // Colores
@@ -79,6 +87,8 @@ public class HackManager : MonoBehaviour
 
     private void Update()
     {
+        if (bloqueoInput > 0f) bloqueoInput -= Time.unscaledDeltaTime;
+
         if (!activo) { if (promptTimer > 0f) promptTimer -= Time.unscaledDeltaTime; return; }
 
         // Cerrar con Escape
@@ -242,7 +252,7 @@ public class HackManager : MonoBehaviour
         feedbackTexto.text = "";
     }
 
-    private void ConstruirModuloActual()
+    private void ConstruirModuloActual(bool forzarModulo = false)
     {
         // Limpiar contenido anterior
         foreach (Transform t in contenido) Destroy(t.gameObject);
@@ -251,7 +261,7 @@ public class HackManager : MonoBehaviour
         feedbackTexto.text = "";
 
         // Tutorial (Nivel 1): primero las instrucciones, después el módulo
-        if (esTutorial)
+        if (esTutorial && !forzarModulo)
         {
             MostrarInstrucciones(modulos[indiceModulo]);
             return;
@@ -259,6 +269,7 @@ public class HackManager : MonoBehaviour
 
         contenido.gameObject.SetActive(true);
         panelInstrucciones.SetActive(false);
+        bloqueoInput = 0.25f;   // evita que el clic que cerró las instrucciones se "coma" el primer clic
 
         switch (modulos[indiceModulo])
         {
@@ -286,11 +297,11 @@ public class HackManager : MonoBehaviour
                                      new Vector2(200f, 40f), colAcento);
 
         textoInstrucciones = CrearTexto(panelInstrucciones.transform, "TextoInstrucciones", "", 26,
-                                        TextAnchor.UpperLeft, new Vector2(-180f, -90f),
-                                        new Vector2(720f, 360f), new Color(0.85f, 0.9f, 0.95f));
+                                        TextAnchor.MiddleCenter, new Vector2(0f, 15f),
+                                        new Vector2(800f, 380f), new Color(0.85f, 0.9f, 0.95f));
         textoInstrucciones.horizontalOverflow = HorizontalWrapMode.Wrap;
         textoInstrucciones.verticalOverflow = VerticalWrapMode.Overflow;
-        textoInstrucciones.lineSpacing = 1.4f;
+        textoInstrucciones.lineSpacing = 1.5f;
 
         var btn = CrearBoton(panelInstrucciones.transform, "BotonContinuar", "EMPEZAR HACKEO",
                              new Vector2(0f, -265f), new Vector2(320f, 62f));
@@ -298,7 +309,7 @@ public class HackManager : MonoBehaviour
         {
             panelInstrucciones.SetActive(false);
             contenido.gameObject.SetActive(true);
-            ConstruirModuloActual();
+            ConstruirModuloActual(true);   // directo al puzzle, sin volver a las instrucciones
         });
 
         panelInstrucciones.SetActive(false);
@@ -329,27 +340,27 @@ public class HackManager : MonoBehaviour
             case HackableType.DescifrarCodigo:
                 return "El código interceptado está cifrado con un desplazamiento César.\n\n" +
                        "Si el desplazamiento es -3, cada letra se movió 3 lugares hacia adelante " +
-                       "en el abecedario. Para recuperar la palabra original, mové cada letra " +
+                       "en el abecedario. Para recuperar la palabra original, mueve cada letra " +
                        "hacia atrás esa misma cantidad.\n\n" +
                        "Ejemplo:  'D' con desplazamiento -3  =  'A'\n\n" +
-                       "Escribí la palabra original en el campo de texto y presioná VERIFICAR.";
+                       "Escribe la palabra original en el campo de texto y presiona VERIFICAR.";
 
             case HackableType.UnirCables:
                 return "Cada cable de la columna izquierda tiene un par del mismo color en la derecha.\n\n" +
-                       "1. Hacé clic en un cable de la IZQUIERDA.\n" +
-                       "2. Hacé clic en el cable del MISMO COLOR de la derecha.\n" +
-                       "3. Si acertás, el cable queda conectado. Si te equivocás, la selección se descarta.\n\n" +
-                       "Conectá todos los cables para completar el módulo.";
+                       "1. Haz clic en un cable de la IZQUIERDA.\n" +
+                       "2. Haz clic en el cable del MISMO COLOR de la derecha.\n" +
+                       "3. Si aciertas, el cable queda conectado. Si te equivocas, la selección se descarta.\n\n" +
+                       "Conecta todos los cables para completar el módulo.";
 
             case HackableType.Patron:
-                return "El sistema muestra una secuencia de luces que tenés que memorizar.\n\n" +
-                       "1. Observá el orden en que se encienden los botones.\n" +
-                       "2. Repetí la secuencia haciendo clic en el mismo orden.\n" +
-                       "3. Si te equivocás, la secuencia se reinicia desde el principio.\n\n" +
+                return "El sistema muestra una secuencia de luces que debes memorizar.\n\n" +
+                       "1. Observa el orden en que se encienden los botones.\n" +
+                       "2. Repite la secuencia haciendo clic en el mismo orden.\n" +
+                       "3. Si te equivocas, la secuencia se reinicia desde el principio.\n\n" +
                        "Cada módulo agrega un paso más a la secuencia.";
 
             default:
-                return "Resolvé el módulo para continuar.";
+                return "Resuelve el módulo para continuar.";
         }
     }
 
@@ -360,8 +371,9 @@ public class HackManager : MonoBehaviour
 
     private void PuzzleDescifrar()
     {
-        int dificultad = Mathf.Clamp(indiceModulo + 1, 1, 5);
-        int desplazamiento = 2 + dificultad;                       // 3..6
+        // Dificultad: tutorial (0) fácil → Nivel 3 (2) difícil
+        int dificultad = Mathf.Clamp(DificultadBase + indiceModulo, 0, 5);
+        int desplazamiento = 3 + dificultad;                       // 3..8
         int idx = UnityEngine.Random.Range(0, palabras.Length);
         string palabra = palabras[idx];
         respuestaActual = Desplazar(palabra, desplazamiento);
@@ -375,7 +387,7 @@ public class HackManager : MonoBehaviour
 
         CrearTexto(contenido, "Lbl2", $"Desplazamiento César: -{desplazamiento}", 20, TextAnchor.MiddleCenter,
                    new Vector2(0f, 58f), new Vector2(700f, 32f), new Color(0.6f, 0.7f, 0.8f));
-        CrearTexto(contenido, "Lbl3", "Escribí el código original y verificá", 20, TextAnchor.MiddleCenter,
+        CrearTexto(contenido, "Lbl3", "Escribe el código original y presiona VERIFICAR", 20, TextAnchor.MiddleCenter,
                    new Vector2(0f, 20f), new Vector2(700f, 32f), new Color(0.6f, 0.7f, 0.8f));
 
         // Campo de texto
@@ -419,8 +431,8 @@ public class HackManager : MonoBehaviour
 
     private void PuzzleCables()
     {
-        int cantidad = Mathf.Clamp(3 + indiceModulo, 3, 6);
-        CrearTexto(contenido, "LblCables", "CONECTÁ LOS CABLES DEL MISMO COLOR", 26, TextAnchor.MiddleCenter,
+        int cantidad = Mathf.Clamp(3 + DificultadBase + indiceModulo, 3, 6);
+        CrearTexto(contenido, "LblCables", "CONECTA LOS CABLES DEL MISMO COLOR", 26, TextAnchor.MiddleCenter,
                    new Vector2(0f, 195f), new Vector2(760f, 40f), colAcento);
 
         Color[] colores = {
@@ -467,9 +479,10 @@ public class HackManager : MonoBehaviour
             bDer.image.color = colores[colorIdx];
             bDer.onClick.AddListener(() =>
             {
+                if (bloqueoInput > 0f) return;
                 if (seleccionado < 0)
                 {
-                    MostrarFeedback("SELECCIONÁ UN CABLE DE LA IZQUIERDA", false);
+                    MostrarFeedback("SELECCIONA UN CABLE DE LA IZQUIERDA", false);
                     return;
                 }
                 if (colorIdx == seleccionado)
@@ -534,8 +547,8 @@ public class HackManager : MonoBehaviour
 
     private void PuzzlePatron()
     {
-        int largo = Mathf.Clamp(3 + indiceModulo, 3, 6);
-        CrearTexto(contenido, "LblPatron", "REPETÍ LA SECUENCIA DE LUCES", 26, TextAnchor.MiddleCenter,
+        int largo = Mathf.Clamp(3 + DificultadBase + indiceModulo, 3, 8);
+        CrearTexto(contenido, "LblPatron", "REPITE LA SECUENCIA DE LUCES", 26, TextAnchor.MiddleCenter,
                    new Vector2(0f, 195f), new Vector2(760f, 40f), colAcento);
 
         Color[] colores = {
@@ -570,7 +583,7 @@ public class HackManager : MonoBehaviour
 
     private IEnumerator MostrarSecuencia(Color[] encendidos, Color[] apagados)
     {
-        MostrarFeedback("OBSERVÁ LA SECUENCIA...", false);
+        MostrarFeedback("OBSERVA LA SECUENCIA...", false);
         yield return new WaitForSecondsRealtime(0.7f);
 
         foreach (int idx in secuencia)
@@ -582,12 +595,12 @@ public class HackManager : MonoBehaviour
         }
 
         mostrandoSecuencia = false;
-        MostrarFeedback("REPETÍ LA SECUENCIA", false);
+        MostrarFeedback("REPITE LA SECUENCIA", false);
     }
 
     private void ClickPatron(int idx, Color[] encendidos, Color[] apagados)
     {
-        if (mostrandoSecuencia || tiempoTransicion > 0f) return;
+        if (mostrandoSecuencia || tiempoTransicion > 0f || bloqueoInput > 0f) return;
 
         // Flash del botón
         StartCoroutine(FlashBoton(idx, encendidos[idx], apagados[idx]));
@@ -685,20 +698,32 @@ public class HackManager : MonoBehaviour
 
     private Button CrearBoton(Transform parent, string nombre, string etiqueta, Vector2 pos, Vector2 size, Color? colorBase = null)
     {
+        Color baseColor = colorBase ?? colBoton;
+
         var go = NuevoUI(parent, nombre, pos, size);
         var img = go.AddComponent<Image>();
-        img.color = colBoton;
+        img.color = baseColor;
 
         var btn = go.AddComponent<Button>();
         btn.targetGraphic = img;
         btn.transition = Selectable.Transition.ColorTint;
+
+        // El tint REEMPLAZA el color del gráfico: por eso los colores del tint
+        // deben ser el color del propio botón (así se ven los cables/patrones de color)
         var c = btn.colors;
-        c.normalColor = colBoton;
-        c.highlightedColor = Color.Lerp(colBoton, Color.white, 0.18f);
-        c.pressedColor = colAcento;
+        c.normalColor = baseColor;
+        c.highlightedColor = Color.Lerp(baseColor, Color.white, 0.22f);
+        c.pressedColor = Color.Lerp(baseColor, Color.white, 0.45f);
+        c.selectedColor = baseColor;
+        c.disabledColor = Color.Lerp(baseColor, Color.black, 0.4f);
         c.fadeDuration = 0.05f;
+        c.colorMultiplier = 1f;
         btn.colors = c;
-        btn.image.color = colorBase ?? colBoton;
+        btn.image.color = baseColor;
+
+        var nav = btn.navigation;
+        nav.mode = Navigation.Mode.None;
+        btn.navigation = nav;
 
         if (!string.IsNullOrEmpty(etiqueta))
         {

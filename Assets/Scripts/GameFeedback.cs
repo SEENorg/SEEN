@@ -168,7 +168,10 @@ public class GameFeedback : MonoBehaviour
         {
             Time.timeScale = 1f;
             if (!string.IsNullOrEmpty(EscenaSiguiente) && Application.CanStreamedLevelBeLoaded(EscenaSiguiente))
+            {
+                Boot.PermitirInicioEscena = true;
                 SceneManager.LoadScene(EscenaSiguiente);
+            }
             else
             {
                 Debug.LogWarning("[Feedback] No hay nivel siguiente disponible.");
@@ -181,6 +184,7 @@ public class GameFeedback : MonoBehaviour
         if (BotonConHover(new Rect(bx, py + 228f, bw, bh), "REINTENTAR"))
         {
             Time.timeScale = 1f;
+            Boot.PermitirInicioEscena = true;
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
         }
 
@@ -188,7 +192,10 @@ public class GameFeedback : MonoBehaviour
         {
             Time.timeScale = 1f;
             if (Application.CanStreamedLevelBeLoaded("MainMenu"))
+            {
+                Boot.PermitirInicioEscena = true;
                 SceneManager.LoadScene("MainMenu");
+            }
             else
                 Debug.LogWarning("[Feedback] No existe la escena 'MainMenu'. " +
                                  "Ejecuta SEEN / Construir Menu Principal.");

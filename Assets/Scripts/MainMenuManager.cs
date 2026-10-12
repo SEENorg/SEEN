@@ -27,6 +27,7 @@ public class MainMenuManager : MonoBehaviour
     public void Jugar()
     {
         Time.timeScale = 1f; // por si se vuelve de una partida pausada
+        Boot.PermitirInicioEscena = true;
         SceneManager.LoadScene("Juego");
     }
 

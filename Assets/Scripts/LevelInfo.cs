@@ -1,8 +1,9 @@
 using UnityEngine;
 
 /// <summary>
-/// Información del nivel: nombre para mostrar y escena siguiente a cargar
-/// al completarlo (vacía si es el último nivel).
+/// Información del nivel: nombre para mostrar, escena siguiente a cargar
+/// al completarlo (vacía si es el último nivel) y dificultad de los puzzles
+/// (0 = tutorial, 1 = medio, 2 = difícil).
 /// </summary>
 public class LevelInfo : MonoBehaviour
 {
@@ -12,9 +13,13 @@ public class LevelInfo : MonoBehaviour
     [Tooltip("Escena a cargar al completar (vacía = no hay siguiente)")]
     public string escenaSiguiente = "";
 
+    [Tooltip("Dificultad de los puzzles: 0 = fácil (tutorial), 1 = medio, 2 = difícil")]
+    public int dificultad;
+
     private void Start()
     {
         GameFeedback.NombreNivelActual = nombreNivel;
         GameFeedback.EscenaSiguiente = escenaSiguiente;
+        HackManager.DificultadBase = dificultad;
     }
 }

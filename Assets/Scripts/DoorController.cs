@@ -15,17 +15,22 @@ public class DoorController : MonoBehaviour
     private bool abierta;
     private Vector3 posCerrada;
     private Collider col;
+    private float distanciaApertura;
 
     private void Start()
     {
         posCerrada = transform.position;
         col = GetComponent<Collider>();
+
+        // La hoja baja TODO su alto más un margen (así desaparece completa)
+        float alto = col != null ? col.bounds.size.y : 4.5f;
+        distanciaApertura = alto + 0.5f;
     }
 
     private void Update()
     {
         if (!abierta) return;
-        if (transform.position.y <= posCerrada.y - apertura) return;
+        if (transform.position.y <= posCerrada.y - distanciaApertura) return;
         transform.Translate(Vector3.down * velocidad * Time.deltaTime, Space.World);
     }
 
