@@ -498,7 +498,7 @@ public static class SEENLevelBuilder
         // ── HACKEO 1 (1 módulo: DescifrarCodigo) ──
         var puerta1 = L1Puerta(root, "L1_Puerta1", new Vector3(0f, 2.4f, 50f), 40f, 4.8f);
         L1Tableta(root, "L1_Tableta1", new Vector3(-2.3f, 0.25f, 47.5f),
-                  new[] { HackableType.DescifrarCodigo }, "PUERTA 1", puerta1);
+                  new[] { HackableType.DescifrarCodigo }, "PUERTA 1", true, puerta1);
 
         L1Checkpoint(root, "L1_CP_Pasillo", new Vector3(0f, 0.5f, 19f), 1);
         L1Light(root, "L1_Light_Pasillo", new Vector3(0f, 4.5f, 35f),
@@ -628,7 +628,7 @@ public static class SEENLevelBuilder
         // ── HACKEO 2 (1 módulo: UnirCables) ──
         var puerta2 = L1Puerta(root, "L1_Puerta2", new Vector3(0f, 11.6f, 104f), 28f, 4.6f);
         L1Tableta(root, "L1_Tableta2", new Vector3(-4.5f, 9.2f, 101.5f),
-                  new[] { HackableType.UnirCables }, "PUERTA 2", puerta2);
+                  new[] { HackableType.UnirCables }, "PUERTA 2", true, puerta2);
 
         // Entidad hostil: "Comentario" que patrulla
         L1Patrol(root, "L1_ENT_Comentario", new Vector3(-4.5f, 9.8f, 108f), new Vector3(4.5f, 9.8f, 108f), 2.5f);
@@ -723,7 +723,7 @@ public static class SEENLevelBuilder
     /// sobre un pedestal, con su luz y prompt flotante. Se conecta a las puertas dadas.
     /// </summary>
     static void L1Tableta(GameObject parent, string name, Vector3 pos, HackableType[] modulos,
-                          string nombreAcceso, params GameObject[] puertas)
+                          string nombreAcceso, bool tutorial = false, params GameObject[] puertas)
     {
         // Pedestal
         Platform(parent, name + "_Base", pos + new Vector3(0f, 0.45f, 0f),
@@ -750,6 +750,7 @@ public static class SEENLevelBuilder
         var term = panel.AddComponent<HackTerminal>();
         term.modulos = modulos;
         term.nombreAcceso = nombreAcceso;
+        term.esTutorial = tutorial;
 
         var lista = new System.Collections.Generic.List<DoorController>();
         foreach (var p in puertas)

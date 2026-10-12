@@ -25,10 +25,16 @@ public class HackManager : MonoBehaviour
     private Text feedbackTexto;
     private Transform contenido;
 
+    // Instrucciones (tutorial)
+    private GameObject panelInstrucciones;
+    private Text textoInstrucciones;
+    private Text textoTipoModulo;
+
     private HackableType[] modulos;
     private System.Action onCompletado;
     private int indiceModulo;
     private bool activo;
+    private bool esTutorial;
     private bool finalizando;
     private float tiempoTransicion;   // para avance entre módulos (tiempo real)
 
@@ -46,14 +52,14 @@ public class HackManager : MonoBehaviour
     // ── API estática ─────────────────────────────────────────────
 
     /// <summary>Abre la interfaz de hackeo con la cadena de módulos dada.</summary>
-    public static void Abrir(HackableType[] mods, string nombreAcceso, Action onResuelto)
+    public static void Abrir(HackableType[] mods, string nombreAcceso, Action onResuelto, bool tutorial = false)
     {
         if (Instancia == null)
         {
             var go = new GameObject("HackManager");
             Instancia = go.AddComponent<HackManager>();
         }
-        Instancia.Iniciar(mods, nombreAcceso, onResuelto);
+        Instancia.Iniciar(mods, nombreAcceso, onResuelto, tutorial);
     }
 
     private static string textoPromptActual;
@@ -135,14 +141,16 @@ public class HackManager : MonoBehaviour
         if (pc != null) pc.enabled = true;
     }
 
-    private void Iniciar(HackableType[] mods, string nombreAcceso, Action onResuelto)
+    private void Iniciar(HackableType[] mods, string nombreAcceso, Action onResuelto, bool tutorial = false)
     {
         if (activo) return;
 
         modulos = (mods != null && mods.Length > 0) ? mods : new[] { HackableType.DescifrarCodigo };
         onCompletado = onResuelto;
+        esTutorial = tutorial;
         indiceModulo = 0;
         tiempoTransicion = 0f;
+        finalizando = false;
 
         // Pausa y ratón libre
         Time.timeScale = 0f;
@@ -208,21 +216,24 @@ public class HackManager : MonoBehaviour
 
             Contorno(panel.transform, colAcento);
 
-            // Título
-            tituloTexto = CrearTexto(panel.transform, "Titulo", "HACKEO", 38, TextAnchor.UpperCenter,
-                                     new Vector2(0f, -20f), new Vector2(860f, 54f), colAcento);
+            // Título arriba a la IZQUIERDA (para que no se pise con nada)
+            tituloTexto = CrearTexto(panel.transform, "Titulo", "HACKEO", 34, TextAnchor.UpperLeft,
+                                     new Vector2(-180f, -285f), new Vector2(560f, 50f), colAcento);
             tituloTexto.fontStyle = FontStyle.Bold;
 
-            // Progreso de módulos
-            moduloTexto = CrearTexto(panel.transform, "Modulo", "", 24, TextAnchor.UpperRight,
-                                     new Vector2(400f, -24f), new Vector2(220f, 34f), new Color(0.7f, 0.8f, 0.9f));
+            // Módulo en la esquina SUPERIOR DERECHA del panel
+            moduloTexto = CrearTexto(panel.transform, "Modulo", "", 22, TextAnchor.UpperRight,
+                                     new Vector2(360f, -285f), new Vector2(200f, 40f), new Color(0.7f, 0.8f, 0.9f));
 
-            // Contenido del módulo
-            contenido = NuevoUI(panel.transform, "Contenido", new Vector2(0f, -20f), new Vector2(860f, 460f)).transform;
+            // Contenido del módulo (debajo del título)
+            contenido = NuevoUI(panel.transform, "Contenido", new Vector2(0f, -20f), new Vector2(860f, 400f)).transform;
 
-            // Feedback
+            // Feedback abajo
             feedbackTexto = CrearTexto(panel.transform, "Feedback", "", 24, TextAnchor.MiddleCenter,
-                                       new Vector2(0f, 278f), new Vector2(860f, 40f), Color.white);
+                                       new Vector2(0f, -290f), new Vector2(860f, 40f), Color.white);
+
+            // ── Panel de instrucciones (tutorial del Nivel 1) ──
+            ConstruirPanelInstrucciones();
         }
 
         canvas.gameObject.SetActive(true);
@@ -239,11 +250,106 @@ public class HackManager : MonoBehaviour
         moduloTexto.text = $"MÓDULO {indiceModulo + 1}/{modulos.Length}";
         feedbackTexto.text = "";
 
+        // Tutorial (Nivel 1): primero las instrucciones, después el módulo
+        if (esTutorial)
+        {
+            MostrarInstrucciones(modulos[indiceModulo]);
+            return;
+        }
+
+        contenido.gameObject.SetActive(true);
+        panelInstrucciones.SetActive(false);
+
         switch (modulos[indiceModulo])
         {
             case HackableType.DescifrarCodigo: PuzzleDescifrar(); break;
             case HackableType.UnirCables: PuzzleCables(); break;
             case HackableType.Patron: PuzzlePatron(); break;
+        }
+    }
+
+    // ═══════════════════ INSTRUCCIONES (tutorial) ═══════════════════
+
+    private void ConstruirPanelInstrucciones()
+    {
+        panelInstrucciones = NuevoUI(panel.transform, "Instrucciones", Vector2.zero, new Vector2(920f, 640f));
+        var img = panelInstrucciones.AddComponent<Image>();
+        img.color = colPanel;
+
+        var tituloInst = CrearTexto(panelInstrucciones.transform, "TituloInst", "CÓMO HACKEAR", 34,
+                                    TextAnchor.UpperLeft, new Vector2(-180f, -285f),
+                                    new Vector2(560f, 50f), colVerde);
+        tituloInst.fontStyle = FontStyle.Bold;
+
+        textoTipoModulo = CrearTexto(panelInstrucciones.transform, "TipoModulo", "", 24,
+                                     TextAnchor.UpperRight, new Vector2(360f, -285f),
+                                     new Vector2(200f, 40f), colAcento);
+
+        textoInstrucciones = CrearTexto(panelInstrucciones.transform, "TextoInstrucciones", "", 26,
+                                        TextAnchor.UpperLeft, new Vector2(-180f, -90f),
+                                        new Vector2(720f, 360f), new Color(0.85f, 0.9f, 0.95f));
+        textoInstrucciones.horizontalOverflow = HorizontalWrapMode.Wrap;
+        textoInstrucciones.verticalOverflow = VerticalWrapMode.Overflow;
+        textoInstrucciones.lineSpacing = 1.4f;
+
+        var btn = CrearBoton(panelInstrucciones.transform, "BotonContinuar", "EMPEZAR HACKEO",
+                             new Vector2(0f, -265f), new Vector2(320f, 62f));
+        btn.onClick.AddListener(() =>
+        {
+            panelInstrucciones.SetActive(false);
+            contenido.gameObject.SetActive(true);
+            ConstruirModuloActual();
+        });
+
+        panelInstrucciones.SetActive(false);
+    }
+
+    private void MostrarInstrucciones(HackableType tipo)
+    {
+        contenido.gameObject.SetActive(false);
+        panelInstrucciones.SetActive(true);
+
+        string nombreTipo;
+        switch (tipo)
+        {
+            case HackableType.DescifrarCodigo: nombreTipo = "DESCIFRAR CÓDIGO"; break;
+            case HackableType.UnirCables: nombreTipo = "UNIR CABLES"; break;
+            case HackableType.Patron: nombreTipo = "REPETIR PATRÓN"; break;
+            default: nombreTipo = "HACKEO"; break;
+        }
+
+        textoTipoModulo.text = $"MÓDULO {indiceModulo + 1}/{modulos.Length} · {nombreTipo}";
+        textoInstrucciones.text = TextoInstrucciones(tipo);
+    }
+
+    private static string TextoInstrucciones(HackableType tipo)
+    {
+        switch (tipo)
+        {
+            case HackableType.DescifrarCodigo:
+                return "El código interceptado está cifrado con un desplazamiento César.\n\n" +
+                       "Si el desplazamiento es -3, cada letra se movió 3 lugares hacia adelante " +
+                       "en el abecedario. Para recuperar la palabra original, mové cada letra " +
+                       "hacia atrás esa misma cantidad.\n\n" +
+                       "Ejemplo:  'D' con desplazamiento -3  =  'A'\n\n" +
+                       "Escribí la palabra original en el campo de texto y presioná VERIFICAR.";
+
+            case HackableType.UnirCables:
+                return "Cada cable de la columna izquierda tiene un par del mismo color en la derecha.\n\n" +
+                       "1. Hacé clic en un cable de la IZQUIERDA.\n" +
+                       "2. Hacé clic en el cable del MISMO COLOR de la derecha.\n" +
+                       "3. Si acertás, el cable queda conectado. Si te equivocás, la selección se descarta.\n\n" +
+                       "Conectá todos los cables para completar el módulo.";
+
+            case HackableType.Patron:
+                return "El sistema muestra una secuencia de luces que tenés que memorizar.\n\n" +
+                       "1. Observá el orden en que se encienden los botones.\n" +
+                       "2. Repetí la secuencia haciendo clic en el mismo orden.\n" +
+                       "3. Si te equivocás, la secuencia se reinicia desde el principio.\n\n" +
+                       "Cada módulo agrega un paso más a la secuencia.";
+
+            default:
+                return "Resolvé el módulo para continuar.";
         }
     }
 

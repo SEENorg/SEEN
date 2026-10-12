@@ -17,9 +17,12 @@ public class HackTerminal : MonoBehaviour
     [Tooltip("Estado del hackeo")]
     public bool resuelto;
 
-    [Header("Prompt flotante")]
+    [Header("Prompt y tutorial")]
     [Tooltip("Texto 3D junto a la tableta")]
     public string textoPrompt = "Presione E para hackear";
+
+    [Tooltip("Si es true, muestra una pantalla de instrucciones antes de cada módulo (tutorial)")]
+    public bool esTutorial;
 
     [Tooltip("Puertas que se abren al completar todos los módulos")]
     public DoorController[] puertas;
@@ -58,7 +61,7 @@ public class HackTerminal : MonoBehaviour
     public void Interactuar()
     {
         if (resuelto || HackManager.Abierto) return;
-        HackManager.Abrir(modulos, nombreAcceso, OnHackCompletado);
+        HackManager.Abrir(modulos, nombreAcceso, OnHackCompletado, esTutorial);
     }
 
     /// <summary>Se llama cuando el jugador resolvió todos los módulos.</summary>
