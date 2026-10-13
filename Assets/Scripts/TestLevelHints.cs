@@ -25,6 +25,13 @@ public class TestLevelHints : MonoBehaviour
 
     private void Update()
     {
+        // Los controles en pantalla SOLO aparecen en el tutorial (dificultad 0)
+        if (HackManager.DificultadBase != 0)
+        {
+            goalReached = true;
+            return;
+        }
+
         elapsed += Time.deltaTime;
         if (hideAfterSeconds > 0f && elapsed > hideAfterSeconds)
             goalReached = true;
@@ -47,7 +54,7 @@ public class TestLevelHints : MonoBehaviour
         }
 
         string contenido =
-            "<b>SEEN — Nivel de pruebas</b>\n" +
+            "<b>SEEN — Tutorial de movimiento</b>\n" +
             "WASD / Flechas   →   Moverse\n" +
             "Mouse   →   Mirar      (Esc libera el ratón)\n" +
             "Espacio   →   Saltar (doble salto)\n" +

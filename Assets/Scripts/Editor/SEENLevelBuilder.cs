@@ -1,4 +1,4 @@
-﻿#if UNITY_EDITOR
+#if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -265,9 +265,21 @@ public static class SEENLevelBuilder
         if (player.GetComponent<Crosshair>() == null)
             player.AddComponent<Crosshair>();
 
+        // Efectos de cámara (bob, viento del dash, onda del doble salto)
+        if (player.GetComponent<HeadBob>() == null) player.AddComponent<HeadBob>();
+        if (player.GetComponent<SpeedLines>() == null) player.AddComponent<SpeedLines>();
+        if (player.GetComponent<JumpRing>() == null) player.AddComponent<JumpRing>();
+
+        // Indicadores de habilidades (esquina inferior izquierda)
+        if (player.GetComponent<SkillIndicators>() == null) player.AddComponent<SkillIndicators>();
+
         // Menú de pausa
         if (player.GetComponent<PauseMenu>() == null)
             player.AddComponent<PauseMenu>();
+
+        // Tabla César (se abre con TAB)
+        if (player.GetComponent<CipherWheel>() == null)
+            player.AddComponent<CipherWheel>();
 
         // Respawn al caer
         if (player.GetComponent<RespawnOnFall>() == null)
@@ -480,97 +492,116 @@ public static class SEENLevelBuilder
     /// <summary>ZONA 0 — Punto de Infección: plaza de spawn decorada.</summary>
     static void BuildZona0(GameObject root)
     {
-        Platform(root, "L1_Plaza", new Vector3(0f, 0f, 0f), new Vector3(26f, 0.5f, 30f), matConcrete);
+        // Plaza más ABIERTA (32 x 34)
+        Platform(root, "L1_Plaza", new Vector3(0f, 0f, 0f), new Vector3(32f, 0.5f, 34f), matConcrete);
 
-        Wall(root, "L1_Wall_Back", new Vector3(0f, 3.5f, -15.3f), new Vector3(26f, 7f, 0.6f));
-        Wall(root, "L1_Wall_L", new Vector3(-13.3f, 3.5f, 0f), new Vector3(0.6f, 7f, 30f));
-        Wall(root, "L1_Wall_R", new Vector3(13.3f, 3.5f, 0f), new Vector3(0.6f, 7f, 30f));
-        Wall(root, "L1_Wall_FL", new Vector3(-8f, 3.5f, 15.3f), new Vector3(10.6f, 7f, 0.6f));
-        Wall(root, "L1_Wall_FR", new Vector3(8f, 3.5f, 15.3f), new Vector3(10.6f, 7f, 0.6f));
+        Wall(root, "L1_Wall_Back", new Vector3(0f, 3.5f, -17.3f), new Vector3(32f, 7f, 0.6f));
+        Wall(root, "L1_Wall_L", new Vector3(-16.3f, 3.5f, 0f), new Vector3(0.6f, 7f, 34f));
+        Wall(root, "L1_Wall_R", new Vector3(16.3f, 3.5f, 0f), new Vector3(0.6f, 7f, 34f));
+        Wall(root, "L1_Wall_FL", new Vector3(-10.3f, 3.5f, 17.3f), new Vector3(12f, 7f, 0.6f));
+        Wall(root, "L1_Wall_FR", new Vector3(10.3f, 3.5f, 17.3f), new Vector3(12f, 7f, 0.6f));
 
         // Vigas del techo
-        Wall(root, "L1_Viga_A", new Vector3(-6f, 7.2f, 0f), new Vector3(0.5f, 0.5f, 30f));
-        Wall(root, "L1_Viga_B", new Vector3(0f, 7.2f, 0f), new Vector3(0.5f, 0.5f, 30f));
-        Wall(root, "L1_Viga_C", new Vector3(6f, 7.2f, 0f), new Vector3(0.5f, 0.5f, 30f));
+        Wall(root, "L1_Viga_A", new Vector3(-7f, 7.2f, 0f), new Vector3(0.5f, 0.5f, 34f));
+        Wall(root, "L1_Viga_B", new Vector3(0f, 7.2f, 0f), new Vector3(0.5f, 0.5f, 34f));
+        Wall(root, "L1_Viga_C", new Vector3(7f, 7.2f, 0f), new Vector3(0.5f, 0.5f, 34f));
 
         // Arco de entrada al pasillo
-        Wall(root, "L1_Arco_L", new Vector3(-3.2f, 3f, 15.3f), new Vector3(0.9f, 6f, 0.9f));
-        Wall(root, "L1_Arco_R", new Vector3(3.2f, 3f, 15.3f), new Vector3(0.9f, 6f, 0.9f));
-        Wall(root, "L1_Arco_Top", new Vector3(0f, 6.4f, 15.3f), new Vector3(7.3f, 0.7f, 0.9f));
-        Platform(root, "L1_Arco_Luz", new Vector3(0f, 5.9f, 15.3f), new Vector3(6f, 0.12f, 0.4f), matCyan);
+        Wall(root, "L1_Arco_L", new Vector3(-4.6f, 3f, 17.3f), new Vector3(0.9f, 6f, 0.9f));
+        Wall(root, "L1_Arco_R", new Vector3(4.6f, 3f, 17.3f), new Vector3(0.9f, 6f, 0.9f));
+        Wall(root, "L1_Arco_Top", new Vector3(0f, 6.4f, 17.3f), new Vector3(10.1f, 0.7f, 0.9f));
+        Platform(root, "L1_Arco_Luz", new Vector3(0f, 5.9f, 17.3f), new Vector3(9f, 0.12f, 0.4f), matCyan);
 
         // Pilares
-        Platform(root, "L1_Pilar_A", new Vector3(-6f, 3f, 4f), new Vector3(1.6f, 6f, 1.6f), matStructure);
-        Platform(root, "L1_Pilar_B", new Vector3(6f, 3f, 4f), new Vector3(1.6f, 6f, 1.6f), matStructure);
-        Platform(root, "L1_Pilar_C", new Vector3(0f, 3f, -8f), new Vector3(1.6f, 6f, 1.6f), matStructure);
+        Platform(root, "L1_Pilar_A", new Vector3(-8f, 3f, 6f), new Vector3(1.6f, 6f, 1.6f), matStructure);
+        Platform(root, "L1_Pilar_B", new Vector3(8f, 3f, 6f), new Vector3(1.6f, 6f, 1.6f), matStructure);
+        Platform(root, "L1_Pilar_C", new Vector3(-8f, 3f, -10f), new Vector3(1.6f, 6f, 1.6f), matStructure);
+        Platform(root, "L1_Pilar_D", new Vector3(8f, 3f, -10f), new Vector3(1.6f, 6f, 1.6f), matStructure);
         // Molduras emisivas en los pilares
-        Platform(root, "L1_Pilar_A_Luz", new Vector3(-6f, 5.6f, 4f), new Vector3(1.7f, 0.12f, 1.7f), matCyan);
-        Platform(root, "L1_Pilar_B_Luz", new Vector3(6f, 5.6f, 4f), new Vector3(1.7f, 0.12f, 1.7f), matCyan);
-        Platform(root, "L1_Pilar_C_Luz", new Vector3(0f, 5.6f, -8f), new Vector3(1.7f, 0.12f, 1.7f), matMagenta);
+        Platform(root, "L1_Pilar_A_Luz", new Vector3(-8f, 5.6f, 6f), new Vector3(1.7f, 0.12f, 1.7f), matCyan);
+        Platform(root, "L1_Pilar_B_Luz", new Vector3(8f, 5.6f, 6f), new Vector3(1.7f, 0.12f, 1.7f), matCyan);
+        Platform(root, "L1_Pilar_C_Luz", new Vector3(-8f, 5.6f, -10f), new Vector3(1.7f, 0.12f, 1.7f), matMagenta);
+        Platform(root, "L1_Pilar_D_Luz", new Vector3(8f, 5.6f, -10f), new Vector3(1.7f, 0.12f, 1.7f), matMagenta);
 
-        // Muro de publicaciones (rejilla de pantallas emisivas)
-        for (int col = 0; col < 6; col++)
+        // Muro de publicaciones (rejilla de pantallas emisivas, más ancho)
+        for (int col = 0; col < 8; col++)
         {
             for (int row = 0; row < 3; row++)
             {
                 var mat = (col + row) % 2 == 0 ? matCyan : matMagenta;
                 Platform(root, $"L1_Post_{col}_{row}",
-                    new Vector3(-5f + col * 2f, 1.8f + row * 1.4f, -14.85f),
+                    new Vector3(-7f + col * 2f, 1.8f + row * 1.4f, -17.0f),
                     new Vector3(1.3f, 1.3f, 0.15f), mat);
             }
         }
 
-        // Rack de servidores en una esquina
-        Platform(root, "L1_Rack", new Vector3(-11.5f, 2.2f, -4f), new Vector3(1.6f, 4.4f, 1.6f), matStructure);
+        // Racks de servidores en ambas esquinas
+        Platform(root, "L1_Rack", new Vector3(-14.5f, 2.2f, -8f), new Vector3(1.6f, 4.4f, 1.6f), matStructure);
+        Platform(root, "L1_Rack_B", new Vector3(14.5f, 2.2f, -8f), new Vector3(1.6f, 4.4f, 1.6f), matStructure);
         for (int i = 0; i < 4; i++)
-            Platform(root, $"L1_Rack_Luz_{i}", new Vector3(-11.1f, 0.8f + i * 1.1f, -4f),
+        {
+            Platform(root, $"L1_Rack_Luz_{i}", new Vector3(-14.1f, 0.8f + i * 1.1f, -8f),
                      new Vector3(0.08f, 0.12f, 1.2f), matCyan);
+            Platform(root, $"L1_RackB_Luz_{i}", new Vector3(14.1f, 0.8f + i * 1.1f, -8f),
+                     new Vector3(0.08f, 0.12f, 1.2f), matMagenta);
+        }
 
         // Cajas / escombros apilados
-        Platform(root, "L1_Caja_A", new Vector3(-8.5f, 0.5f, 8f), new Vector3(1.2f, 1f, 1.2f), matJump);
-        Platform(root, "L1_Caja_B", new Vector3(-8.5f, 1.5f, 8f), new Vector3(0.8f, 1f, 0.8f), matJump);
-        Platform(root, "L1_Caja_C", new Vector3(9.5f, 0.55f, 6.5f), new Vector3(1.1f, 1.1f, 1.1f), matJump);
+        Platform(root, "L1_Caja_A", new Vector3(-11f, 0.5f, 10f), new Vector3(1.2f, 1f, 1.2f), matJump);
+        Platform(root, "L1_Caja_B", new Vector3(-11f, 1.5f, 10f), new Vector3(0.8f, 1f, 0.8f), matJump);
+        Platform(root, "L1_Caja_C", new Vector3(12f, 0.55f, 8f), new Vector3(1.1f, 1.1f, 1.1f), matJump);
+        Platform(root, "L1_Caja_D", new Vector3(12f, 1.65f, 8f), new Vector3(0.9f, 0.9f, 0.9f), matJump);
 
         // Guías emisivas en el piso (marcan la ruta)
-        Platform(root, "L1_Guia_1", new Vector3(-2f, 0.28f, 6f), new Vector3(0.5f, 0.06f, 10f), matCyan);
-        Platform(root, "L1_Guia_2", new Vector3(2f, 0.28f, 6f), new Vector3(0.5f, 0.06f, 10f), matCyan);
+        Platform(root, "L1_Guia_1", new Vector3(-3f, 0.28f, 8f), new Vector3(0.5f, 0.06f, 14f), matCyan);
+        Platform(root, "L1_Guia_2", new Vector3(3f, 0.28f, 8f), new Vector3(0.5f, 0.06f, 14f), matCyan);
 
         // Escombros decorativos
         var rng = new System.Random(7);
-        L1Debris(root, rng, 6, new Bounds(new Vector3(0f, 0.6f, 4f), new Vector3(20f, 1.2f, 18f)));
+        L1Debris(root, rng, 10, new Bounds(new Vector3(0f, 0.6f, 4f), new Vector3(26f, 1.2f, 22f)));
 
         // Caños a lo largo de las paredes laterales
-        L1Cable(root, "L1_Cano_L", new Vector3(-12.9f, 6.5f, -14f), new Vector3(-12.9f, 6.5f, 14f), 0.18f);
-        L1Cable(root, "L1_Cano_R", new Vector3(12.9f, 6.5f, -14f), new Vector3(12.9f, 6.5f, 14f), 0.18f);
+        L1Cable(root, "L1_Cano_L", new Vector3(-15.9f, 6.5f, -16f), new Vector3(-15.9f, 6.5f, 16f), 0.18f);
+        L1Cable(root, "L1_Cano_R", new Vector3(15.9f, 6.5f, -16f), new Vector3(15.9f, 6.5f, 16f), 0.18f);
+
+        // Farolas de techo
+        for (int i = 0; i < 3; i++)
+        {
+            float x = -10f + i * 10f;
+            L1Cable(root, $"L1_FarolaCable_{i}", new Vector3(x, 7.0f, -8f), new Vector3(x, 6.0f, -8f), 0.05f);
+            Platform(root, $"L1_Farola_{i}", new Vector3(x, 5.85f, -8f), new Vector3(1.6f, 0.3f, 0.9f), matCyan);
+        }
 
         L1Light(root, "L1_Light_Plaza", new Vector3(0f, 5.5f, 0f),
-            new Color(0.5f, 0.85f, 1f), 14f, 18f);
+            new Color(0.5f, 0.85f, 1f), 16f, 22f);
+        L1Light(root, "L1_Light_Plaza_B", new Vector3(0f, 5.5f, -12f),
+            new Color(1f, 0.2f, 0.65f), 8f, 16f);
     }
 
     /// <summary>ZONA 1 — Pasillo de Notificaciones: pasillo con barras rotatorias.</summary>
     static void BuildZona1(GameObject root)
     {
-        // Piso CONTINUO: se extiende hasta tocar la plaza (sin huecos donde trabarse)
-        PlataformaZ(root, "L1_Corridor", 15f, 53f, 0f, 0.5f, matConcrete, 0f, 5.5f);
-        Wall(root, "L1_CorWall_L", new Vector3(-3.6f, 3.5f, 34f), new Vector3(0.6f, 7f, 38f));
-        Wall(root, "L1_CorWall_R", new Vector3(3.6f, 3.5f, 34f), new Vector3(0.6f, 7f, 38f));
+        // Piso CONTINUO y más ANCHO (8 unidades)
+        PlataformaZ(root, "L1_Corridor", 15f, 53f, 0f, 0.5f, matConcrete, 0f, 8f);
+        Wall(root, "L1_CorWall_L", new Vector3(-4.8f, 3.5f, 34f), new Vector3(0.6f, 7f, 38f));
+        Wall(root, "L1_CorWall_R", new Vector3(4.8f, 3.5f, 34f), new Vector3(0.6f, 7f, 38f));
 
         // Tiras emisivas en lo alto de las paredes
-        Platform(root, "L1_Strip_L", new Vector3(-3.2f, 6.3f, 34f), new Vector3(0.12f, 0.06f, 37f), matCyan);
-        Platform(root, "L1_Strip_R", new Vector3(3.2f, 6.3f, 34f), new Vector3(0.12f, 0.06f, 37f), matCyan);
+        Platform(root, "L1_Strip_L", new Vector3(-4.4f, 6.3f, 34f), new Vector3(0.12f, 0.06f, 37f), matCyan);
+        Platform(root, "L1_Strip_R", new Vector3(4.4f, 6.3f, 34f), new Vector3(0.12f, 0.06f, 37f), matCyan);
 
         // Paneles de techo con luces
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < 6; i++)
         {
-            float z = 19f + i * 8f;
-            Wall(root, $"L1_Techo_{i}", new Vector3(0f, 7.2f, z), new Vector3(5.5f, 0.3f, 2.6f));
-            Platform(root, $"L1_LuzTecho_{i}", new Vector3(0f, 7.0f, z), new Vector3(1.2f, 0.08f, 0.7f), matCyan);
+            float z = 18f + i * 7f;
+            Wall(root, $"L1_Techo_{i}", new Vector3(0f, 7.2f, z), new Vector3(8f, 0.3f, 2.6f));
+            Platform(root, $"L1_LuzTecho_{i}", new Vector3(0f, 7.0f, z), new Vector3(1.6f, 0.08f, 0.7f), matCyan);
         }
 
         // Rejillas de energía verde en el piso (antes de cada barrera)
-        L1Vent(root, "L1_Vent_1", new Vector3(0f, 0.28f, 27f), new Vector3(4.4f, 0.05f, 2.2f));
-        L1Vent(root, "L1_Vent_2", new Vector3(0f, 0.28f, 35f), new Vector3(4.4f, 0.05f, 2.2f));
-        L1Vent(root, "L1_Vent_3", new Vector3(0f, 0.28f, 43f), new Vector3(4.4f, 0.05f, 2.2f));
+        L1Vent(root, "L1_Vent_1", new Vector3(0f, 0.28f, 27f), new Vector3(6f, 0.05f, 2.2f));
+        L1Vent(root, "L1_Vent_2", new Vector3(0f, 0.28f, 35f), new Vector3(6f, 0.05f, 2.2f));
+        L1Vent(root, "L1_Vent_3", new Vector3(0f, 0.28f, 43f), new Vector3(6f, 0.05f, 2.2f));
 
         // 4 barras rotatorias ("notificaciones") a distintas velocidades
         L1RotatingBar(root, "L1_Bar_1", new Vector3(0f, 1.5f, 23f), 6.6f, 40f);
@@ -578,24 +609,29 @@ public static class SEENLevelBuilder
         L1RotatingBar(root, "L1_Bar_3", new Vector3(0f, 1.5f, 39f), 6.6f, 70f);
         L1RotatingBar(root, "L1_Bar_4", new Vector3(0f, 1.5f, 47f), 6.6f, 45f);
 
+        // Obstáculo suave para saltar (tutorial: solo uno y bajito)
+        L1Obstaculo(root, "L1_Obs_1", new Vector3(0f, 0.25f, 37f), 6f, 0.5f, 0.7f);
+
         // Cables/caños decorativos en el techo
-        L1Cable(root, "L1_Cable_1", new Vector3(-3.4f, 6.8f, 18f), new Vector3(-3.4f, 6.8f, 52f), 0.07f);
-        L1Cable(root, "L1_Cable_2", new Vector3(3.4f, 6.8f, 18f), new Vector3(3.4f, 6.8f, 52f), 0.07f);
+        L1Cable(root, "L1_Cable_1", new Vector3(-4.6f, 6.8f, 18f), new Vector3(-4.6f, 6.8f, 52f), 0.07f);
+        L1Cable(root, "L1_Cable_2", new Vector3(4.6f, 6.8f, 18f), new Vector3(4.6f, 6.8f, 52f), 0.07f);
 
         // Marco de salida hacia el abismo
-        Wall(root, "L1_Puerta_L", new Vector3(-3.9f, 2.6f, 53f), new Vector3(0.5f, 5.2f, 0.5f));
-        Wall(root, "L1_Puerta_R", new Vector3(3.9f, 2.6f, 53f), new Vector3(0.5f, 5.2f, 0.5f));
-        Wall(root, "L1_Puerta_Top", new Vector3(0f, 5.4f, 53f), new Vector3(8.3f, 0.4f, 0.5f));
-        Platform(root, "L1_Puerta_Luz", new Vector3(0f, 5.1f, 53f), new Vector3(7f, 0.1f, 0.3f), matMagenta);
+        Wall(root, "L1_Puerta_L", new Vector3(-4.6f, 2.6f, 53f), new Vector3(0.5f, 5.2f, 0.5f));
+        Wall(root, "L1_Puerta_R", new Vector3(4.6f, 2.6f, 53f), new Vector3(0.5f, 5.2f, 0.5f));
+        Wall(root, "L1_Puerta_Top", new Vector3(0f, 5.4f, 53f), new Vector3(9.7f, 0.4f, 0.5f));
+        Platform(root, "L1_Puerta_Luz", new Vector3(0f, 5.1f, 53f), new Vector3(8.4f, 0.1f, 0.3f), matMagenta);
 
         // ── HACKEO 1 (tutorial: DescifrarCodigo) ──
-        var puerta1 = L1Puerta(root, "L1_Puerta1", new Vector3(0f, 2.4f, 50f), 40f, 4.8f);
-        L1Tableta(root, "L1_Tableta1", new Vector3(-2.3f, 0.25f, 47.5f),
+        var puerta1 = L1Puerta(root, "L1_Puerta1", new Vector3(0f, 2.4f, 50f), 54f, 4.8f);
+        L1Tableta(root, "L1_Tableta1", new Vector3(-2.6f, 0.25f, 47.5f),
                   new[] { HackableType.DescifrarCodigo }, "PUERTA 1", true, puerta1);
 
         L1Checkpoint(root, "L1_CP_Pasillo", new Vector3(0f, 0.5f, 19f), 1);
         L1Light(root, "L1_Light_Pasillo", new Vector3(0f, 4.5f, 35f),
-            new Color(0.4f, 0.8f, 1f), 10f, 17f);
+            new Color(0.4f, 0.8f, 1f), 12f, 20f);
+        L1Light(root, "L1_Light_Pasillo_B", new Vector3(0f, 4.5f, 47f),
+            new Color(0.35f, 1f, 0.5f), 8f, 14f);
     }
 
     /// <summary>ZONA 2 — El Abismo de Datos: plataformeo suave del tutorial.</summary>
@@ -656,10 +692,11 @@ public static class SEENLevelBuilder
     /// <summary>ZONA 3 — Sala del Sistema: la Pantalla, el Comentario hostil y la Meta.</summary>
     static void BuildZona3(GameObject root)
     {
-        Platform(root, "L1_Sala", new Vector3(0f, 8.95f, 111f), new Vector3(28f, 0.5f, 30f), matConcrete);
-        Wall(root, "L1_SalaWall_Back", new Vector3(0f, 13f, 126.3f), new Vector3(28f, 9f, 0.6f));
-        Wall(root, "L1_SalaWall_L", new Vector3(-14.3f, 13f, 111f), new Vector3(0.6f, 9f, 30f));
-        Wall(root, "L1_SalaWall_R", new Vector3(14.3f, 13f, 111f), new Vector3(0.6f, 9f, 30f));
+        // Sala más ABIERTA (34 x 30)
+        Platform(root, "L1_Sala", new Vector3(0f, 8.95f, 111f), new Vector3(34f, 0.5f, 30f), matConcrete);
+        Wall(root, "L1_SalaWall_Back", new Vector3(0f, 13f, 126.3f), new Vector3(34f, 9f, 0.6f));
+        Wall(root, "L1_SalaWall_L", new Vector3(-17.3f, 13f, 111f), new Vector3(0.6f, 9f, 30f));
+        Wall(root, "L1_SalaWall_R", new Vector3(17.3f, 13f, 111f), new Vector3(0.6f, 9f, 30f));
 
         // Rejilla de vigas en el techo
         for (int i = 0; i < 5; i++)
@@ -719,13 +756,13 @@ public static class SEENLevelBuilder
         Platform(root, "L1_PanelFloat_4", new Vector3(8f, 13f, 121f), new Vector3(1.2f, 2f, 0.1f), matMagenta);
 
         // ── HACKEO 2 (tutorial: UnirCables) ──
-        var puerta2 = L1Puerta(root, "L1_Puerta2", new Vector3(0f, 11.6f, 104f), 28f, 4.6f);
-        L1Tableta(root, "L1_Tableta2", new Vector3(-4.5f, 9.2f, 101.5f),
+        var puerta2 = L1Puerta(root, "L1_Puerta2", new Vector3(0f, 11.6f, 104f), 34f, 4.6f);
+        L1Tableta(root, "L1_Tableta2", new Vector3(-5f, 9.2f, 101.5f),
                   new[] { HackableType.UnirCables }, "PUERTA 2", true, puerta2);
 
         // ── HACKEO 3 (tutorial: Patron) ──
-        var puerta3 = L1Puerta(root, "L1_Puerta3", new Vector3(0f, 11.6f, 112f), 28f, 4.6f);
-        L1Tableta(root, "L1_Tableta3", new Vector3(-4.5f, 9.2f, 109.5f),
+        var puerta3 = L1Puerta(root, "L1_Puerta3", new Vector3(0f, 11.6f, 112f), 34f, 4.6f);
+        L1Tableta(root, "L1_Tableta3", new Vector3(-5f, 9.2f, 109.5f),
                   new[] { HackableType.Patron }, "PUERTA 3", true, puerta3);
 
         // Entidad hostil: "Comentario" que patrulla
@@ -765,31 +802,42 @@ public static class SEENLevelBuilder
 
     static void BuildNivel2_ZonaPlaza(GameObject root)
     {
-        Platform(root, "N2_Plaza", new Vector3(0f, 0f, 0f), new Vector3(24f, 0.5f, 24f), matConcrete);
-        Wall(root, "N2_Wall_Back", new Vector3(0f, 3.5f, -12.3f), new Vector3(24f, 7f, 0.6f));
-        Wall(root, "N2_Wall_L", new Vector3(-12.3f, 3.5f, 0f), new Vector3(0.6f, 7f, 24f));
-        Wall(root, "N2_Wall_R", new Vector3(12.3f, 3.5f, 0f), new Vector3(0.6f, 7f, 24f));
-        Wall(root, "N2_Wall_FL", new Vector3(-8.2f, 3.5f, 12.3f), new Vector3(8f, 7f, 0.6f));
-        Wall(root, "N2_Wall_FR", new Vector3(8.2f, 3.5f, 12.3f), new Vector3(8f, 7f, 0.6f));
+        // Plaza más ABIERTA (30 x 26)
+        Platform(root, "N2_Plaza", new Vector3(0f, 0f, 0f), new Vector3(30f, 0.5f, 26f), matConcrete);
+        Wall(root, "N2_Wall_Back", new Vector3(0f, 3.5f, -13.3f), new Vector3(30f, 7f, 0.6f));
+        Wall(root, "N2_Wall_L", new Vector3(-15.3f, 3.5f, 0f), new Vector3(0.6f, 7f, 26f));
+        Wall(root, "N2_Wall_R", new Vector3(15.3f, 3.5f, 0f), new Vector3(0.6f, 7f, 26f));
+        Wall(root, "N2_Wall_FL", new Vector3(-10.2f, 3.5f, 13.3f), new Vector3(10f, 7f, 0.6f));
+        Wall(root, "N2_Wall_FR", new Vector3(10.2f, 3.5f, 13.3f), new Vector3(10f, 7f, 0.6f));
 
         // Muro de publicaciones
-        for (int col = 0; col < 5; col++)
+        for (int col = 0; col < 7; col++)
             for (int row = 0; row < 2; row++)
                 Platform(root, $"N2_Post_{col}_{row}",
-                    new Vector3(-4f + col * 2f, 2f + row * 1.5f, -12.05f),
+                    new Vector3(-6f + col * 2f, 2f + row * 1.5f, -13.05f),
                     new Vector3(1.4f, 1.2f, 0.15f), (col + row) % 2 == 0 ? matCyan : matMagenta);
 
         // Arco de salida
-        Wall(root, "N2_Arco_L", new Vector3(-3.2f, 3f, 12.3f), new Vector3(0.9f, 6f, 0.9f));
-        Wall(root, "N2_Arco_R", new Vector3(3.2f, 3f, 12.3f), new Vector3(0.9f, 6f, 0.9f));
-        Wall(root, "N2_Arco_Top", new Vector3(0f, 6.4f, 12.3f), new Vector3(7.3f, 0.7f, 0.9f));
-        Platform(root, "N2_Arco_Luz", new Vector3(0f, 5.9f, 12.3f), new Vector3(6f, 0.12f, 0.4f), matCyan);
+        Wall(root, "N2_Arco_L", new Vector3(-4.6f, 3f, 13.3f), new Vector3(0.9f, 6f, 0.9f));
+        Wall(root, "N2_Arco_R", new Vector3(4.6f, 3f, 13.3f), new Vector3(0.9f, 6f, 0.9f));
+        Wall(root, "N2_Arco_Top", new Vector3(0f, 6.4f, 13.3f), new Vector3(10.1f, 0.7f, 0.9f));
+        Platform(root, "N2_Arco_Luz", new Vector3(0f, 5.9f, 13.3f), new Vector3(9f, 0.12f, 0.4f), matCyan);
 
         // Guías en el piso
-        Platform(root, "N2_Guia", new Vector3(0f, 0.28f, 4f), new Vector3(0.5f, 0.06f, 16f), matCyan);
-        L1Vent(root, "N2_VentPlaza", new Vector3(-6f, 0.28f, -4f), new Vector3(3f, 0.05f, 3f));
+        Platform(root, "N2_Guia", new Vector3(0f, 0.28f, 4f), new Vector3(0.5f, 0.06f, 18f), matCyan);
+        L1Vent(root, "N2_VentPlaza", new Vector3(-8f, 0.28f, -4f), new Vector3(4f, 0.05f, 4f));
+        L1Vent(root, "N2_VentPlaza_B", new Vector3(8f, 0.28f, -4f), new Vector3(4f, 0.05f, 4f));
 
-        L1Light(root, "N2_Light_Plaza", new Vector3(0f, 5.5f, 0f), new Color(0.4f, 0.8f, 1f), 12f, 18f);
+        // Cajas
+        Platform(root, "N2_Caja_A", new Vector3(-11f, 0.6f, 8f), new Vector3(1.4f, 1.2f, 1.4f), matJump);
+        Platform(root, "N2_Caja_B", new Vector3(-11f, 1.8f, 8f), new Vector3(1f, 1.2f, 1f), matJump);
+        Platform(root, "N2_Caja_C", new Vector3(11f, 0.55f, 6f), new Vector3(1.1f, 1.1f, 1.1f), matJump);
+
+        var rng = new System.Random(13);
+        L1Debris(root, rng, 10, new Bounds(new Vector3(0f, 0.7f, 2f), new Vector3(24f, 1.4f, 20f)));
+
+        L1Light(root, "N2_Light_Plaza", new Vector3(0f, 5.5f, 0f), new Color(0.4f, 0.8f, 1f), 14f, 22f);
+        L1Light(root, "N2_Light_Plaza_B", new Vector3(0f, 5.5f, -8f), new Color(1f, 0.25f, 0.65f), 8f, 16f);
     }
 
     static void BuildNivel2_ZonaTorre(GameObject root)
@@ -809,21 +857,29 @@ public static class SEENLevelBuilder
         var rng = new System.Random(41);
         L1Debris(root, rng, 8, new Bounds(new Vector3(0f, 3f, 26f), new Vector3(14f, 4f, 20f)));
 
-        // Pasillo con barras (piso continuo)
-        PlataformaZ(root, "N2_Corredor", 41f, 59f, 6.75f, 0.5f, matConcrete, 0f, 6f);
-        Wall(root, "N2_CorWall_L", new Vector3(-3.6f, 10f, 50f), new Vector3(0.6f, 7f, 18f));
-        Wall(root, "N2_CorWall_R", new Vector3(3.6f, 10f, 50f), new Vector3(0.6f, 7f, 18f));
-        Platform(root, "N2_Strip_L", new Vector3(-3.2f, 13.2f, 50f), new Vector3(0.12f, 0.06f, 17f), matCyan);
-        Platform(root, "N2_Strip_R", new Vector3(3.2f, 13.2f, 50f), new Vector3(0.12f, 0.06f, 17f), matCyan);
-        for (int i = 0; i < 3; i++)
+        // Pasillo con barras (piso continuo, más ANCHO: 8.5)
+        PlataformaZ(root, "N2_Corredor", 41f, 59f, 6.75f, 0.5f, matConcrete, 0f, 8.5f);
+        Wall(root, "N2_CorWall_L", new Vector3(-5.1f, 10f, 50f), new Vector3(0.6f, 7f, 18f));
+        Wall(root, "N2_CorWall_R", new Vector3(5.1f, 10f, 50f), new Vector3(0.6f, 7f, 18f));
+        Platform(root, "N2_Strip_L", new Vector3(-4.7f, 13.2f, 50f), new Vector3(0.12f, 0.06f, 17f), matCyan);
+        Platform(root, "N2_Strip_R", new Vector3(4.7f, 13.2f, 50f), new Vector3(0.12f, 0.06f, 17f), matCyan);
+        for (int i = 0; i < 4; i++)
         {
-            float z = 44f + i * 6f;
-            Wall(root, $"N2_Techo_{i}", new Vector3(0f, 13.7f, z), new Vector3(6f, 0.3f, 2.2f));
-            Platform(root, $"N2_LuzT_{i}", new Vector3(0f, 13.5f, z), new Vector3(1.2f, 0.08f, 0.7f), matCyan);
+            float z = 43f + i * 5f;
+            Wall(root, $"N2_Techo_{i}", new Vector3(0f, 13.7f, z), new Vector3(8.5f, 0.3f, 2.2f));
+            Platform(root, $"N2_LuzT_{i}", new Vector3(0f, 13.5f, z), new Vector3(1.6f, 0.08f, 0.7f), matCyan);
         }
-        L1Vent(root, "N2_Vent_Cor", new Vector3(0f, 7f, 48f), new Vector3(5f, 0.05f, 2.2f));
-        L1RotatingBar(root, "N2_Bar_1", new Vector3(0f, 8.2f, 46f), 6.8f, 45f);
-        L1RotatingBar(root, "N2_Bar_2", new Vector3(0f, 8.2f, 53f), 6.8f, 60f);
+        L1Vent(root, "N2_Vent_Cor", new Vector3(0f, 7f, 48f), new Vector3(7f, 0.05f, 2.2f));
+        L1RotatingBar(root, "N2_Bar_1", new Vector3(0f, 8.2f, 44f), 7f, 45f);
+        L1RotatingBar(root, "N2_Bar_2", new Vector3(0f, 8.2f, 51f), 7f, 60f);
+        L1RotatingBar(root, "N2_Bar_3", new Vector3(0f, 8.2f, 56f), 7f, 52f);
+
+        // Obstáculos verdes para saltar
+        L1Obstaculo(root, "N2_Obs_1", new Vector3(0f, 7.25f, 46f), 7f, 0.5f, 0.7f);
+        L1Obstaculo(root, "N2_Obs_2", new Vector3(0f, 7.25f, 54f), 7f, 0.7f, 0.7f);
+
+        // Patrulla hostil en el pasillo
+        L1Patrol(root, "N2_PatrullaCor", new Vector3(-2.5f, 8f, 57f), new Vector3(2.5f, 8f, 57f), 2.4f);
 
         // ── HACKEO 1 (1 módulo) ──
         var puertaA = L1Puerta(root, "N2_PuertaA", new Vector3(0f, 9f, 57f), 40f, 4.4f);
@@ -855,11 +911,11 @@ public static class SEENLevelBuilder
 
     static void BuildNivel2_ZonaFinal(GameObject root)
     {
-        // Sala: piso continuo desde 113 (tope 14.2 = D3) hasta 135
-        PlataformaZ(root, "N2_Sala", 113f, 135f, 13.95f, 0.5f, matConcrete, 0f, 26f);
-        Wall(root, "N2_SalaWall_Back", new Vector3(0f, 18f, 135.3f), new Vector3(26f, 9f, 0.6f));
-        Wall(root, "N2_SalaWall_L", new Vector3(-13.3f, 18f, 124f), new Vector3(0.6f, 9f, 22f));
-        Wall(root, "N2_SalaWall_R", new Vector3(13.3f, 18f, 124f), new Vector3(0.6f, 9f, 22f));
+        // Sala más ABIERTA (32 x 22)
+        PlataformaZ(root, "N2_Sala", 113f, 135f, 13.95f, 0.5f, matConcrete, 0f, 32f);
+        Wall(root, "N2_SalaWall_Back", new Vector3(0f, 18f, 135.3f), new Vector3(32f, 9f, 0.6f));
+        Wall(root, "N2_SalaWall_L", new Vector3(-16.3f, 18f, 124f), new Vector3(0.6f, 9f, 22f));
+        Wall(root, "N2_SalaWall_R", new Vector3(16.3f, 18f, 124f), new Vector3(0.6f, 9f, 22f));
 
         // La Pantalla
         Platform(root, "N2_Pantalla", new Vector3(0f, 18f, 134.9f), new Vector3(9f, 4.5f, 0.4f), matMagenta);
@@ -880,7 +936,7 @@ public static class SEENLevelBuilder
         Platform(root, "N2_SalaGuia_2", new Vector3(2.5f, 14.22f, 124f), new Vector3(0.16f, 0.05f, 12f), matCyan);
 
         // ── HACKEO 3 (3 módulos) ──
-        var puertaC = L1Puerta(root, "N2_PuertaC", new Vector3(0f, 16.4f, 119f), 26f, 4.4f);
+        var puertaC = L1Puerta(root, "N2_PuertaC", new Vector3(0f, 16.4f, 119f), 32f, 4.4f);
         L1Tableta(root, "N2_TabletaC", new Vector3(-4.5f, 14.2f, 116.5f),
                   new[] { HackableType.DescifrarCodigo, HackableType.UnirCables, HackableType.Patron },
                   "ARCHIVO 3", false, puertaC);
@@ -910,22 +966,36 @@ public static class SEENLevelBuilder
 
     static void BuildNivel3_Plaza(GameObject root)
     {
-        Platform(root, "N3_Plaza", new Vector3(0f, 0f, 0f), new Vector3(28f, 0.5f, 28f), matConcrete);
-        Wall(root, "N3_Wall_Back", new Vector3(0f, 4f, -14.3f), new Vector3(28f, 8f, 0.6f));
-        Wall(root, "N3_Wall_L", new Vector3(-14.3f, 4f, 0f), new Vector3(0.6f, 8f, 28f));
-        Wall(root, "N3_Wall_R", new Vector3(14.3f, 4f, 0f), new Vector3(0.6f, 8f, 28f));
-        Wall(root, "N3_Wall_FL", new Vector3(-9f, 4f, 14.3f), new Vector3(10f, 8f, 0.6f));
-        Wall(root, "N3_Wall_FR", new Vector3(9f, 4f, 14.3f), new Vector3(10f, 8f, 0.6f));
+        // Plaza más ABIERTA (34 x 30)
+        Platform(root, "N3_Plaza", new Vector3(0f, 0f, 0f), new Vector3(34f, 0.5f, 30f), matConcrete);
+        Wall(root, "N3_Wall_Back", new Vector3(0f, 4f, -15.3f), new Vector3(34f, 8f, 0.6f));
+        Wall(root, "N3_Wall_L", new Vector3(-17.3f, 4f, 0f), new Vector3(0.6f, 8f, 30f));
+        Wall(root, "N3_Wall_R", new Vector3(17.3f, 4f, 0f), new Vector3(0.6f, 8f, 30f));
+        Wall(root, "N3_Wall_FL", new Vector3(-10.2f, 4f, 15.3f), new Vector3(12f, 8f, 0.6f));
+        Wall(root, "N3_Wall_FR", new Vector3(10.2f, 4f, 15.3f), new Vector3(12f, 8f, 0.6f));
 
-        for (int col = 0; col < 6; col++)
+        // Muro de publicaciones más grande
+        for (int col = 0; col < 8; col++)
             for (int row = 0; row < 3; row++)
                 Platform(root, $"N3_Post_{col}_{row}",
-                    new Vector3(-5f + col * 2f, 1.6f + row * 1.4f, -14.05f),
+                    new Vector3(-7f + col * 2f, 1.6f + row * 1.4f, -15.05f),
                     new Vector3(1.4f, 1.2f, 0.15f), (col + row) % 2 == 0 ? matCyan : matMagenta);
 
-        L1Vent(root, "N3_Vent_Plaza", new Vector3(-7f, 0.28f, -4f), new Vector3(4f, 0.05f, 4f));
-        Platform(root, "N3_Guia", new Vector3(0f, 0.28f, 6f), new Vector3(0.5f, 0.06f, 14f), matMagenta);
-        L1Light(root, "N3_Light_Plaza", new Vector3(0f, 6f, 0f), new Color(0.4f, 0.8f, 1f), 14f, 20f);
+        L1Vent(root, "N3_Vent_Plaza", new Vector3(-9f, 0.28f, -6f), new Vector3(5f, 0.05f, 5f));
+        L1Vent(root, "N3_Vent_Plaza_B", new Vector3(9f, 0.28f, -6f), new Vector3(5f, 0.05f, 5f));
+        Platform(root, "N3_Guia", new Vector3(0f, 0.28f, 8f), new Vector3(0.5f, 0.06f, 16f), matMagenta);
+
+        // Cajas y torres decorativas
+        Platform(root, "N3_Caja_A", new Vector3(-13f, 0.6f, 9f), new Vector3(1.4f, 1.2f, 1.4f), matJump);
+        Platform(root, "N3_Caja_B", new Vector3(13f, 0.55f, 7f), new Vector3(1.1f, 1.1f, 1.1f), matJump);
+        L1Tower(root, "N3_PlazaTorre_A", new Vector3(-15f, 4f, 2f), new Vector3(3f, 18f, 3f), false);
+        L1Tower(root, "N3_PlazaTorre_B", new Vector3(15f, 4f, 2f), new Vector3(3f, 18f, 3f), true);
+
+        var rng = new System.Random(29);
+        L1Debris(root, rng, 10, new Bounds(new Vector3(0f, 0.7f, 4f), new Vector3(26f, 1.4f, 20f)));
+
+        L1Light(root, "N3_Light_Plaza", new Vector3(0f, 6f, 0f), new Color(0.4f, 0.8f, 1f), 16f, 24f);
+        L1Light(root, "N3_Light_Plaza_B", new Vector3(0f, 6f, -10f), new Color(1f, 0.25f, 0.65f), 9f, 18f);
     }
 
     static void BuildNivel3_Sector1(GameObject root)
@@ -940,15 +1010,18 @@ public static class SEENLevelBuilder
         L1Tower(root, "N3_Tower_B", new Vector3(10f, 3f, 24f), new Vector3(3f, 14f, 3f), true);
 
         // Pasillo peligroso: PEGADO a P4 (empieza en 44.5), tope 6.25
-        PlataformaZ(root, "N3_Pasillo", 44.5f, 60.5f, 6f, 0.5f, matConcrete, 0f, 6f);
-        Wall(root, "N3_PasoWall_L", new Vector3(-3.6f, 9f, 52.5f), new Vector3(0.6f, 6f, 16f));
-        Wall(root, "N3_PasoWall_R", new Vector3(3.6f, 9f, 52.5f), new Vector3(0.6f, 6f, 16f));
+        PlataformaZ(root, "N3_Pasillo", 44.5f, 60.5f, 6f, 0.5f, matConcrete, 0f, 8.5f);
+        Wall(root, "N3_PasoWall_L", new Vector3(-5.1f, 9f, 52.5f), new Vector3(0.6f, 6f, 16f));
+        Wall(root, "N3_PasoWall_R", new Vector3(5.1f, 9f, 52.5f), new Vector3(0.6f, 6f, 16f));
         Platform(root, "N3_PasoStrip", new Vector3(0f, 12.2f, 52.5f), new Vector3(5.5f, 0.1f, 15f), matCyan);
-        L1RotatingBar(root, "N3_Bar_1", new Vector3(0f, 7.6f, 47f), 6.8f, 50f);
-        L1RotatingBar(root, "N3_Bar_2", new Vector3(0f, 7.6f, 54f), 6.8f, 65f);
-        L1RotatingBar(root, "N3_Bar_2b", new Vector3(0f, 7.6f, 59f), 6.8f, 55f);
-        L1Vent(root, "N3_Vent_Paso", new Vector3(0f, 6.28f, 50f), new Vector3(5f, 0.05f, 2f));
-        L1Patrol(root, "N3_Patrulla_1", new Vector3(-2f, 6.9f, 57f), new Vector3(2f, 6.9f, 57f), 2.2f);
+        L1RotatingBar(root, "N3_Bar_1", new Vector3(0f, 7.6f, 47f), 7.4f, 50f);
+        L1RotatingBar(root, "N3_Bar_2", new Vector3(0f, 7.6f, 54f), 7.4f, 65f);
+        L1RotatingBar(root, "N3_Bar_2b", new Vector3(0f, 7.6f, 59f), 7.4f, 55f);
+        L1Vent(root, "N3_Vent_Paso", new Vector3(0f, 6.28f, 50f), new Vector3(7f, 0.05f, 2f));
+        // Obstáculos verdes para saltar
+        L1Obstaculo(root, "N3_Obs_1", new Vector3(0f, 6.25f, 45.5f), 7f, 0.5f, 0.7f);
+        L1Obstaculo(root, "N3_Obs_2", new Vector3(0f, 6.25f, 51.5f), 7f, 0.5f, 0.7f);
+        L1Patrol(root, "N3_Patrulla_1", new Vector3(-2.5f, 6.9f, 56f), new Vector3(2.5f, 6.9f, 56f), 2.2f);
 
         // ── HACKEO 1 (1 módulo) ──
         var p1 = L1Puerta(root, "N3_Puerta1", new Vector3(0f, 8.4f, 58.5f), 40f, 4.6f);
@@ -983,15 +1056,18 @@ public static class SEENLevelBuilder
     static void BuildNivel3_Sector3(GameObject root)
     {
         // Pasillo de hazards: separado de D1 por un hueco de 3 (salto)
-        PlataformaZ(root, "N3_Pasillo2", 105f, 122f, 12.95f, 0.5f, matConcrete, 0f, 6f);
-        Wall(root, "N3_Paso2Wall_L", new Vector3(-3.6f, 15.5f, 113.5f), new Vector3(0.6f, 6f, 17f));
-        Wall(root, "N3_Paso2Wall_R", new Vector3(3.6f, 15.5f, 113.5f), new Vector3(0.6f, 6f, 17f));
+        PlataformaZ(root, "N3_Pasillo2", 105f, 122f, 12.95f, 0.5f, matConcrete, 0f, 8.5f);
+        Wall(root, "N3_Paso2Wall_L", new Vector3(-5.1f, 15.5f, 113.5f), new Vector3(0.6f, 6f, 17f));
+        Wall(root, "N3_Paso2Wall_R", new Vector3(5.1f, 15.5f, 113.5f), new Vector3(0.6f, 6f, 17f));
         Platform(root, "N3_Paso2Strip", new Vector3(0f, 19f, 113.5f), new Vector3(5.5f, 0.1f, 16f), matMagenta);
-        L1RotatingBar(root, "N3_Bar_3", new Vector3(0f, 14.8f, 107f), 6.8f, 55f);
-        L1RotatingBar(root, "N3_Bar_4", new Vector3(0f, 14.8f, 113f), 6.8f, 70f);
-        L1RotatingBar(root, "N3_Bar_5", new Vector3(0f, 14.8f, 119f), 6.8f, 60f);
-        L1Vent(root, "N3_Vent_Paso2", new Vector3(0f, 13.2f, 110f), new Vector3(5f, 0.05f, 2f));
-        L1Patrol(root, "N3_Patrulla_2", new Vector3(-2f, 13.8f, 121f), new Vector3(2f, 13.8f, 121f), 2.6f);
+        L1RotatingBar(root, "N3_Bar_3", new Vector3(0f, 14.8f, 107f), 7.4f, 55f);
+        L1RotatingBar(root, "N3_Bar_4", new Vector3(0f, 14.8f, 113f), 7.4f, 70f);
+        L1RotatingBar(root, "N3_Bar_5", new Vector3(0f, 14.8f, 119f), 7.4f, 60f);
+        L1Vent(root, "N3_Vent_Paso2", new Vector3(0f, 13.2f, 110f), new Vector3(7f, 0.05f, 2f));
+        // Obstáculos verdes
+        L1Obstaculo(root, "N3_Obs_3", new Vector3(0f, 13.2f, 108.5f), 7f, 0.6f, 0.7f);
+        L1Obstaculo(root, "N3_Obs_4", new Vector3(0f, 13.2f, 116f), 7f, 0.6f, 0.7f);
+        L1Patrol(root, "N3_Patrulla_2", new Vector3(-2.5f, 13.8f, 121f), new Vector3(2.5f, 13.8f, 121f), 2.6f);
 
         // ── HACKEO 3 (3 módulos) ──
         var p3 = L1Puerta(root, "N3_Puerta3", new Vector3(0f, 15.6f, 120.5f), 40f, 4.4f);
@@ -1016,10 +1092,10 @@ public static class SEENLevelBuilder
     static void BuildNivel3_Nucleo(GameObject root)
     {
         // Núcleo: piso continuo 146..168, mismo tope que Plat4 (13.2)
-        PlataformaZ(root, "N3_Nucleo", 146f, 168f, 12.95f, 0.5f, matConcrete, 0f, 26f);
-        Wall(root, "N3_NucWall_Back", new Vector3(0f, 19f, 168.3f), new Vector3(26f, 9f, 0.6f));
-        Wall(root, "N3_NucWall_L", new Vector3(-13.3f, 19f, 157f), new Vector3(0.6f, 9f, 22f));
-        Wall(root, "N3_NucWall_R", new Vector3(13.3f, 19f, 157f), new Vector3(0.6f, 9f, 22f));
+        PlataformaZ(root, "N3_Nucleo", 146f, 168f, 12.95f, 0.5f, matConcrete, 0f, 32f);
+        Wall(root, "N3_NucWall_Back", new Vector3(0f, 19f, 168.3f), new Vector3(32f, 9f, 0.6f));
+        Wall(root, "N3_NucWall_L", new Vector3(-16.3f, 19f, 157f), new Vector3(0.6f, 9f, 22f));
+        Wall(root, "N3_NucWall_R", new Vector3(16.3f, 19f, 157f), new Vector3(0.6f, 9f, 22f));
 
         // Pantalla del Núcleo
         Platform(root, "N3_Pantalla", new Vector3(0f, 19f, 167.9f), new Vector3(10f, 5f, 0.4f), matMagenta);
@@ -1036,7 +1112,7 @@ public static class SEENLevelBuilder
         Platform(root, "N3_NucGuia_2", new Vector3(2.5f, 13.22f, 157f), new Vector3(0.16f, 0.05f, 16f), matMagenta);
 
         // ── HACKEO 5 (5 módulos) ──
-        var p5 = L1Puerta(root, "N3_Puerta5", new Vector3(0f, 15.5f, 152f), 26f, 4.6f);
+        var p5 = L1Puerta(root, "N3_Puerta5", new Vector3(0f, 15.5f, 152f), 32f, 4.6f);
         L1Tableta(root, "N3_Tableta5", new Vector3(-4.5f, 13.2f, 149f),
                   new[] { HackableType.DescifrarCodigo, HackableType.UnirCables, HackableType.Patron,
                           HackableType.UnirCables, HackableType.DescifrarCodigo }, "NÚCLEO", false, p5);
@@ -1221,6 +1297,20 @@ public static class SEENLevelBuilder
         glow.minIntensidad = 1.2f;
         glow.maxIntensidad = 2.6f;
         glow.velocidad = 1.4f;
+    }
+
+    /// <summary>
+    /// Obstáculo de energía verde SÓLIDO: hay que saltarlo (no mata, bloquea).
+    /// Se usa para hacer más difícil el plataformeo.
+    /// </summary>
+    static void L1Obstaculo(GameObject parent, string name, Vector3 pos, float ancho, float alto, float profundidad)
+    {
+        var go = Platform(parent, name, pos, new Vector3(ancho, alto, profundidad), matHazard);
+        var glow = go.AddComponent<HazardGlow>();
+        glow.crearLuz = false;
+        glow.minIntensidad = 1.0f;
+        glow.maxIntensidad = 2.2f;
+        glow.velocidad = 1.8f;
     }
 
     static void L1Patrol(GameObject parent, string name, Vector3 a, Vector3 b, float speed)

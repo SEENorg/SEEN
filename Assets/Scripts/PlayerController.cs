@@ -338,6 +338,9 @@ public class PlayerController : MonoBehaviour
         jumpsLeft--;
         jumpBufferTimer = 0f;
         groundGuardTimer = jumpGroundGuard;
+
+        if (isDoubleJump)
+            OnDobleSalto?.Invoke(transform.position);
     }
 
     // ─────────────────────────────────────────────────── Dash
@@ -415,7 +418,18 @@ public class PlayerController : MonoBehaviour
     public bool IsGrounded => isGrounded;
     public bool IsDashing => isDashing;
     public float DashCooldownLeft => dashCooldownTimer;
+    public float DashCooldown => dashCooldown;
     public int JumpsLeft => jumpsLeft;
+    public int MaxJumps => maxJumps;
+
+    /// <summary>Velocidad de caminar configurada.</summary>
+    public float MoveSpeed => moveSpeed;
+
+    /// <summary>Magnitud de la velocidad horizontal actual.</summary>
+    public float VelocidadHorizontal => new Vector2(rb.linearVelocity.x, rb.linearVelocity.z).magnitude;
+
+    /// <summary>Se dispara en el doble salto (recibe la posición del jugador).</summary>
+    public event System.Action<Vector3> OnDobleSalto;
 
     /// <summary>Sensibilidad del ratón (la ajusta el menú de Ajustes vía PlayerPrefs).</summary>
     public float MouseSensitivity
