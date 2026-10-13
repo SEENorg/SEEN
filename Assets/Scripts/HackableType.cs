@@ -12,5 +12,14 @@ public enum HackableType
     UnirCables,
 
     /// <summary>Repetir una secuencia de luces (ratón).</summary>
-    Patron
+    Patron,
+
+    /// <summary>Encontrar el glifo diferente en una cuadrícula (ratón).</summary>
+    Escanear,
+
+    /// <summary>Sincronizar la señal en la zona verde (timing, ratón o espacio).</summary>
+    Sincronizar,
+
+    /// <summary>Completar una secuencia lógica eligiendo la opción correcta.</summary>
+    Secuencia
 }

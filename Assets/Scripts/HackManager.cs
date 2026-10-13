@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -98,6 +98,13 @@ public class HackManager : MonoBehaviour
         if (LeerEscape()) { Cerrar(); return; }
 
         // Avance entre módulos (tiempo real, el juego está pausado)
+        // Modulo de sincronizacion: animacion del marcador + tecla Espacio
+        if (sincroActivo)
+        {
+            ActualizarSincro();
+            if (LeerEspacio()) IntentarSincro();
+        }
+
         if (tiempoTransicion > 0f)
         {
             tiempoTransicion -= Time.unscaledDeltaTime;
@@ -178,7 +185,8 @@ public class HackManager : MonoBehaviour
     }
 
     private void Cerrar()
-    {
+{
+        sincroActivo = false;
         activo = false;
         if (canvas != null) canvas.gameObject.SetActive(false);
         Time.timeScale = 1f;
@@ -279,8 +287,12 @@ public class HackManager : MonoBehaviour
             case HackableType.DescifrarCodigo: PuzzleDescifrar(); break;
             case HackableType.UnirCables: PuzzleCables(); break;
             case HackableType.Patron: PuzzlePatron(); break;
+            case HackableType.Escanear: PuzzleEscanear(); break;
+            case HackableType.Sincronizar: PuzzleSincronizar(); break;
+            case HackableType.Secuencia: PuzzleSecuencia(); break;
         }
     }
+
 
     // ═══════════════════ INSTRUCCIONES (tutorial) ═══════════════════
 
@@ -362,6 +374,22 @@ public class HackManager : MonoBehaviour
                        "3. Si te equivocas, la secuencia se reinicia desde el principio.\n\n" +
                        "Cada módulo agrega un paso más a la secuencia.";
 
+            case HackableType.Escanear:
+                return "Una cuadrícula de glifos idénticos esconde UNO diferente." +
+                       "\n\nHacé clic en el glifo distinto para completar el módulo. " +
+                       "Si te equivocás, la cuadrícula se reescanea.";
+
+            case HackableType.Sincronizar:
+                return "El marcador se mueve por la pista y hay una ZONA VERDE." +
+                       "\n\nPresioná SINCRONIZAR (o la barra espaciadora) cuando el " +
+                       "marcador esté dentro de la zona. Las señales necesarias y la " +
+                       "velocidad aumentan con la dificultad del nivel.";
+
+            case HackableType.Secuencia:
+                return "Se muestra una serie con un elemento faltante." +
+                       "\n\nDescubrí la regla (multiplicación, suma constante, " +
+                       "cuadrados o letras con salto) y elegí la opción correcta " +
+                       "entre las cuatro disponibles.";
             default:
                 return "Resuelve el módulo para continuar.";
         }
@@ -541,6 +569,250 @@ public class HackManager : MonoBehaviour
         return (Vector2)contenedor.InverseTransformPoint(mundo);
     }
 
+    // ═══════════════════ MÓDULO 4: ESCANEAR ═══════════════════
+
+    private int indiceEscaneado;
+
+    private void PuzzleEscanear()
+    {
+        CrearTexto(contenido, "LblScan", "HACÉ CLIC EN EL GLIFO DIFERENTE", 26, TextAnchor.MiddleCenter,
+                   new Vector2(0f, 178f), new Vector2(760f, 36f), colAcento);
+
+        int filas = 4 + Mathf.Clamp(DificultadBase, 0, 1);   // 4x4 o 5x5 según nivel
+        CrearTexto(contenido, "LblScanInfo", "Cuadrícula " + filas + "x" + filas, 18, TextAnchor.MiddleCenter,
+                   new Vector2(0f, 142f), new Vector2(400f, 26f), new Color(0.6f, 0.7f, 0.8f));
+
+        ConstruirCuadriculaScan(filas);
+    }
+
+    private void ConstruirCuadriculaScan(int filas)
+    {
+        var viejo = contenido.Find("GridScan");
+        if (viejo != null) Destroy(viejo.gameObject);
+
+        float lado = 400f;
+        float tam = lado / filas;
+        var grid = NuevoUI(contenido, "GridScan", new Vector2(0f, -20f), new Vector2(lado, lado)).transform;
+
+        indiceEscaneado = UnityEngine.Random.Range(0, filas * filas);
+        Color colorCelda = new Color(0.13f, 0.15f, 0.19f);
+
+        for (int i = 0; i < filas * filas; i++)
+        {
+            int f = i / filas, c = i % filas;
+            float x = -lado / 2f + tam / 2f + c * tam;
+            float y = lado / 2f - tam / 2f - f * tam;
+            bool esDiferente = i == indiceEscaneado;
+
+            var b = CrearBoton(grid, "Celda_" + i, esDiferente ? "◈" : "◆",
+                               new Vector2(x, y), new Vector2(tam - 8f, tam - 8f), colorCelda);
+            int idx = i;
+            b.onClick.AddListener(() =>
+            {
+                if (idx == indiceEscaneado)
+                {
+                    MostrarFeedback("MÓDULO COMPLETADO", true);
+                    tiempoTransicion = 0.9f;
+                }
+                else
+                {
+                    MostrarFeedback("GLIFO INCORRECTO — REESCANEANDO", false);
+                    ConstruirCuadriculaScan(filas);
+                }
+            });
+        }
+    }
+
+    // ═══════════════════ MÓDULO 5: SINCRONIZAR (timing) ═══════════════════
+
+    private RectTransform marcadorSincro;
+    private RectTransform zonaSincro;
+    private float sincroT;
+    private float sincroVelocidad;
+    private float anchoSincro;
+    private int sincroHits;
+    private bool sincroActivo;
+    private int sincroObjetivo;
+    private Text textoSincro;
+
+    private void PuzzleSincronizar()
+    {
+        CrearTexto(contenido, "LblSinc", "SINCRONIZÁ LA SEÑAL EN LA ZONA VERDE", 26, TextAnchor.MiddleCenter,
+                   new Vector2(0f, 160f), new Vector2(760f, 36f), colAcento);
+        CrearTexto(contenido, "LblSincInfo", "Hacé clic en el botón (o presioná Espacio) cuando el marcador esté dentro", 18,
+                   TextAnchor.MiddleCenter, new Vector2(0f, 124f), new Vector2(760f, 26f), new Color(0.6f, 0.7f, 0.8f));
+
+        anchoSincro = 620f;
+        sincroObjetivo = 2 + DificultadBase;          // 2, 3 o 4 señales
+        sincroHits = 0;
+        sincroT = 0f;
+        sincroVelocidad = 380f + DificultadBase * 90f;
+        sincroActivo = true;
+
+        // Pista
+        var pista = NuevoUI(contenido, "PistaSinc", new Vector2(0f, 40f), new Vector2(anchoSincro, 34f));
+        pista.AddComponent<Image>().color = new Color(0.09f, 0.10f, 0.13f);
+
+        // Zona verde (se mueve en cada acierto)
+        float anchoZona = Mathf.Max(90f, 190f - DificultadBase * 40f);
+        zonaSincro = (RectTransform)NuevoUI(contenido, "ZonaSinc",
+            new Vector2(0f, 40f), new Vector2(anchoZona, 34f)).transform;
+        zonaSincro.gameObject.AddComponent<Image>().color = new Color(0.15f, 0.75f, 0.35f, 0.55f);
+
+        // Marcador
+        marcadorSincro = (RectTransform)NuevoUI(contenido, "MarcadorSinc",
+            new Vector2(0f, 40f), new Vector2(8f, 52f)).transform;
+        marcadorSincro.gameObject.AddComponent<Image>().color = colAcento;
+
+        // Contador
+        textoSincro = CrearTexto(contenido, "ContadorSinc",
+            "SEÑALES SINCRONIZADAS: 0/" + sincroObjetivo, 22, TextAnchor.MiddleCenter,
+            new Vector2(0f, -30f), new Vector2(560f, 32f), new Color(0.85f, 0.9f, 0.95f));
+
+        var btn = CrearBoton(contenido, "BtnSincronizar", "SINCRONIZAR", new Vector2(0f, -90f),
+                             new Vector2(280f, 60f));
+        btn.onClick.AddListener(IntentarSincro);
+    }
+
+    private void ActualizarSincro()
+    {
+        if (marcadorSincro == null) { sincroActivo = false; return; }
+        sincroT += Time.unscaledDeltaTime;
+        float x = Mathf.PingPong(sincroT * sincroVelocidad, anchoSincro) - anchoSincro / 2f;
+        marcadorSincro.anchoredPosition = new Vector2(x, marcadorSincro.anchoredPosition.y);
+    }
+
+    private void IntentarSincro()
+    {
+        if (!sincroActivo || marcadorSincro == null || zonaSincro == null) return;
+
+        float mx = marcadorSincro.anchoredPosition.x;
+        float zw = zonaSincro.sizeDelta.x;
+        float zx = zonaSincro.anchoredPosition.x;
+
+        if (Mathf.Abs(mx - zx) <= zw / 2f)
+        {
+            sincroHits++;
+            sincroVelocidad += 90f;
+
+            float nuevoX = UnityEngine.Random.Range(-anchoSincro / 2f + zw / 2f, anchoSincro / 2f - zw / 2f);
+            zonaSincro.anchoredPosition = new Vector2(nuevoX, zonaSincro.anchoredPosition.y);
+
+            if (textoSincro != null)
+                textoSincro.text = "SEÑALES SINCRONIZADAS: " + sincroHits + "/" + sincroObjetivo;
+
+            if (sincroHits >= sincroObjetivo)
+            {
+                sincroActivo = false;
+                MostrarFeedback("MÓDULO COMPLETADO", true);
+                tiempoTransicion = 0.9f;
+            }
+            else
+            {
+                MostrarFeedback("SEÑAL SINCRONIZADA " + sincroHits + "/" + sincroObjetivo, true);
+            }
+        }
+        else
+        {
+            sincroHits = 0;
+            if (textoSincro != null)
+                textoSincro.text = "SEÑALES SINCRONIZADAS: 0/" + sincroObjetivo;
+            MostrarFeedback("SEÑAL PERDIDA", false);
+        }
+    }
+
+    // ═══════════════════ MÓDULO 6: SECUENCIA LÓGICA ═══════════════════
+
+    private string respuestaSecuencia;
+
+    private void PuzzleSecuencia()
+    {
+        CrearTexto(contenido, "LblLog", "COMPLETÁ LA SECUENCIA", 26, TextAnchor.MiddleCenter,
+                   new Vector2(0f, 165f), new Vector2(700f, 36f), colAcento);
+
+        int tipo = UnityEngine.Random.Range(0, 4);
+        string pregunta = "";
+        string respuesta = "";
+        var distractores = new System.Collections.Generic.List<string>();
+
+        if (tipo == 0)
+        {
+            int a = UnityEngine.Random.Range(2, 6);
+            pregunta = a + "   " + (a * 2) + "   " + (a * 4) + "   ?";
+            respuesta = (a * 8).ToString();
+            distractores.Add((a * 8 + 2).ToString());
+            distractores.Add((a * 8 - 2).ToString());
+            distractores.Add((a * 6).ToString());
+        }
+        else if (tipo == 1)
+        {
+            int d = UnityEngine.Random.Range(2, 7);
+            int s = UnityEngine.Random.Range(1, 8);
+            pregunta = s + "   " + (s + d) + "   " + (s + 2 * d) + "   " + (s + 3 * d) + "   ?";
+            respuesta = (s + 4 * d).ToString();
+            distractores.Add((s + 4 * d + d).ToString());
+            distractores.Add((s + 3 * d).ToString());
+            distractores.Add((s + 4 * d - d).ToString());
+        }
+        else if (tipo == 2)
+        {
+            pregunta = "1   4   9   16   ?";
+            respuesta = "25";
+            distractores.Add("20");
+            distractores.Add("24");
+            distractores.Add("30");
+        }
+        else
+        {
+            int salto = UnityEngine.Random.Range(2, 4);
+            int inicio = UnityEngine.Random.Range(0, 20 - 4 * salto);
+            char c0 = (char)('A' + inicio);
+            char c1 = (char)('A' + inicio + salto);
+            char c2 = (char)('A' + inicio + 2 * salto);
+            char c3 = (char)('A' + inicio + 3 * salto);
+            pregunta = c0 + "   " + c1 + "   " + c2 + "   " + c3 + "   ?";
+            respuesta = ((char)('A' + inicio + 4 * salto)).ToString();
+            distractores.Add(((char)('A' + inicio + 4 * salto + salto)).ToString());
+            distractores.Add(((char)('A' + inicio + 3 * salto)).ToString());
+            distractores.Add("Z");
+        }
+
+        // Sin distractores repetidos con la respuesta
+        for (int i = distractores.Count - 1; i >= 0; i--)
+            if (distractores[i] == respuesta) distractores.RemoveAt(i);
+        while (distractores.Count < 3) distractores.Add("?");
+
+        respuestaSecuencia = respuesta;
+
+        var textoPregunta = CrearTexto(contenido, "PreguntaSec", pregunta, 42, TextAnchor.MiddleCenter,
+                                       new Vector2(0f, 80f), new Vector2(760f, 60f), new Color(0.9f, 0.95f, 1f));
+        textoPregunta.fontStyle = FontStyle.Bold;
+
+        var opciones = new System.Collections.Generic.List<string> { respuesta };
+        opciones.AddRange(distractores);
+
+        for (int i = 0; i < opciones.Count; i++)
+        {
+            int fila = i / 2, col = i % 2;
+            float x = (col == 0) ? -170f : 170f;
+            float y = 0f - fila * 70f;
+            var b = CrearBoton(contenido, "Opcion_" + i, opciones[i], new Vector2(x, y),
+                               new Vector2(280f, 60f));
+            int idx = i;
+            b.onClick.AddListener(() =>
+            {
+                if (opciones[idx] == respuestaSecuencia)
+                {
+                    MostrarFeedback("MÓDULO COMPLETADO", true);
+                    tiempoTransicion = 0.9f;
+                }
+                else
+                {
+                    MostrarFeedback("RESPUESTA INCORRECTA", false);
+                }
+            });
+        }
+    }
     // ═══════════════════════ MÓDULO 3: PATRÓN ═══════════════════════
 
     private List<int> secuencia = new List<int>();
@@ -757,6 +1029,16 @@ public class HackManager : MonoBehaviour
         return kb != null && kb.escapeKey.wasPressedThisFrame;
 #else
         return Input.GetKeyDown(KeyCode.Escape);
+#endif
+    }
+
+    private bool LeerEspacio()
+    {
+#if ENABLE_INPUT_SYSTEM
+        var kb = Keyboard.current;
+        return kb != null && kb.spaceKey.wasPressedThisFrame;
+#else
+        return Input.GetKeyDown(KeyCode.Space);
 #endif
     }
 }

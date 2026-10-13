@@ -884,7 +884,7 @@ public static class SEENLevelBuilder
         // ── HACKEO 1 (1 módulo) ──
         var puertaA = L1Puerta(root, "N2_PuertaA", new Vector3(0f, 9f, 57f), 40f, 4.4f);
         L1Tableta(root, "N2_TabletaA", new Vector3(-2.3f, 7f, 55.5f),
-                  new[] { HackableType.DescifrarCodigo }, "ARCHIVO 1", false, puertaA);
+                  new[] { HackableType.DescifrarCodigo, HackableType.Escanear }, "ARCHIVO 1", false, puertaA);
         L1Checkpoint(root, "N2_CP_A", new Vector3(0f, 7.5f, 60f), 1);
 
         // Torre de señal
@@ -899,7 +899,7 @@ public static class SEENLevelBuilder
         PlataformaZ(root, "N2_PuertaPlat", 86f, 96f, 13.15f, 0.5f, matConcrete, 0f, 10f);
         var puertaB = L1Puerta(root, "N2_PuertaB", new Vector3(0f, 15.6f, 90f), 30f, 4.4f);
         L1Tableta(root, "N2_TabletaB", new Vector3(-3.5f, 13.4f, 87.5f),
-                  new[] { HackableType.DescifrarCodigo, HackableType.UnirCables }, "ARCHIVO 2", false, puertaB);
+                  new[] { HackableType.DescifrarCodigo, HackableType.UnirCables, HackableType.Sincronizar }, "ARCHIVO 2", false, puertaB);
 
         // Hueco con dash: D1 toca la plataforma en 96; D2/D3 separados 4 unidades
         PlataformaZ(root, "N2_D1", 96f, 99f, 13.2f, 0.4f, matDash, 0f, 3f);
@@ -938,7 +938,7 @@ public static class SEENLevelBuilder
         // ── HACKEO 3 (3 módulos) ──
         var puertaC = L1Puerta(root, "N2_PuertaC", new Vector3(0f, 16.4f, 119f), 32f, 4.4f);
         L1Tableta(root, "N2_TabletaC", new Vector3(-4.5f, 14.2f, 116.5f),
-                  new[] { HackableType.DescifrarCodigo, HackableType.UnirCables, HackableType.Patron },
+                  new[] { HackableType.DescifrarCodigo, HackableType.UnirCables, HackableType.Secuencia },
                   "ARCHIVO 3", false, puertaC);
         L1Checkpoint(root, "N2_CP_C", new Vector3(0f, 14.4f, 114f), 3);
 
@@ -1026,7 +1026,7 @@ public static class SEENLevelBuilder
         // ── HACKEO 1 (1 módulo) ──
         var p1 = L1Puerta(root, "N3_Puerta1", new Vector3(0f, 8.4f, 58.5f), 40f, 4.6f);
         L1Tableta(root, "N3_Tableta1", new Vector3(-2.3f, 6.25f, 56.5f),
-                  new[] { HackableType.DescifrarCodigo }, "NODO 1", false, p1);
+                  new[] { HackableType.DescifrarCodigo, HackableType.Patron, HackableType.Sincronizar }, "NODO 1", false, p1);
         L1Checkpoint(root, "N3_CP_1", new Vector3(0f, 6.5f, 63f), 1);
     }
 
@@ -1044,7 +1044,7 @@ public static class SEENLevelBuilder
         PlataformaZ(root, "N3_Plat2", 89f, 99f, 12.95f, 0.5f, matConcrete, 0f, 10f);
         var p2 = L1Puerta(root, "N3_Puerta2", new Vector3(0f, 15.4f, 94f), 30f, 4.4f);
         L1Tableta(root, "N3_Tableta2", new Vector3(-3.5f, 13.2f, 91.5f),
-                  new[] { HackableType.DescifrarCodigo, HackableType.UnirCables }, "NODO 2", false, p2);
+                  new[] { HackableType.DescifrarCodigo, HackableType.Secuencia, HackableType.UnirCables }, "NODO 2", false, p2);
 
         // Plataforma de dash, pegada a Plat2 en 99
         PlataformaZ(root, "N3_D1", 99f, 102f, 13f, 0.4f, matDash, 0f, 3f);
@@ -1072,7 +1072,7 @@ public static class SEENLevelBuilder
         // ── HACKEO 3 (3 módulos) ──
         var p3 = L1Puerta(root, "N3_Puerta3", new Vector3(0f, 15.6f, 120.5f), 40f, 4.4f);
         L1Tableta(root, "N3_Tableta3", new Vector3(-2.3f, 13.2f, 106.5f),
-                  new[] { HackableType.DescifrarCodigo, HackableType.UnirCables, HackableType.Patron },
+                  new[] { HackableType.DescifrarCodigo, HackableType.Patron, HackableType.Secuencia },
                   "NODO 3", false, p3);
         L1Checkpoint(root, "N3_CP_3", new Vector3(0f, 13.5f, 104f), 3);
 
@@ -1084,8 +1084,8 @@ public static class SEENLevelBuilder
         PlataformaZ(root, "N3_Plat4", 136.5f, 146f, 12.95f, 0.5f, matConcrete, 0f, 9f);
         var p4 = L1Puerta(root, "N3_Puerta4", new Vector3(0f, 15.4f, 141.5f), 30f, 4.4f);
         L1Tableta(root, "N3_Tableta4", new Vector3(-3.5f, 13.2f, 138.5f),
-                  new[] { HackableType.DescifrarCodigo, HackableType.UnirCables,
-                          HackableType.Patron, HackableType.UnirCables }, "NODO 4", false, p4);
+                  new[] { HackableType.DescifrarCodigo, HackableType.UnirCables, HackableType.Patron, HackableType.Sincronizar }, "NODO 4", false, p4);
+
         L1Checkpoint(root, "N3_CP_4", new Vector3(0f, 13.4f, 138f), 4);
     }
 
@@ -1115,7 +1115,7 @@ public static class SEENLevelBuilder
         var p5 = L1Puerta(root, "N3_Puerta5", new Vector3(0f, 15.5f, 152f), 32f, 4.6f);
         L1Tableta(root, "N3_Tableta5", new Vector3(-4.5f, 13.2f, 149f),
                   new[] { HackableType.DescifrarCodigo, HackableType.UnirCables, HackableType.Patron,
-                          HackableType.UnirCables, HackableType.DescifrarCodigo }, "NÚCLEO", false, p5);
+                          HackableType.Sincronizar, HackableType.Secuencia }, "Núcleo", false, p5);
         L1Checkpoint(root, "N3_CP_5", new Vector3(0f, 13.4f, 148f), 5);
 
         L1Patrol(root, "N3_Patrulla_3", new Vector3(-4.5f, 13.8f, 160f), new Vector3(4.5f, 13.8f, 160f), 3f);
