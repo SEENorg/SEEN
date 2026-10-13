@@ -91,6 +91,9 @@ public class HackManager : MonoBehaviour
 
         if (!activo) { if (promptTimer > 0f) promptTimer -= Time.unscaledDeltaTime; return; }
 
+        // Si la tabla César está abierta, no procesamos Esc (lo usa la tabla)
+        if (CipherWheel.Abierta) return;
+
         // Cerrar con Escape
         if (LeerEscape()) { Cerrar(); return; }
 
