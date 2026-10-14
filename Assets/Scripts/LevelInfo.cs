@@ -16,10 +16,13 @@ public class LevelInfo : MonoBehaviour
     [Tooltip("Dificultad de los puzzles: 0 = fácil (tutorial), 1 = medio, 2 = difícil")]
     public int dificultad;
 
-    private void Start()
+    private void Awake()
     {
+        // Se escribe en Awake (antes que el Start de GameFeedback) para
+        // evitar problemas de orden entre componentes.
         GameFeedback.NombreNivelActual = nombreNivel;
         GameFeedback.EscenaSiguiente = escenaSiguiente;
         HackManager.DificultadBase = dificultad;
     }
 }
+

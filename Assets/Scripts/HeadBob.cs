@@ -54,8 +54,8 @@ public class HeadBob : MonoBehaviour
         float offsetY = Mathf.Sin(ciclo) * amplitudY * peso;
         float offsetX = Mathf.Cos(ciclo * 0.5f) * amplitudX * peso;
 
-        cam.transform.localPosition = new Vector3(alturaBase.x + offsetX,
-                                                  alturaBase.y + offsetY,
-                                                  alturaBase.z);
+        // La altura base la dicta el jugador (baja al agacharse)
+        float altura = pc.AlturaCamara;
+        cam.transform.localPosition = new Vector3(offsetX, altura + offsetY, 0f);
     }
 }

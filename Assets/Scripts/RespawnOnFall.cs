@@ -38,6 +38,10 @@ public class RespawnOnFall : MonoBehaviour
     public void SetSpawnPoint(Vector3 point)
     {
         spawnPoint = point + Vector3.up * 0.5f;
+
+        // El antivirus vuelve a su posición original al tomar un checkpoint
+        var av = Object.FindFirstObjectByType<Antivirus>();
+        if (av != null) av.Reiniciar();
     }
 
     /// <summary>Reaparece al jugador. Público para que los hazards también lo llamen.</summary>

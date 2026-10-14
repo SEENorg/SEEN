@@ -130,8 +130,8 @@ public class CipherWheel : MonoBehaviour
         // Si ya estábamos hackeando, mantener el juego en pausa y seguir el hackeo
         hackEstabaAbierto = HackManager.Abierto;
 
-        Time.timeScale = 0f;
-        Cursor.lockState = CursorLockMode.None;
+        // Si venimos de un hackeo, el juego ya está congelado
+        if (!HackManager.Abierto) Time.timeScale = 0f;
         Cursor.visible = true;
 
         var pc = Object.FindFirstObjectByType<PlayerController>();
@@ -147,13 +147,13 @@ public class CipherWheel : MonoBehaviour
         if (hackEstabaAbierto)
         {
             // Volver EXACTamente como estábamos: hackeo en pausa, ratón libre
-            Time.timeScale = 0f;
-            Cursor.lockState = CursorLockMode.None;
+        // Si venimos de un hackeo, el juego ya está congelado
+        if (!HackManager.Abierto) Time.timeScale = 0f;
             Cursor.visible = true;
             return;
         }
 
-        Time.timeScale = 1f;
+        if (!HackManager.Abierto) Time.timeScale = 1f;   // no descongelar si seguimos hackeando
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
 

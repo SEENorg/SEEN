@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -21,6 +21,8 @@ public class GameFeedback : MonoBehaviour
     public static string EscenaSiguiente { get; set; } = "";
     /// <summary>True mientras se muestra la pantalla de nivel completado.</summary>
     public static bool NivelCompletadoVisible { get; private set; }
+    /// <summary>True mientras se muestra la pantalla de GAME OVER.</summary>
+    public static bool GameOverVisible { get; private set; }
 
     [Header("Mensajes")]
     [SerializeField] private float duracionMensaje = 3.5f;
@@ -35,18 +37,23 @@ public class GameFeedback : MonoBehaviour
     private readonly List<MsgUI> mensajes = new List<MsgUI>();
     private bool nivelCompletado;
     private float tiempoNivel;
-
+    private bool gameOverVisible;
     // Estilos cacheados
     private GUIStyle estiloMensaje;
     private GUIStyle estiloPanel;
     private GUIStyle estiloTitulo;
     private GUIStyle estiloBoton;
     private GUIStyle estiloBotonHover;
-
+    private GUIStyle estiloGameOver;
     private void Awake()
     {
-        NivelCompletadoVisible = false;
         Instancia = this;
+        NivelCompletadoVisible = false;
+        GameOverVisible = false;
+        gameOverVisible = false;
+        nivelCompletado = false;
+        tiempoNivel = 0f;
+        Time.timeScale = 1f;   // por si venimos de una escena pausada
     }
 
     private void OnDestroy()
@@ -88,6 +95,45 @@ public class GameFeedback : MonoBehaviour
         Instancia.MostrarPantallaFinal();
     }
 
+    /// <summary>Muestra la pantalla de GAME OVER (el antivirus atrapo al jugador).</summary>
+    public static void MostrarGameOver()
+    {
+        if (Instancia == null) return;
+        Instancia.MostrarGameOverInterno();
+    }
+
+    /// <summary>
+    /// Obtiene la escena siguiente de forma robusta:
+    ///  1. El valor estático (lo escribe LevelInfo al arrancar)
+    ///  2. El LevelInfo presente en la escena
+    ///  3. Derivado del nombre de la escena actual
+    /// Devuelve "" si no hay siguiente.
+    /// </summary>
+    public static string ObtenerSiguienteNivel()
+    {
+        if (!string.IsNullOrEmpty(EscenaSiguiente))
+            return EscenaSiguiente;
+
+        // Buscar el LevelInfo activo en la escena
+        if (Instancia != null)
+        {
+            var info = Object.FindFirstObjectByType<LevelInfo>();
+            if (info != null && !string.IsNullOrEmpty(info.escenaSiguiente))
+                return info.escenaSiguiente;
+        }
+
+        // Derivar del nombre de la escena actual (último recurso)
+        string actual = SceneManager.GetActiveScene().name;
+        switch (actual)
+        {
+            case "Juego": return "Nivel2";
+            case "Nivel2": return "Nivel3";
+            case "Nivel3": return "Nivel4";
+            case "Nivel4": return "Nivel5";
+            default: return "";
+        }
+    }
+
     // ── Interno ──────────────────────────────────────────────────
 
     private void AgregarMensaje(string texto)
@@ -115,6 +161,24 @@ public class GameFeedback : MonoBehaviour
         Debug.Log("[Feedback] NIVEL COMPLETADO");
     }
 
+    private void MostrarGameOverInterno()
+    {
+        if (gameOverVisible) return;
+        gameOverVisible = true;
+        GameOverVisible = true;
+
+        // Detener al antivirus y congelar la escena
+        var av = Object.FindFirstObjectByType<Antivirus>();
+        if (av != null) av.Detener();
+
+        Time.timeScale = 0f;
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+
+        var pc = Object.FindFirstObjectByType<PlayerController>();
+        if (pc != null) pc.enabled = false;
+    }
+
     // ── Dibujado ─────────────────────────────────────────────────
 
     private void OnGUI()
@@ -136,6 +200,42 @@ public class GameFeedback : MonoBehaviour
             GUI.color = c;
 
             y += alto + 6f;
+        }
+
+        // Pantalla de GAME OVER
+        if (gameOverVisible)
+        {
+            var gFondo = new Rect(0f, 0f, Screen.width, Screen.height);
+            GUI.color = new Color(0.25f, 0f, 0f, 0.88f);
+            GUI.DrawTexture(gFondo, Texture2D.whiteTexture);
+            GUI.color = Color.white;
+
+            float gpw = 560f, gph = 320f;
+            float gpx = (Screen.width - gpw) / 2f;
+            float gpy = (Screen.height - gph) / 2f;
+            GUI.Box(new Rect(gpx, gpy, gpw, gph), GUIContent.none, estiloPanel);
+
+            GUI.Label(new Rect(gpx, gpy + 30f, gpw, 70f), "GAME OVER", estiloGameOver);
+            GUI.Label(new Rect(gpx, gpy + 104f, gpw, 30f), "El antivirus te alcanzó", estiloMensaje);
+
+            float gbw = 280f, gbh = 56f;
+            float gbx = gpx + (gpw - gbw) / 2f;
+
+            if (BotonConHover(new Rect(gbx, gpy + 156f, gbw, gbh), "REINTENTAR"))
+            {
+                Time.timeScale = 1f;
+                Boot.PermitirInicioEscena = true;
+                SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+            }
+
+            if (BotonConHover(new Rect(gbx, gpy + 224f, gbw, gbh), "MENÚ PRINCIPAL"))
+            {
+                Time.timeScale = 1f;
+                Boot.PermitirInicioEscena = true;
+                if (Application.CanStreamedLevelBeLoaded("MainMenu"))
+                    SceneManager.LoadScene("MainMenu");
+            }
+            return;
         }
 
         // Pantalla de nivel completado
@@ -162,22 +262,28 @@ public class GameFeedback : MonoBehaviour
         float bw = 280f, bh = 56f;
         float bx = px + (pw - bw) / 2f;
 
-        InicializarEstiloHover();
-
         if (BotonConHover(new Rect(bx, py + 160f, bw, bh), "SIGUIENTE NIVEL ▶"))
         {
             Time.timeScale = 1f;
-            if (!string.IsNullOrEmpty(EscenaSiguiente) && Application.CanStreamedLevelBeLoaded(EscenaSiguiente))
+            string siguiente = ObtenerSiguienteNivel();
+
+            if (!string.IsNullOrEmpty(siguiente) && Application.CanStreamedLevelBeLoaded(siguiente))
             {
+                Debug.Log("[Feedback] Avanzando de '" + SceneManager.GetActiveScene().name + "' a '" + siguiente + "'");
                 Boot.PermitirInicioEscena = true;
-                SceneManager.LoadScene(EscenaSiguiente);
+                SceneManager.LoadScene(siguiente);
             }
             else
             {
-                Debug.LogWarning("[Feedback] No hay nivel siguiente disponible.");
+                Debug.LogWarning("[Feedback] No hay nivel siguiente. Escena actual: '" +
+                                 SceneManager.GetActiveScene().name + "'. EscenaSiguiente estatica: '" +
+                                 (EscenaSiguiente ?? "null") + "'. Derivado: '" + siguiente + "'");
                 Time.timeScale = 1f;
                 if (Application.CanStreamedLevelBeLoaded("MainMenu"))
+                {
+                    Boot.PermitirInicioEscena = true;
                     SceneManager.LoadScene("MainMenu");
+                }
             }
         }
 
@@ -226,6 +332,20 @@ public class GameFeedback : MonoBehaviour
 
     private void InicializarEstilos()
     {
+        estiloGameOver = new GUIStyle(GUI.skin.label)
+        {
+            fontSize = 52,
+            fontStyle = FontStyle.Bold,
+            alignment = TextAnchor.MiddleCenter
+        };
+        estiloGameOver.normal.textColor = new Color(1f, 0.15f, 0.15f);
+
+        // El estilo hover se crea AQUÍ (antes solo se creaba en la ruta de
+        // "nivel completado", por eso los botones de GAME OVER se rompían al pasar el mouse)
+        estiloBotonHover = new GUIStyle(GUI.skin.button) { fontSize = 20, fontStyle = FontStyle.Bold };
+        estiloBotonHover.normal.textColor = new Color(0.15f, 0.85f, 1f);
+        estiloBotonHover.hover.textColor = new Color(0.15f, 0.85f, 1f);
+
         if (estiloMensaje != null) return;
 
         estiloMensaje = new GUIStyle(GUI.skin.box)

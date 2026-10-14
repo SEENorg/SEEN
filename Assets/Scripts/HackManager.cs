@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -172,7 +172,7 @@ public class HackManager : MonoBehaviour
         tiempoTransicion = 0f;
         finalizando = false;
 
-        // Pausa y ratón libre
+        // Congelar el juego y liberar el raton para operar la UI
         Time.timeScale = 0f;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
@@ -185,7 +185,7 @@ public class HackManager : MonoBehaviour
     }
 
     private void Cerrar()
-{
+    {
         sincroActivo = false;
         activo = false;
         if (canvas != null) canvas.gameObject.SetActive(false);
@@ -278,6 +278,7 @@ public class HackManager : MonoBehaviour
             return;
         }
 
+
         contenido.gameObject.SetActive(true);
         panelInstrucciones.SetActive(false);
         bloqueoInput = 0.25f;   // evita que el clic que cerró las instrucciones se "coma" el primer clic
@@ -290,6 +291,19 @@ public class HackManager : MonoBehaviour
             case HackableType.Escanear: PuzzleEscanear(); break;
             case HackableType.Sincronizar: PuzzleSincronizar(); break;
             case HackableType.Secuencia: PuzzleSecuencia(); break;
+        }
+    }
+
+    /// <summary>Regenera el modulo actual con datos nuevos (tras un error).</summary>
+    public void RegenerarModulo(HackableType tipo)
+    {
+        foreach (Transform t in contenido) Destroy(t.gameObject);
+        switch (tipo)
+        {
+            case HackableType.Secuencia: PuzzleSecuencia(); break;
+            case HackableType.UnirCables: PuzzleCables(); break;
+            case HackableType.Patron: PuzzlePatron(); break;
+            case HackableType.Escanear: PuzzleEscanear(); break;
         }
     }
 
@@ -534,7 +548,7 @@ public class HackManager : MonoBehaviour
                 else
                 {
                     MostrarFeedback("CABLE INCORRECTO", false);
-                    seleccionado = -1;
+                    RegenerarModulo(HackableType.UnirCables);   // cables nuevos
                 }
             });
         }
@@ -576,11 +590,11 @@ public class HackManager : MonoBehaviour
     private void PuzzleEscanear()
     {
         CrearTexto(contenido, "LblScan", "HACÉ CLIC EN EL GLIFO DIFERENTE", 26, TextAnchor.MiddleCenter,
-                   new Vector2(0f, 178f), new Vector2(760f, 36f), colAcento);
+                   new Vector2(0f, 186f), new Vector2(760f, 36f), colAcento);
 
         int filas = 4 + Mathf.Clamp(DificultadBase, 0, 1);   // 4x4 o 5x5 según nivel
         CrearTexto(contenido, "LblScanInfo", "Cuadrícula " + filas + "x" + filas, 18, TextAnchor.MiddleCenter,
-                   new Vector2(0f, 142f), new Vector2(400f, 26f), new Color(0.6f, 0.7f, 0.8f));
+                   new Vector2(0f, 150f), new Vector2(400f, 26f), new Color(0.6f, 0.7f, 0.8f));
 
         ConstruirCuadriculaScan(filas);
     }
@@ -590,9 +604,9 @@ public class HackManager : MonoBehaviour
         var viejo = contenido.Find("GridScan");
         if (viejo != null) Destroy(viejo.gameObject);
 
-        float lado = 400f;
+        float lado = 360f;
         float tam = lado / filas;
-        var grid = NuevoUI(contenido, "GridScan", new Vector2(0f, -20f), new Vector2(lado, lado)).transform;
+        var grid = NuevoUI(contenido, "GridScan", new Vector2(0f, -45f), new Vector2(360f, 360f)).transform;
 
         indiceEscaneado = UnityEngine.Random.Range(0, filas * filas);
         Color colorCelda = new Color(0.13f, 0.15f, 0.19f);
@@ -638,10 +652,9 @@ public class HackManager : MonoBehaviour
     private void PuzzleSincronizar()
     {
         CrearTexto(contenido, "LblSinc", "SINCRONIZÁ LA SEÑAL EN LA ZONA VERDE", 26, TextAnchor.MiddleCenter,
-                   new Vector2(0f, 160f), new Vector2(760f, 36f), colAcento);
+                   new Vector2(0f, 172f), new Vector2(760f, 36f), colAcento);
         CrearTexto(contenido, "LblSincInfo", "Hacé clic en el botón (o presioná Espacio) cuando el marcador esté dentro", 18,
-                   TextAnchor.MiddleCenter, new Vector2(0f, 124f), new Vector2(760f, 26f), new Color(0.6f, 0.7f, 0.8f));
-
+                   TextAnchor.MiddleCenter, new Vector2(0f, 138f), new Vector2(760f, 26f), new Color(0.6f, 0.7f, 0.8f));
         anchoSincro = 620f;
         sincroObjetivo = 2 + DificultadBase;          // 2, 3 o 4 señales
         sincroHits = 0;
@@ -650,18 +663,18 @@ public class HackManager : MonoBehaviour
         sincroActivo = true;
 
         // Pista
-        var pista = NuevoUI(contenido, "PistaSinc", new Vector2(0f, 40f), new Vector2(anchoSincro, 34f));
+        var pista = NuevoUI(contenido, "PistaSinc", new Vector2(0f, 55f), new Vector2(anchoSincro, 34f));
         pista.AddComponent<Image>().color = new Color(0.09f, 0.10f, 0.13f);
 
         // Zona verde (se mueve en cada acierto)
         float anchoZona = Mathf.Max(90f, 190f - DificultadBase * 40f);
         zonaSincro = (RectTransform)NuevoUI(contenido, "ZonaSinc",
-            new Vector2(0f, 40f), new Vector2(anchoZona, 34f)).transform;
+            new Vector2(0f, 55f), new Vector2(anchoZona, 34f)).transform;
         zonaSincro.gameObject.AddComponent<Image>().color = new Color(0.15f, 0.75f, 0.35f, 0.55f);
 
         // Marcador
         marcadorSincro = (RectTransform)NuevoUI(contenido, "MarcadorSinc",
-            new Vector2(0f, 40f), new Vector2(8f, 52f)).transform;
+            new Vector2(0f, 55f), new Vector2(8f, 52f)).transform;
         marcadorSincro.gameObject.AddComponent<Image>().color = colAcento;
 
         // Contador
@@ -809,6 +822,7 @@ public class HackManager : MonoBehaviour
                 else
                 {
                     MostrarFeedback("RESPUESTA INCORRECTA", false);
+                    RegenerarModulo(HackableType.Secuencia);   // pregunta nueva
                 }
             });
         }
@@ -892,8 +906,8 @@ public class HackManager : MonoBehaviour
         else
         {
             MostrarFeedback("SECUENCIA INCORRECTA", false);
-            indiceJugador = 0;
-            StartCoroutine(ReiniciarSecuencia());
+                    indiceJugador = 0;
+                    StartCoroutine(ReiniciarSecuenciaNueva());
         }
     }
 
@@ -904,10 +918,19 @@ public class HackManager : MonoBehaviour
         if (botonesPatron[idx] != null) botonesPatron[idx].image.color = apagado;
     }
 
-    private IEnumerator ReiniciarSecuencia()
+    // (ReiniciarSecuencia antiguo eliminado: al fallar se genera una secuencia nueva)
+    /// <summary>Al fallar, genera una secuencia NUEVA (no repite la misma).</summary>
+    private IEnumerator ReiniciarSecuenciaNueva()
     {
         yield return new WaitForSecondsRealtime(0.8f);
         if (!activo) yield break;
+
+        // Regenerar el orden al azar
+        int largo = secuencia.Count;
+        secuencia.Clear();
+        for (int i = 0; i < largo; i++) secuencia.Add(UnityEngine.Random.Range(0, 4));
+        indiceJugador = 0;
+
         mostrandoSecuencia = true;
         yield return StartCoroutine(MostrarSecuencia(
             new[] { new Color(1f, 0.25f, 0.25f), new Color(0.25f, 0.8f, 1f), new Color(1f, 0.85f, 0.2f), new Color(0.4f, 1f, 0.35f) },

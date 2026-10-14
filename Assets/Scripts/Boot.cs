@@ -2,34 +2,44 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 /// <summary>
-/// Bandera estática que indica si la escena actual se abrió legítimamente
-/// (desde el menú, o desde una pantalla de reintentar/siguiente nivel).
-/// Si no, el BootRedirect manda al jugador al menú principal.
+/// Controla el arranque del juego:
+///  • Si se pulsa Play estando en una escena de nivel (no el menú),
+///    redirige automáticamente al menú principal.
+///  • Desde el menú se marca el permiso para entrar a un nivel.
+///
+/// Usa [RuntimeInitializeOnLoadMethod], así que funciona SIEMPRE
+/// (no depende de ajustes del editor ni de componentes en las escenas).
 /// </summary>
 public static class Boot
 {
+    /// <summary>Permiso para iniciar la escena actual (lo pone el menú).</summary>
     public static bool PermitirInicioEscena { get; set; }
-}
 
-/// <summary>
-/// Se coloca en las escenas de nivel. Si el jugador le da Play directamente
-/// en una escena de nivel (sin pasar por el menú), lo redirige al menú
-/// principal. Desde el menú sí se puede entrar normalmente.
-/// </summary>
-public class BootRedirect : MonoBehaviour
-{
-    private void Awake()
+    private const string EscenaMenu = "MainMenu";
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    private static void ComprobarEscenaInicial()
     {
-        if (!Application.isPlaying) return;
+        string escenaActual = SceneManager.GetActiveScene().name;
 
-        if (!Boot.PermitirInicioEscena)
+        // Consumir el permiso de una carga anterior
+        if (PermitirInicioEscena)
         {
-            Debug.Log("[Boot] Play iniciado fuera del menú → cargando menú principal.");
-            SceneManager.LoadScene("MainMenu");
+            PermitirInicioEscena = false;
+            Debug.Log("[Boot] Permiso consumido: entrando a '" + escenaActual + "'");
             return;
         }
 
-        // Consumir el permiso: la próxima carga sin permiso volvería al menú
-        Boot.PermitirInicioEscena = false;
+        // Si ya estamos en el menú, todo bien
+        if (escenaActual == EscenaMenu)
+            return;
+
+        // Se inició el juego desde una escena de nivel → ir al menú
+        if (Application.CanStreamedLevelBeLoaded(EscenaMenu))
+        {
+            Debug.Log("[Boot] Inicio fuera del menú ('" + escenaActual + "') → cargando el menú principal.");
+            PermitirInicioEscena = true;   // permiso para que el menú no rebote
+            SceneManager.LoadScene(EscenaMenu);
+        }
     }
 }

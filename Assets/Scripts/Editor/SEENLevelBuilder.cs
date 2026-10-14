@@ -96,6 +96,346 @@ public static class SEENLevelBuilder
         Debug.Log("[SEENLevelBuilder] NIVEL 2 construido: 3 hackeos (1, 2 y 3 módulos).");
     }
 
+    // ══════════════════════════════════════════════════════════════
+    //  NIVEL 4 — "PERSECUCIÓN"  (velocidad + antivirus)
+    // ══════════════════════════════════════════════════════════════
+
+    [MenuItem("SEEN/Construir Nivel 4 (Persecución)")]
+    static void BuildNivel4()
+    {
+        if (!EditorUtility.DisplayDialog("Construir Nivel 4 — SEEN",
+                "Se creará una escena nueva <b>Nivel4</b>:\n\n" +
+                "• Nivel de VELOCIDAD: ancho y directo\n" +
+                "• Checkpoints detrás de cada puerta de hackeo\n" +
+                "• ¡Un ANTIVIRUS te persigue! Si te alcanza: GAME OVER\n" +
+                "• Agacharse conserva el momentum para correr\n\n" +
+                "Se reemplazará la escena abierta actual. ¿Continuar?",
+                "Sí, construir", "Cancelar")) return;
+
+        var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+        CreateMaterials();
+        CreateLevel1Materials();
+        ClearOldLevel();
+        SetupPlayer();
+        SetupCamera();
+
+        var root = new GameObject("N4_Root");
+        Undo.RegisterCreatedObjectUndo(root, "N4_Root");
+
+        var kz = new GameObject("N4_KillZone");
+        kz.transform.SetParent(root.transform, true);
+        kz.transform.position = new Vector3(0f, -14f, 55f);
+        var kzCol = kz.AddComponent<BoxCollider>();
+        kzCol.isTrigger = true;
+        kzCol.size = new Vector3(400f, 4f, 420f);
+        Undo.RegisterCreatedObjectUndo(kz, "KillZone");
+
+        BuildNivel4_Zona1(root);
+        BuildNivel4_Zona2(root);
+        BuildNivel4_Zona3(root);
+
+        // ── ANTIVIRUS (persigue desde el inicio) ──
+        var avGO = new GameObject("N4_Antivirus");
+        avGO.transform.SetParent(root.transform, true);
+        avGO.transform.position = new Vector3(0f, 2f, -12f);
+        var av = avGO.AddComponent<Antivirus>();
+        av.velocidad = 6.4f;
+        av.retrasoInicial = 3f;
+        av.radioAtrapar = 2.4f;
+        Undo.RegisterCreatedObjectUndo(avGO, "Antivirus");
+
+        RegistrarEscena("Nivel4");
+
+        var player = GameObject.Find("Player");
+        if (player != null) player.transform.position = new Vector3(0f, 1.3f, -8f);
+
+        L1LevelInfo(root, "Nivel 4 — Persecución", "Nivel5", 2);
+
+        SetupAtmosphere();
+        SetupPostProcessing();
+        EnsureManagers();
+
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene, "Assets/Scenes/Nivel4.unity");
+        AssetDatabase.SaveAssets();
+        Debug.Log("[SEENLevelBuilder] NIVEL 4 construido: velocidad + antivirus (velocidad 8).");
+    }
+
+    static void BuildNivel4_Zona1(GameObject root)
+    {
+        // Zona amplia y recta (velocidad)
+        PlataformaZ(root, "N4_Suelo1", -20f, 40f, 0f, 0.5f, matConcrete, 0f, 22f);
+        Wall(root, "N4_W1_L", new Vector3(-11.3f, 4f, 10f), new Vector3(0.6f, 8f, 60f));
+        Wall(root, "N4_W1_R", new Vector3(11.3f, 4f, 10f), new Vector3(0.6f, 8f, 60f));
+
+        // Pantallas decorativas
+        for (int i = 0; i < 8; i++)
+            Platform(root, $"N4_Pantalla_{i}",
+                new Vector3(-10.8f, 3f + (i % 3) * 1.6f, -14f + i * 8f),
+                new Vector3(0.15f, 1.3f, 2.2f), i % 2 == 0 ? matCyan : matMagenta);
+        for (int i = 0; i < 8; i++)
+            Platform(root, $"N4_PantallaR_{i}",
+                new Vector3(10.8f, 3f + (i % 3) * 1.6f, -14f + i * 8f),
+                new Vector3(0.15f, 1.3f, 2.2f), i % 2 == 0 ? matMagenta : matCyan);
+
+        // Farolas
+        for (int i = 0; i < 6; i++)
+        {
+            float z = -14f + i * 10f;
+            L1Cable(root, $"N4_FarolaC_{i}", new Vector3(-8f, 6.5f, z), new Vector3(-8f, 5.5f, z), 0.05f);
+            Platform(root, $"N4_Farola_{i}", new Vector3(-8f, 5.35f, z), new Vector3(1.4f, 0.3f, 0.8f), matCyan);
+        }
+
+        // Primeros obstáculos: bloques verdes para saltar (a velocidad)
+        L1Obstaculo(root, "N4_Obs_1", new Vector3(0f, 0.35f, 6f), 4f, 0.7f, 0.7f);
+        L1Obstaculo(root, "N4_Obs_2", new Vector3(0f, 0.35f, 20f), 4f, 0.7f, 0.7f);
+
+        L1Light(root, "N4_Light_Z1", new Vector3(0f, 5.5f, 10f), new Color(0.35f, 0.8f, 1f), 12f, 24f);
+
+        // ── HACKEO 1 (2 módulos, sin tutorial) ──
+        var p1 = L1Puerta(root, "N4_Puerta1", new Vector3(0f, 2.9f, 34f), 40f, 4.8f);
+        L1Tableta(root, "N4_Tableta1", new Vector3(-3f, 0.25f, 31.5f),
+                  new[] { HackableType.DescifrarCodigo, HackableType.Sincronizar }, "CANDADO 1", false, p1);
+        // Checkpoint DETRÁS de la puerta
+        L1Checkpoint(root, "N4_CP_1", new Vector3(0f, 0.5f, 37f), 1);
+    }
+
+    static void BuildNivel4_Zona2(GameObject root)
+    {
+        // Zona 2: plataformeo ancho con huecos (requiere saltos largos con momentum)
+        PlataformaZ(root, "N4_Suelo2", 40f, 62f, 0f, 0.5f, matConcrete, 0f, 22f);
+        Wall(root, "N4_W2_L", new Vector3(-11.3f, 4f, 51f), new Vector3(0.6f, 8f, 22f));
+        Wall(root, "N4_W2_R", new Vector3(11.3f, 4f, 51f), new Vector3(0.6f, 8f, 22f));
+
+        // Escalones para subir (plataformeo suave)
+        Platform(root, "N4_Esc_1", new Vector3(0f, 1f, 46f), new Vector3(8f, 0.5f, 4f), matConcrete);
+        Platform(root, "N4_Esc_2", new Vector3(0f, 2f, 51f), new Vector3(8f, 0.5f, 4f), matConcrete);
+        Platform(root, "N4_Esc_3", new Vector3(0f, 3f, 56f), new Vector3(8f, 0.5f, 4f), matConcrete);
+
+        // Hazard verde en el camino (para saltar)
+        L1Obstaculo(root, "N4_Obs_3", new Vector3(0f, 3.35f, 60f), 6f, 0.7f, 0.7f);
+
+        L1Light(root, "N4_Light_Z2", new Vector3(0f, 5.5f, 51f), new Color(0.35f, 0.8f, 1f), 10f, 22f);
+
+        // ── HACKEO 2 (3 módulos) ──
+        var p2 = L1Puerta(root, "N4_Puerta2", new Vector3(0f, 5.9f, 62f), 40f, 4.4f);
+        L1Tableta(root, "N4_Tableta2", new Vector3(-3f, 3f, 59.5f),
+                  new[] { HackableType.UnirCables, HackableType.Escanear, HackableType.Patron },
+                  "CANDADO 2", false, p2);
+        L1Checkpoint(root, "N4_CP_2", new Vector3(0f, 3.5f, 64.5f), 2);
+    }
+
+    static void BuildNivel4_Zona3(GameObject root)
+    {
+        // Recta final hacia la meta (pura velocidad)
+        PlataformaZ(root, "N4_Suelo3", 62f, 100f, 3f, 0.5f, matConcrete, 0f, 22f);
+        Wall(root, "N4_W3_L", new Vector3(-11.3f, 7f, 81f), new Vector3(0.6f, 8f, 38f));
+        Wall(root, "N4_W3_R", new Vector3(11.3f, 7f, 81f), new Vector3(0.6f, 8f, 38f));
+
+        // Guías emisivas de velocidad
+        Platform(root, "N4_Guia_1", new Vector3(-3f, 3.22f, 81f), new Vector3(0.2f, 0.05f, 36f), matCyan);
+        Platform(root, "N4_Guia_2", new Vector3(3f, 3.22f, 81f), new Vector3(0.2f, 0.05f, 36f), matCyan);
+
+        // Obstáculos finales
+        L1Obstaculo(root, "N4_Obs_4", new Vector3(0f, 3.35f, 72f), 6f, 0.7f, 0.7f);
+        L1Obstaculo(root, "N4_Obs_5", new Vector3(0f, 3.35f, 84f), 6f, 0.7f, 0.7f);
+
+        L1Light(root, "N4_Light_Z3", new Vector3(0f, 8.5f, 95f), new Color(0.3f, 1f, 0.5f), 14f, 24f);
+
+        // Meta
+        Platform(root, "N4_Meta", new Vector3(0f, 3.6f, 96f), new Vector3(6f, 0.4f, 6f), matGoal);
+        var goal = new GameObject("N4_GoalTrigger");
+        goal.transform.SetParent(root.transform, true);
+        goal.transform.position = new Vector3(0f, 5.5f, 96f);
+        var gCol = goal.AddComponent<BoxCollider>();
+        gCol.isTrigger = true;
+        gCol.size = new Vector3(5f, 3f, 5f);
+        goal.AddComponent<LevelGoal>();
+        L1Beacon(root, "N4_MetaBeacon", new Vector3(0f, 5f, 96f), Color.green);
+
+        // Torres decorativas laterales
+        L1Tower(root, "N4_Torre_A", new Vector3(-14f, 3f, 90f), new Vector3(3f, 20f, 3f), false);
+        L1Tower(root, "N4_Torre_B", new Vector3(14f, 3f, 90f), new Vector3(3f, 20f, 3f), true);
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    //  NIVEL 5 — "EVASIÓN"  (velocidad extrema + antivirus rápido)
+    // ══════════════════════════════════════════════════════════════
+
+    [MenuItem("SEEN/Construir Nivel 5 (Evasión)")]
+    static void BuildNivel5()
+    {
+        if (!EditorUtility.DisplayDialog("Construir Nivel 5 — SEEN",
+                "Se creará una escena nueva <b>Nivel5</b>:\n\n" +
+                "• Nivel de VELOCIDAD EXTREMA\n" +
+                "• Más plataformeo, hazards y checkpoints tras puertas\n" +
+                "• El antivirus es MÁS RÁPIDO: usá el momentum\n" +
+                "• 3 candados de hackeo\n\n" +
+                "Se reemplazará la escena abierta actual. ¿Continuar?",
+                "Sí, construir", "Cancelar")) return;
+
+        var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+        CreateMaterials();
+        CreateLevel1Materials();
+        ClearOldLevel();
+        SetupPlayer();
+        SetupCamera();
+
+        var root = new GameObject("N5_Root");
+        Undo.RegisterCreatedObjectUndo(root, "N5_Root");
+
+        var kz = new GameObject("N5_KillZone");
+        kz.transform.SetParent(root.transform, true);
+        kz.transform.position = new Vector3(0f, -14f, 70f);
+        var kzCol = kz.AddComponent<BoxCollider>();
+        kzCol.isTrigger = true;
+        kzCol.size = new Vector3(400f, 4f, 460f);
+        Undo.RegisterCreatedObjectUndo(kz, "KillZone");
+
+        BuildNivel5_Zona1(root);
+        BuildNivel5_Zona2(root);
+        BuildNivel5_Zona3(root);
+        BuildNivel5_ZonaFinal(root);
+
+        // ── ANTIVIRUS (más rápido y arranca antes) ──
+        var avGO = new GameObject("N5_Antivirus");
+        avGO.transform.SetParent(root.transform, true);
+        avGO.transform.position = new Vector3(0f, 2f, -12f);
+        var av = avGO.AddComponent<Antivirus>();
+        av.velocidad = 7.84f;
+        av.retrasoInicial = 2f;
+        av.radioAtrapar = 2.5f;
+        Undo.RegisterCreatedObjectUndo(avGO, "Antivirus");
+
+        RegistrarEscena("Nivel5");
+
+        var player = GameObject.Find("Player");
+        if (player != null) player.transform.position = new Vector3(0f, 1.3f, -8f);
+
+        L1LevelInfo(root, "Nivel 5 — Evasión", "", 2);
+
+        SetupAtmosphere();
+        SetupPostProcessing();
+        EnsureManagers();
+
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene, "Assets/Scenes/Nivel5.unity");
+        AssetDatabase.SaveAssets();
+        Debug.Log("[SEENLevelBuilder] NIVEL 5 construido: evasión con antivirus rápido (9.8).");
+    }
+
+    static void BuildNivel5_Zona1(GameObject root)
+    {
+        // Recta ancha con barras rotatorias y obstáculos
+        PlataformaZ(root, "N5_Suelo1", -20f, 45f, 0f, 0.5f, matConcrete, 0f, 24f);
+        Wall(root, "N5_W1_L", new Vector3(-12.3f, 4.5f, 12f), new Vector3(0.6f, 9f, 65f));
+        Wall(root, "N5_W1_R", new Vector3(12.3f, 4.5f, 12f), new Vector3(0.6f, 9f, 65f));
+
+        for (int i = 0; i < 10; i++)
+            Platform(root, $"N5_Pantalla_{i}",
+                new Vector3(-11.8f, 3f + (i % 3) * 1.7f, -16f + i * 7f),
+                new Vector3(0.15f, 1.4f, 2.4f), i % 2 == 0 ? matCyan : matMagenta);
+        for (int i = 0; i < 10; i++)
+            Platform(root, $"N5_PantallaR_{i}",
+                new Vector3(11.8f, 3f + (i % 3) * 1.7f, -16f + i * 7f),
+                new Vector3(0.15f, 1.4f, 2.4f), i % 2 == 0 ? matMagenta : matCyan);
+
+        L1RotatingBar(root, "N5_Bar_1", new Vector3(0f, 1.5f, 10f), 9f, 55f);
+        L1RotatingBar(root, "N5_Bar_2", new Vector3(0f, 1.5f, 26f), 9f, 70f);
+        L1Obstaculo(root, "N5_Obs_1", new Vector3(0f, 0.35f, 18f), 6f, 0.7f, 0.7f);
+        L1Obstaculo(root, "N5_Obs_2", new Vector3(0f, 0.35f, 36f), 6f, 0.7f, 0.7f);
+
+        L1Light(root, "N5_Light_Z1", new Vector3(0f, 6f, 12f), new Color(0.35f, 0.8f, 1f), 14f, 26f);
+
+        // ── HACKEO 1 (3 módulos) ──
+        var p1 = L1Puerta(root, "N5_Puerta1", new Vector3(0f, 2.9f, 42f), 40f, 4.8f);
+        L1Tableta(root, "N5_Tableta1", new Vector3(-3.5f, 0.25f, 39.5f),
+                  new[] { HackableType.DescifrarCodigo, HackableType.Escanear, HackableType.Sincronizar },
+                  "CANDADO 1", false, p1);
+        L1Checkpoint(root, "N5_CP_1", new Vector3(0f, 0.5f, 43.5f), 1);
+    }
+
+    static void BuildNivel5_Zona2(GameObject root)
+    {
+        // Escaleras amplias sobre el vacío
+        PlataformaZ(root, "N5_Suelo2", 45f, 70f, 0f, 0.5f, matConcrete, 0f, 24f);
+        Wall(root, "N5_W2_L", new Vector3(-12.3f, 4f, 57f), new Vector3(0.6f, 8f, 25f));
+        Wall(root, "N5_W2_R", new Vector3(12.3f, 4f, 57f), new Vector3(0.6f, 8f, 25f));
+
+        Platform(root, "N5_Esc_1", new Vector3(0f, 1.5f, 50f), new Vector3(10f, 0.5f, 4f), matConcrete);
+        Platform(root, "N5_Esc_2", new Vector3(0f, 3f, 55f), new Vector3(10f, 0.5f, 4f), matConcrete);
+        Platform(root, "N5_Esc_3", new Vector3(0f, 4.5f, 60f), new Vector3(10f, 0.5f, 4f), matConcrete);
+        Platform(root, "N5_Esc_4", new Vector3(0f, 6f, 65f), new Vector3(10f, 0.5f, 4f), matConcrete);
+
+        L1RotatingBar(root, "N5_Bar_3", new Vector3(0f, 8.5f, 62f), 9f, 60f);
+        L1Vent(root, "N5_Vent_Z2", new Vector3(0f, 0.28f, 48f), new Vector3(10f, 0.05f, 3f));
+
+        L1Light(root, "N5_Light_Z2", new Vector3(0f, 8f, 57f), new Color(0.35f, 0.8f, 1f), 12f, 24f);
+
+        // ── HACKEO 2 (4 módulos) ──
+        var p2 = L1Puerta(root, "N5_Puerta2", new Vector3(0f, 8.9f, 70f), 40f, 4.4f);
+        L1Tableta(root, "N5_Tableta2", new Vector3(-4f, 6f, 67.5f),
+                  new[] { HackableType.UnirCables, HackableType.Patron, HackableType.Secuencia, HackableType.Sincronizar },
+                  "CANDADO 2", false, p2);
+        L1Checkpoint(root, "N5_CP_2", new Vector3(0f, 6.5f, 72f), 2);
+    }
+
+    static void BuildNivel5_Zona3(GameObject root)
+    {
+        // Zona de dash con plataformas separadas
+        PlataformaZ(root, "N5_Suelo3", 70f, 100f, 6f, 0.5f, matConcrete, 0f, 24f);
+        Wall(root, "N5_W3_L", new Vector3(-12.3f, 10f, 85f), new Vector3(0.6f, 8f, 30f));
+        Wall(root, "N5_W3_R", new Vector3(12.3f, 10f, 85f), new Vector3(0.6f, 8f, 30f));
+
+        // Plataformas de dash (tocan el suelo en sus bordes)
+        PlataformaZ(root, "N5_Dash_1", 76f, 80f, 6.4f, 0.4f, matDash, 0f, 5f);
+        PlataformaZ(root, "N5_Dash_2", 85f, 89f, 7.4f, 0.4f, matDash, 0f, 5f);
+        PlataformaZ(root, "N5_Dash_3", 94f, 98f, 6.4f, 0.4f, matDash, 0f, 5f);
+
+        L1Obstaculo(root, "N5_Obs_3", new Vector3(0f, 6.35f, 82f), 8f, 0.7f, 0.7f);
+        L1Vent(root, "N5_Vent_Z3", new Vector3(0f, 6.28f, 92f), new Vector3(8f, 0.05f, 3f));
+
+        L1Light(root, "N5_Light_Z3", new Vector3(0f, 12f, 85f), new Color(0.35f, 0.8f, 1f), 14f, 26f);
+
+        // ── HACKEO 3 (5 módulos) ──
+        var p3 = L1Puerta(root, "N5_Puerta3", new Vector3(0f, 9.4f, 99f), 40f, 4.6f);
+        L1Tableta(root, "N5_Tableta3", new Vector3(-4f, 6.2f, 96f),
+                  new[] { HackableType.DescifrarCodigo, HackableType.UnirCables, HackableType.Patron,
+                          HackableType.Secuencia, HackableType.Sincronizar }, "CANDADO 3", false, p3);
+        L1Checkpoint(root, "N5_CP_3", new Vector3(0f, 6.5f, 101f), 3);
+    }
+
+    static void BuildNivel5_ZonaFinal(GameObject root)
+    {
+        // Recta final
+        PlataformaZ(root, "N5_Suelo4", 100f, 132f, 6f, 0.5f, matConcrete, 0f, 24f);
+        Wall(root, "N5_W4_L", new Vector3(-12.3f, 10f, 116f), new Vector3(0.6f, 8f, 32f));
+        Wall(root, "N5_W4_R", new Vector3(12.3f, 10f, 116f), new Vector3(0.6f, 8f, 32f));
+
+        Platform(root, "N5_Guia_1", new Vector3(-3f, 6.22f, 116f), new Vector3(0.2f, 0.05f, 32f), matCyan);
+        Platform(root, "N5_Guia_2", new Vector3(3f, 6.22f, 116f), new Vector2(0.2f, 0.05f).x > 0 ? new Vector3(0.2f, 0.05f, 32f) : new Vector3(0.2f, 0.05f, 32f), matCyan);
+
+        L1Obstaculo(root, "N5_Obs_4", new Vector3(0f, 6.35f, 110f), 8f, 0.7f, 0.7f);
+        L1Obstaculo(root, "N5_Obs_5", new Vector3(0f, 6.35f, 124f), 8f, 0.7f, 0.7f);
+
+        L1Light(root, "N5_Light_Final", new Vector3(0f, 12f, 128f), new Color(0.3f, 1f, 0.5f), 16f, 26f);
+
+        Platform(root, "N5_Meta", new Vector3(0f, 6.6f, 128f), new Vector3(6f, 0.4f, 6f), matGoal);
+        var goal = new GameObject("N5_GoalTrigger");
+        goal.transform.SetParent(root.transform, true);
+        goal.transform.position = new Vector3(0f, 8.5f, 128f);
+        var gCol = goal.AddComponent<BoxCollider>();
+        gCol.isTrigger = true;
+        gCol.size = new Vector3(5f, 3f, 5f);
+        goal.AddComponent<LevelGoal>();
+        L1Beacon(root, "N5_MetaBeacon", new Vector3(0f, 8f, 128f), Color.green);
+
+        L1Tower(root, "N5_Torre_A", new Vector3(-15f, 6f, 122f), new Vector3(3f, 22f, 3f), false);
+        L1Tower(root, "N5_Torre_B", new Vector3(15f, 6f, 122f), new Vector3(3f, 22f, 3f), true);
+    }
+
     [MenuItem("SEEN/Construir Nivel 3 (El Núcleo)")]
     static void BuildNivel3()
     {
@@ -138,7 +478,7 @@ public static class SEENLevelBuilder
         var player = GameObject.Find("Player");
         if (player != null) player.transform.position = new Vector3(0f, 1.3f, 8f);
 
-        L1LevelInfo(root, "Nivel 3 — El Núcleo", "", 2);
+        L1LevelInfo(root, "Nivel 3 — El Núcleo", "Nivel4", 2);
 
         SetupAtmosphere();
         SetupPostProcessing();
@@ -405,13 +745,6 @@ public static class SEENLevelBuilder
             Undo.RegisterCreatedObjectUndo(ui, "Feedback");
         }
 
-        // Redirección al menú si se da Play directamente en el nivel
-        if (Object.FindFirstObjectByType<BootRedirect>() == null)
-        {
-            var boot = new GameObject("BootRedirect");
-            boot.AddComponent<BootRedirect>();
-            Undo.RegisterCreatedObjectUndo(boot, "BootRedirect");
-        }
 
         AsegurarPlayDesdeMenu();
     }
@@ -423,7 +756,6 @@ public static class SEENLevelBuilder
         if (menuAsset != null)
             EditorSceneManager.playModeStartScene = menuAsset;
     }
-
     // ── Helpers de geometría ──────────────────────────────────────
 
     static GameObject PlataformaZ(GameObject parent, string name, float zInicio, float zFin,
@@ -1394,28 +1726,38 @@ public static class SEENLevelBuilder
         Undo.RegisterCreatedObjectUndo(go, "LevelInfo");
     }
 
-    /// <summary>Registra una escena en Build Settings (junto al menú y las demás).</summary>
-    static void RegistrarEscena(string nombre)
+    [MenuItem("SEEN/Registrar los 5 niveles en Build Settings")]
+    static void RepararBuildSettings()
     {
-        string ruta = $"Assets/Scenes/{nombre}.unity";
-        var escenas = new System.Collections.Generic.List<EditorBuildSettingsScene>
-        {
-            new EditorBuildSettingsScene("Assets/Scenes/MainMenu.unity", true),
-            new EditorBuildSettingsScene("Assets/Scenes/Juego.unity", true)
-        };
+        RegistrarTodasLasEscenas();
+        Debug.Log("[SEENLevelBuilder] Build Settings reparado: MainMenu, Juego, Nivel2, Nivel3, Nivel4, Nivel5");
+    }
 
-        foreach (var existente in EditorBuildSettings.scenes)
+    /// <summary>
+    /// Registra TODAS las escenas del juego en el orden correcto.
+    /// Lo llaman los builders para no perder ninguna al reconstruir.
+    /// </summary>
+    static void RegistrarTodasLasEscenas()
+    {
+        var escenas = new System.Collections.Generic.List<EditorBuildSettingsScene>();
+        string[] orden = { "MainMenu", "Juego", "Nivel2", "Nivel3", "Nivel4", "Nivel5" };
+
+        foreach (var nombre in orden)
         {
-            if (existente.path.Contains("/Nivel2") && nombre != "Nivel2")
-                escenas.Add(existente);
-            if (existente.path.Contains("/Nivel3") && nombre != "Nivel3")
-                escenas.Add(existente);
+            string ruta = $"Assets/Scenes/{nombre}.unity";
+            if (AssetDatabase.LoadAssetAtPath<Object>(ruta) != null)
+                escenas.Add(new EditorBuildSettingsScene(ruta, true));
         }
 
-        if (!escenas.Exists(e => e.path == ruta))
-            escenas.Add(new EditorBuildSettingsScene(ruta, true));
+        if (escenas.Count > 0)
+            EditorBuildSettings.scenes = escenas.ToArray();
+    }
 
-        EditorBuildSettings.scenes = escenas.ToArray();
+    /// <summary>Registra una escena en Build Settings preservando las demás.</summary>
+    static void RegistrarEscena(string nombre)
+    {
+        // Registrar TODAS garantiza que ninguna se pierda al reconstruir
+        RegistrarTodasLasEscenas();
     }
 }
 #endif

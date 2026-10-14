@@ -1,4 +1,4 @@
-#if UNITY_EDITOR
+﻿#if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -114,7 +114,6 @@ public static class UIMenuBuilder
         // ── Panel Ajustes ──
         var panelAjustes = CrearPanel(canvasGO.transform, "PanelAjustes", new Color(0.045f, 0.050f, 0.070f, 0.985f));
         menu.panelAjustes = panelAjustes;
-
         CrearTexto(panelAjustes.transform, "TituloAjustes", "A J U S T E S", 48, TextAnchor.MiddleCenter,
                    new Vector2(0f, 280f), new Vector2(900f, 70f), colTexto);
         CrearLinea(panelAjustes.transform, new Vector2(0f, 240f), new Vector2(420f, 2f), colAcento);
@@ -168,15 +167,56 @@ public static class UIMenuBuilder
 
         panelAjustes.SetActive(false);
 
+        // ── Panel NIVELES (selector) ──
+        var panelNiveles = CrearPanel(canvasGO.transform, "PanelNiveles", new Color(0.045f, 0.050f, 0.070f, 0.985f));
+        menu.panelNiveles = panelNiveles;
+
+        var tituloNiveles = CrearTexto(panelNiveles.transform, "TituloNiveles", "NIVELES", 54, TextAnchor.MiddleCenter,
+                                       new Vector2(0f, 250f), new Vector2(800f, 70f), colTexto);
+        tituloNiveles.fontStyle = FontStyle.Bold;
+        CrearLinea(panelNiveles.transform, new Vector2(0f, 200f), new Vector2(560f, 3f), colMagenta);
+
+        var botonesNivel = new Button[5];
+        string[] nombresNivel = { "1", "2", "3", "4", "5" };
+        for (int i = 0; i < 5; i++)
+        {
+            int num = i + 1;
+            float x = -320f + i * 160f;
+            botonesNivel[i] = CrearBoton(panelNiveles.transform, "BotonNivel" + num, nombresNivel[i],
+                                         new Vector2(x, 80f), new Vector2(120f, 120f), colAcento);
+
+            // Listener PERSISTENTE (sobrevive al guardar la escena)
+            switch (num)
+            {
+                case 1: UnityEditor.Events.UnityEventTools.AddPersistentListener(botonesNivel[i].onClick, menu.CargarNivel1); break;
+                case 2: UnityEditor.Events.UnityEventTools.AddPersistentListener(botonesNivel[i].onClick, menu.CargarNivel2); break;
+                case 3: UnityEditor.Events.UnityEventTools.AddPersistentListener(botonesNivel[i].onClick, menu.CargarNivel3); break;
+                case 4: UnityEditor.Events.UnityEventTools.AddPersistentListener(botonesNivel[i].onClick, menu.CargarNivel4); break;
+                case 5: UnityEditor.Events.UnityEventTools.AddPersistentListener(botonesNivel[i].onClick, menu.CargarNivel5); break;
+            }
+        }
+
+        menu.botonNivel1 = botonesNivel[0];
+        menu.botonNivel2 = botonesNivel[1];
+        menu.botonNivel3 = botonesNivel[2];
+        menu.botonNivel4 = botonesNivel[3];
+        menu.botonNivel5 = botonesNivel[4];
+
+        var btnVolverNiveles = CrearBoton(panelNiveles.transform, "BotonVolverNiveles", "VOLVER",
+                                          new Vector2(0f, -80f), new Vector2(280f, 62f), colMagenta);
+        UnityEditor.Events.UnityEventTools.AddPersistentListener(btnVolverNiveles.onClick, menu.MostrarMenuPrincipal);
+
+        CrearTexto(panelNiveles.transform, "NotaNiveles", "Elegí un nivel para empezar", 20,
+                   TextAnchor.MiddleCenter, new Vector2(0f, -160f), new Vector2(700f, 30f), colTextoSec);
+
+        panelNiveles.SetActive(false);
+
         // ── Guardar escena y Build Settings ──
         EditorSceneManager.SaveScene(scene, "Assets/Scenes/MainMenu.unity");
 
-        var buildScenes = new[]
-        {
-            new EditorBuildSettingsScene("Assets/Scenes/MainMenu.unity", true),
-            new EditorBuildSettingsScene("Assets/Scenes/Juego.unity", true)
-        };
-        EditorBuildSettings.scenes = buildScenes;
+        RegistrarEscenasBuild();   // preserva los niveles existentes + añade menú y Juego
+
+        AssetDatabase.SaveAssets();
 
         // Play siempre arranca en el menú
         var menuAsset = AssetDatabase.LoadAssetAtPath<SceneAsset>("Assets/Scenes/MainMenu.unity");
@@ -243,6 +283,28 @@ public static class UIMenuBuilder
 
     // ───────────────────────────────────────────────────────── Helpers
 
+    /// <summary>
+    /// Registra menú y Juego en Build Settings preservando todas las escenas
+    /// existentes (antes el builder borraba los Niveles 2-5).
+    /// </summary>
+    static void RegistrarEscenasBuild()
+    {
+        var escenas = new System.Collections.Generic.List<EditorBuildSettingsScene>
+        {
+            new EditorBuildSettingsScene("Assets/Scenes/MainMenu.unity", true),
+            new EditorBuildSettingsScene("Assets/Scenes/Juego.unity", true)
+        };
+
+        // Preservar todo lo que ya estuviera registrado (Nivel2..Nivel5)
+        foreach (var existente in EditorBuildSettings.scenes)
+        {
+            if (existente == null || string.IsNullOrEmpty(existente.path)) continue;
+            if (!escenas.Exists(e => e.path == existente.path))
+                escenas.Add(existente);
+        }
+
+        EditorBuildSettings.scenes = escenas.ToArray();
+    }
     static GameObject CrearPanel(Transform parent, string nombre, Color color)
     {
         var go = new GameObject(nombre, typeof(RectTransform));
