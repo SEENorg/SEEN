@@ -511,7 +511,7 @@ MonoBehaviour:
     m_FontStyle: 1
     m_BestFit: 0
     m_MinSize: 10
-    m_MaxSize: 40
+    m_MaxSize: 130
     m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
@@ -1010,7 +1010,7 @@ MonoBehaviour:
     m_FontStyle: 0
     m_BestFit: 0
     m_MinSize: 10
-    m_MaxSize: 40
+    m_MaxSize: 48
     m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
@@ -1167,7 +1167,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: "v0.1 \u2014 Prototipo jugable"
+  m_Text: "v0.10 \u2014 Juego sin histor\xEDa ni decoraci\xF3n"
 --- !u!222 &304127226
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1246,7 +1246,8 @@ MonoBehaviour:
     m_HorizontalOverflow: 1
     m_VerticalOverflow: 1
     m_LineSpacing: 1
-  m_Text: "P U N T O   D E   I N F E C C I \xD3 N"
+  m_Text: V A I N A   D E L   M A L   U S O   D E   L A S   R E D E S   S O C I A
+    L E S
 --- !u!222 &332027629
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -2570,7 +2571,7 @@ MonoBehaviour:
     m_FontStyle: 1
     m_BestFit: 0
     m_MinSize: 10
-    m_MaxSize: 40
+    m_MaxSize: 54
     m_Alignment: 4
     m_AlignByGeometry: 0
     m_RichText: 1
