@@ -28,7 +28,7 @@ public class Crosshair : MonoBehaviour
     [SerializeField] private Color colorActivo = new Color(0.2f, 1f, 0.4f, 0.95f);
     [SerializeField] private Color colorListo = new Color(0.25f, 0.85f, 1f, 0.9f);
 
-    private HackTerminal objetivo;
+    private IInteractuable objetivo;
     private float radioActual;
     private Texture2D texturaCirculo;
 
@@ -47,14 +47,14 @@ public class Crosshair : MonoBehaviour
             Ray ray = new Ray(Camera.main.transform.position, Camera.main.transform.forward);
             if (Physics.Raycast(ray, out RaycastHit hit, alcance, ~0, QueryTriggerInteraction.Ignore))
             {
-                var term = hit.collider.GetComponentInParent<HackTerminal>();
-                if (term != null && !term.resuelto)
-                    objetivo = term;
+                var interactuable  = hit.collider.GetComponentInParent<HackTerminal>();
+                if (interactuable != null && !interactuable.resuelto)
+                    objetivo = interactuable;
             }
 
             if (objetivo != null)
             {
-                HackManager.MostrarPrompt(objetivo.textoPrompt);
+                HackManager.MostrarPrompt(objetivo.TextoPrompt);
                 if (LeerTeclaE())
                     objetivo.Interactuar();
             }

@@ -6,7 +6,7 @@ using UnityEngine;
 /// Al resolver todos sus módulos se pone verde y abre la puerta asociada.
 /// </summary>
 [RequireComponent(typeof(Collider))]
-public class HackTerminal : MonoBehaviour
+public class HackTerminal : MonoBehaviour, IInteractuable
 {
     [Header("Módulos a resolver, en orden")]
     public HackableType[] modulos;
@@ -58,6 +58,10 @@ public class HackTerminal : MonoBehaviour
     }
 
     /// <summary>Llamado por la mirilla cuando el jugador mira la tableta y presiona E.</summary>
+    
+    public string TextoPrompt => textoPrompt;
+    public bool PuedeInteractuar => !resuelto;
+
     public void Interactuar()
     {
         if (resuelto || HackManager.Abierto) return;
