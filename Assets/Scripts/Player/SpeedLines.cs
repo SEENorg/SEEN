@@ -42,8 +42,21 @@ public class SpeedLines : MonoBehaviour
     private void Update()
     {
         bool dashing = pc != null && pc.IsDashing;
-        intensidad = Mathf.MoveTowards(intensidad, dashing ? 1f : 0f,
-                        Time.deltaTime * velocidadFade * (dashing ? 3f : 1f));
+
+        float objetivo;
+        if (dashing)
+            objetivo = 1f;
+        else
+            objetivo = 0f;
+
+        float multiplicador;
+        if (dashing)
+            multiplicador = 3f;
+        else
+            multiplicador = 1f;
+
+        intensidad = Mathf.MoveTowards(intensidad, objetivo,
+                        Time.deltaTime * velocidadFade * multiplicador);
         fase += Time.deltaTime * velocidadExpansion;
     }
 
@@ -79,8 +92,15 @@ public class SpeedLines : MonoBehaviour
 
             // Desvanecer: aparece suave y se pierde al salir
             float alpha = intensidad;
-            if (prog < 0.12f) alpha *= prog / 0.12f;
-            else if (prog > 0.75f) alpha *= 1f - ((prog - 0.75f) / 0.25f);
+            if (prog < 0.12f)
+            {
+                alpha *= prog / 0.12f;
+            }
+            else if (prog > 0.75f)
+            {
+                alpha *= 1f - ((prog - 0.75f) / 0.25f);
+            }
+
             c.a = color.a * alpha;
             GUI.color = c;
 

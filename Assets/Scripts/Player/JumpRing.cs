@@ -47,8 +47,9 @@ public class JumpRing : MonoBehaviour
 
         var sr = go.AddComponent<SpriteRenderer>();
         sr.sprite = SpriteAnillo;
-        var mat = new Material(Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default")
-                               ?? Shader.Find("Sprites/Default"));
+        var shader = Shader.Find("Universal Render Pipeline/2D/Sprite-Unlit-Default");
+        if (shader == null) shader = Shader.Find("Sprites/Default");
+        var mat = new Material(shader);
         mat.color = color;
         sr.material = mat;
         sr.color = color;
@@ -112,7 +113,8 @@ public class JumpRing : MonoBehaviour
                 float dy = y - centro;
                 float d = Mathf.Sqrt(dx * dx + dy * dy);
                 bool anillo = d <= radioExt && d >= radioInt;
-                tex.SetPixel(x, y, anillo ? Color.white : new Color(0f, 0f, 0f, 0f));
+                if (anillo) tex.SetPixel(x, y, Color.white);
+                else tex.SetPixel(x, y, new Color(0f, 0f, 0f, 0f));
             }
         }
         tex.Apply();

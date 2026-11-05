@@ -15,17 +15,21 @@ public class TestLevelHints : MonoBehaviour
 
     private void Start()
     {
-        LevelGoal.OnGoalReached += () => goalReached = true;
+        LevelGoal.OnGoalReached += AlLlegarMeta;
     }
 
     private void OnDestroy()
     {
-        LevelGoal.OnGoalReached -= () => goalReached = true;
+        LevelGoal.OnGoalReached -= AlLlegarMeta;
+    }
+
+    private void AlLlegarMeta()
+    {
+        goalReached = true;
     }
 
     private void Update()
     {
-        // Los controles en pantalla SOLO aparecen en el tutorial (dificultad 0)
         if (HackManager.DificultadBase != 0)
         {
             goalReached = true;
@@ -60,7 +64,6 @@ public class TestLevelHints : MonoBehaviour
             "Espacio   →   Saltar (doble salto)\n" +
             "Shift / Clic der   →   Dash";
 
-        // Caja lo suficientemente grande para 5 líneas a 14pt (no se recorta)
         GUI.Box(new Rect(12f, 12f, 470f, 132f), contenido, style);
     }
 }

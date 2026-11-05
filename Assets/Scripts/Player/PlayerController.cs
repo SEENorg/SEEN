@@ -209,8 +209,13 @@ public class PlayerController : MonoBehaviour
 
         if (wish.sqrMagnitude > 0.01f)
         {
-            float objetivo = moveSpeed * (agachado ? bonusAgachado : 1f);
-            float accel = aceleracion * (agachado ? 0.55f : 1f);
+            float objetivo = moveSpeed;
+            float accel = aceleracion;
+            if (agachado)
+            {
+                objetivo = moveSpeed * bonusAgachado;
+                accel = aceleracion * 0.55f;
+            }
 
             if (agachado)
             {
@@ -233,7 +238,9 @@ public class PlayerController : MonoBehaviour
         else
         {
             // Sin input: frenar por fricción (agachado = casi no frena)
-            float friccion = agachado ? friccionAgachado : (isGrounded ? friccionSuelo : friccionAire);
+            float friccion = friccionAire;
+            if (agachado) friccion = friccionAgachado;
+            else if (isGrounded) friccion = friccionSuelo;
             hVel = Vector3.MoveTowards(hVel, Vector3.zero, friccion * Time.fixedDeltaTime);
         }
 
@@ -281,7 +288,8 @@ public class PlayerController : MonoBehaviour
         Vector3 origin = new Vector3(transform.position.x, bottomCenter, transform.position.z);
         float dist = capsule.radius + groundSkin;
 
-        int mask = groundMask.value != 0 ? groundMask.value : ~0;
+        int mask = ~0;
+        if (groundMask.value != 0) mask = groundMask.value;
         isGrounded = Physics.Raycast(origin, Vector3.down, out RaycastHit hit, dist, mask, QueryTriggerInteraction.Ignore);
 
         if (isGrounded && hit.collider != null)
@@ -314,7 +322,8 @@ public class PlayerController : MonoBehaviour
         if (jumpBufferTimer <= 0f || jumpsLeft <= 0) return;
 
         bool isDoubleJump = jumpsLeft < maxJumps;
-        float force = isDoubleJump ? jumpForce * doubleJumpMultiplier : jumpForce;
+        float force = jumpForce;
+        if (isDoubleJump) force = jumpForce * doubleJumpMultiplier;
 
         Vector3 v = rb.linearVelocity;
         v.y = 0f;
@@ -325,8 +334,8 @@ public class PlayerController : MonoBehaviour
         jumpBufferTimer = 0f;
         groundGuardTimer = jumpGroundGuard;
 
-        if (isDoubleJump)
-            OnDobleSalto?.Invoke(transform.position);
+        if (isDoubleJump && OnDobleSalto != null)
+            OnDobleSalto(transform.position);
     }
 
     // ─────────────────────────────────────────────────── Dash
@@ -337,9 +346,9 @@ public class PlayerController : MonoBehaviour
         Vector3 right = Quaternion.Euler(0f, yaw, 0f) * Vector3.right;
 
         // Impulso en la dirección del movimiento (o hacia adelante)
-        Vector3 dashDir = moveInput.sqrMagnitude > 0.01f
-            ? (fwd * moveInput.y + right * moveInput.x).normalized
-            : fwd;
+        Vector3 dashDir = fwd;
+        if (moveInput.sqrMagnitude > 0.01f)
+            dashDir = (fwd * moveInput.y + right * moveInput.x).normalized;
 
         Vector3 v = rb.linearVelocity;
         if (dashCancelsGravity)
@@ -373,7 +382,8 @@ public class PlayerController : MonoBehaviour
         agachado = quiere && isGrounded;
 
         // Altura de cámara suavizada
-        float objetivo = cameraHeight - (agachado ? alturaAgachado : 0f);
+        float objetivo = cameraHeight;
+        if (agachado) objetivo = cameraHeight - alturaAgachado;
         alturaActual = Mathf.Lerp(alturaActual, objetivo, Time.deltaTime * velocidadAgacharse);
 
         if (playerCamera != null)
@@ -460,7 +470,8 @@ public class PlayerController : MonoBehaviour
     private Vector2 ReadLookInput()
     {
 #if ENABLE_INPUT_SYSTEM
-        return Mouse.current != null ? Mouse.current.delta.ReadValue() : Vector2.zero;
+        if (Mouse.current != null) return Mouse.current.delta.ReadValue();
+        return Vector2.zero;
 #else
         return new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y"));
 #endif

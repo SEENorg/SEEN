@@ -6,13 +6,14 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.UI;
+using static HackUI;
 
 /// <summary>
 /// Interfaz de hackeo 2D (Canvas overlay). Abre una cadena de módulos;
 /// al resolverlos todos devuelve el control al jugador y avisa al terminal.
 /// Mientras está abierta el juego queda en pausa (timeScale 0) y el ratón libre.
 /// </summary>
-public class HackManager : MonoBehaviour
+public class HackManager : MonoBehaviour, IContextoHack
 {
     public static HackManager Instancia { get; private set; }
     public static bool Abierto => Instancia != null && Instancia.activo;
@@ -45,6 +46,8 @@ public class HackManager : MonoBehaviour
     private bool finalizando;
     private float bloqueoInput;            // ignora clics un instante tras abrir un módulo
     private float tiempoTransicion;   // para avance entre módulos (tiempo real)
+    private IPuzzle puzzleActual;
+    private HackableType tipoActual;
 
     // Colores
     private readonly Color colFondo = new Color(0.02f, 0.03f, 0.04f, 0.95f);
@@ -54,10 +57,6 @@ public class HackManager : MonoBehaviour
     private readonly Color colRojo = new Color(1f, 0.25f, 0.25f);
     private readonly Color colBoton = new Color(0.10f, 0.13f, 0.17f);
 
-    private static Font _fuente;
-    private static Font Fuente => _fuente ?? (_fuente = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"));
-
-    // ── API estática ─────────────────────────────────────────────
 
     /// <summary>Abre la interfaz de hackeo con la cadena de módulos dada.</summary>
     public static void Abrir(HackableType[] mods, string nombreAcceso, Action onResuelto, bool tutorial = false)
@@ -97,6 +96,8 @@ public class HackManager : MonoBehaviour
         // Cerrar con Escape
         if (LeerEscape()) { Cerrar(); return; }
 
+        if (puzzleActual != null) puzzleActual.Actualizar();
+
         // Avance entre módulos (tiempo real, el juego está pausado)
         // Modulo de sincronizacion: animacion del marcador + tecla Espacio
         if (sincroActivo)
@@ -115,7 +116,7 @@ public class HackManager : MonoBehaviour
                     finalizando = false;
                     var cb = onCompletado;
                     Cerrar();
-                    cb?.Invoke();
+                    if (cb != null) cb();
                 }
                 else
                 {
@@ -165,7 +166,10 @@ public class HackManager : MonoBehaviour
     {
         if (activo) return;
 
-        modulos = (mods != null && mods.Length > 0) ? mods : new[] { HackableType.DescifrarCodigo };
+        if (mods != null && mods.Length > 0)
+            modulos = mods;
+        else
+            modulos = new[] { HackableType.DescifrarCodigo };
         onCompletado = onResuelto;
         esTutorial = tutorial;
         indiceModulo = 0;
@@ -186,6 +190,8 @@ public class HackManager : MonoBehaviour
 
     private void Cerrar()
     {
+        if (puzzleActual != null) puzzleActual.Detener();
+        puzzleActual = null;
         sincroActivo = false;
         activo = false;
         if (canvas != null) canvas.gameObject.SetActive(false);
@@ -209,6 +215,26 @@ public class HackManager : MonoBehaviour
         }
         ConstruirModuloActual();
     }
+
+    // ── IContextoHack ────────────────────────────────────────────
+    Transform IContextoHack.Contenido => contenido;
+    int IContextoHack.DificultadBase => DificultadBase;
+    int IContextoHack.IndiceModulo => indiceModulo;
+    bool IContextoHack.InputBloqueado => bloqueoInput > 0f;
+    bool IContextoHack.EnTransicion => tiempoTransicion > 0f;
+    void IContextoHack.MostrarFeedback(string texto, bool exito) => MostrarFeedback(texto, exito);
+    void IContextoHack.CompletarModulo() { tiempoTransicion = 0.9f; }
+    void IContextoHack.Regenerar() { RegenerarActual(); }
+    Coroutine IContextoHack.IniciarCorrutina(IEnumerator rutina) => StartCoroutine(rutina);
+
+    private void RegenerarActual()
+    {
+        foreach (Transform t in contenido) Destroy(t.gameObject);
+        if (puzzleActual != null) puzzleActual.Detener();
+        puzzleActual = FabricaPuzzles.Crear(tipoActual, this);
+        if (puzzleActual != null) puzzleActual.Construir();
+    }
+
 
     // ── Construcción de UI ───────────────────────────────────────
 
@@ -283,12 +309,15 @@ public class HackManager : MonoBehaviour
         panelInstrucciones.SetActive(false);
         bloqueoInput = 0.25f;   // evita que el clic que cerró las instrucciones se "coma" el primer clic
 
+        if (puzzleActual != null) puzzleActual.Detener();
+        tipoActual = modulos[indiceModulo];
+        puzzleActual = FabricaPuzzles.Crear(tipoActual, this);
+        if (puzzleActual != null) { puzzleActual.Construir(); return; }
+
         switch (modulos[indiceModulo])
         {
             case HackableType.DescifrarCodigo: PuzzleDescifrar(); break;
-            case HackableType.UnirCables: PuzzleCables(); break;
             case HackableType.Patron: PuzzlePatron(); break;
-            case HackableType.Escanear: PuzzleEscanear(); break;
             case HackableType.Sincronizar: PuzzleSincronizar(); break;
             case HackableType.Secuencia: PuzzleSecuencia(); break;
         }
@@ -301,9 +330,7 @@ public class HackManager : MonoBehaviour
         switch (tipo)
         {
             case HackableType.Secuencia: PuzzleSecuencia(); break;
-            case HackableType.UnirCables: PuzzleCables(); break;
             case HackableType.Patron: PuzzlePatron(); break;
-            case HackableType.Escanear: PuzzleEscanear(); break;
         }
     }
 
@@ -448,7 +475,9 @@ public class HackManager : MonoBehaviour
                              new Vector2(200f, 62f));
         btn.onClick.AddListener(() =>
         {
-            string valor = (input.text ?? "").Trim().ToUpperInvariant();
+            string textoIngresado = input.text;
+            if (textoIngresado == null) textoIngresado = "";
+            string valor = textoIngresado.Trim().ToUpperInvariant();
             if (valor == palabra)
             {
                 MostrarFeedback("MÓDULO COMPLETADO", true);
@@ -470,171 +499,6 @@ public class HackManager : MonoBehaviour
                 c[i] = (char)('A' + ((c[i] - 'A' + n) % 26));
         }
         return new string(c);
-    }
-
-    // ═══════════════════════ MÓDULO 2: UNIR CABLES ═══════════════════════
-
-    private void PuzzleCables()
-    {
-        int cantidad = Mathf.Clamp(3 + DificultadBase + indiceModulo, 3, 6);
-        CrearTexto(contenido, "LblCables", "CONECTA LOS CABLES DEL MISMO COLOR", 26, TextAnchor.MiddleCenter,
-                   new Vector2(0f, 195f), new Vector2(760f, 40f), colAcento);
-
-        Color[] colores = {
-            new Color(1f, 0.2f, 0.2f), new Color(0.2f, 0.8f, 1f), new Color(1f, 0.85f, 0.15f),
-            new Color(1f, 0.3f, 0.8f), new Color(0.4f, 1f, 0.3f), new Color(0.7f, 0.4f, 1f)
-        };
-
-        // Columnas izquierda/derecha
-        var izq = NuevoUI(contenido, "Izq", new Vector2(-220f, 0f), new Vector2(160f, 300f)).transform;
-        var der = NuevoUI(contenido, "Der", new Vector2(220f, 0f), new Vector2(160f, 300f)).transform;
-
-        var ordenDer = new List<int>();
-        for (int i = 0; i < cantidad; i++) ordenDer.Add(i);
-        // Mezclar (Fisher-Yates)
-        for (int i = ordenDer.Count - 1; i > 0; i--)
-        {
-            int j = UnityEngine.Random.Range(0, i + 1);
-            (ordenDer[i], ordenDer[j]) = (ordenDer[j], ordenDer[i]);
-        }
-
-        int resueltos = 0;
-        int seleccionado = -1;
-
-        float alto = 300f / cantidad;
-        for (int i = 0; i < cantidad; i++)
-        {
-            float y = 150f - alto * (i + 0.5f);
-            int indiceIzq = i;
-            var bIzq = CrearBoton(izq, $"Cable_{i}", $"C{i + 1}", new Vector2(0f, y),
-                                  new Vector2(120f, Mathf.Min(46f, alto - 12f)),
-                                  colores[i]);
-            bIzq.image.color = colores[i];
-            bIzq.onClick.AddListener(() => seleccionado = indiceIzq);
-        }
-
-        for (int k = 0; k < cantidad; k++)
-        {
-            int colorIdx = ordenDer[k];
-            int indiceDer = k;
-            float y = 150f - alto * (k + 0.5f);
-            var bDer = CrearBoton(der, $"CableR_{colorIdx}", $"C{colorIdx + 1}", new Vector2(0f, y),
-                                  new Vector2(120f, Mathf.Min(46f, alto - 12f)),
-                                  colores[colorIdx]);
-            bDer.image.color = colores[colorIdx];
-            bDer.onClick.AddListener(() =>
-            {
-                if (bloqueoInput > 0f) return;
-                if (seleccionado < 0)
-                {
-                    MostrarFeedback("SELECCIONA UN CABLE DE LA IZQUIERDA", false);
-                    return;
-                }
-                if (colorIdx == seleccionado)
-                {
-                    // Conexión correcta
-                    DibujarCable(contenido, izq.GetChild(seleccionado) as RectTransform,
-                                 der.GetChild(indiceDer) as RectTransform, colores[colorIdx]);
-                    izq.GetChild(seleccionado).GetComponent<Button>().interactable = false;
-                    bDer.interactable = false;
-                    seleccionado = -1;
-                    resueltos++;
-                    if (resueltos >= cantidad)
-                    {
-                        MostrarFeedback("MÓDULO COMPLETADO", true);
-                        tiempoTransicion = 0.9f;
-                    }
-                }
-                else
-                {
-                    MostrarFeedback("CABLE INCORRECTO", false);
-                    RegenerarModulo(HackableType.UnirCables);   // cables nuevos
-                }
-            });
-        }
-    }
-
-    private void DibujarCable(Transform parent, RectTransform a, RectTransform b, Color color)
-    {
-        var cableGO = new GameObject("Linea", typeof(RectTransform));
-        cableGO.transform.SetParent(parent, false);
-        var rt = (RectTransform)cableGO.transform;
-
-        // Posiciones locales al contenedor (los botones cuelgan de columnas hijas)
-        Vector2 pa = LocalAlContenedor(a, (RectTransform)parent);
-        Vector2 pb = LocalAlContenedor(b, (RectTransform)parent);
-        Vector2 delta = pb - pa;
-        float dist = delta.magnitude;
-
-        rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
-        rt.pivot = new Vector2(0.5f, 0.5f);
-        rt.sizeDelta = new Vector2(dist, 8f);
-        rt.anchoredPosition = (pa + pb) / 2f;
-        rt.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);
-
-        var img = cableGO.AddComponent<Image>();
-        img.color = color;
-        img.raycastTarget = false;
-    }
-
-    private Vector2 LocalAlContenedor(RectTransform hijo, RectTransform contenedor)
-    {
-        Vector3 mundo = hijo.TransformPoint(hijo.rect.center);
-        return (Vector2)contenedor.InverseTransformPoint(mundo);
-    }
-
-    // ═══════════════════ MÓDULO 4: ESCANEAR ═══════════════════
-
-    private int indiceEscaneado;
-
-    private void PuzzleEscanear()
-    {
-        CrearTexto(contenido, "LblScan", "HACÉ CLIC EN EL GLIFO DIFERENTE", 26, TextAnchor.MiddleCenter,
-                   new Vector2(0f, 186f), new Vector2(760f, 36f), colAcento);
-
-        int filas = 4 + Mathf.Clamp(DificultadBase, 0, 1);   // 4x4 o 5x5 según nivel
-        CrearTexto(contenido, "LblScanInfo", "Cuadrícula " + filas + "x" + filas, 18, TextAnchor.MiddleCenter,
-                   new Vector2(0f, 150f), new Vector2(400f, 26f), new Color(0.6f, 0.7f, 0.8f));
-
-        ConstruirCuadriculaScan(filas);
-    }
-
-    private void ConstruirCuadriculaScan(int filas)
-    {
-        var viejo = contenido.Find("GridScan");
-        if (viejo != null) Destroy(viejo.gameObject);
-
-        float lado = 360f;
-        float tam = lado / filas;
-        var grid = NuevoUI(contenido, "GridScan", new Vector2(0f, -45f), new Vector2(360f, 360f)).transform;
-
-        indiceEscaneado = UnityEngine.Random.Range(0, filas * filas);
-        Color colorCelda = new Color(0.13f, 0.15f, 0.19f);
-
-        for (int i = 0; i < filas * filas; i++)
-        {
-            int f = i / filas, c = i % filas;
-            float x = -lado / 2f + tam / 2f + c * tam;
-            float y = lado / 2f - tam / 2f - f * tam;
-            bool esDiferente = i == indiceEscaneado;
-
-            var b = CrearBoton(grid, "Celda_" + i, esDiferente ? "◈" : "◆",
-                               new Vector2(x, y), new Vector2(tam - 8f, tam - 8f), colorCelda);
-            int idx = i;
-            b.onClick.AddListener(() =>
-            {
-                if (idx == indiceEscaneado)
-                {
-                    MostrarFeedback("MÓDULO COMPLETADO", true);
-                    tiempoTransicion = 0.9f;
-                }
-                else
-                {
-                    MostrarFeedback("GLIFO INCORRECTO — REESCANEANDO", false);
-                    ConstruirCuadriculaScan(filas);
-                }
-            });
-        }
     }
 
     // ═══════════════════ MÓDULO 5: SINCRONIZAR (timing) ═══════════════════
@@ -807,7 +671,8 @@ public class HackManager : MonoBehaviour
         for (int i = 0; i < opciones.Count; i++)
         {
             int fila = i / 2, col = i % 2;
-            float x = (col == 0) ? -170f : 170f;
+            float x = 170f;
+            if (col == 0) x = -170f;
             float y = 0f - fila * 70f;
             var b = CrearBoton(contenido, "Opcion_" + i, opciones[i], new Vector2(x, y),
                                new Vector2(280f, 60f));
@@ -853,8 +718,10 @@ public class HackManager : MonoBehaviour
         botonesPatron = new Button[4];
         for (int i = 0; i < 4; i++)
         {
-            float x = (i % 2 == 0) ? -90f : 90f;
-            float y = (i < 2) ? 65f : -65f;
+            float x = 90f;
+            if (i % 2 == 0) x = -90f;
+            float y = -65f;
+            if (i < 2) y = 65f;
             var b = CrearBoton(grid, $"Boton_{i}", "", new Vector2(x, y), new Vector2(170f, 120f), apagados[i]);
             b.image.color = apagados[i];
             int idx = i;
@@ -943,106 +810,8 @@ public class HackManager : MonoBehaviour
     {
         if (feedbackTexto == null) return;
         feedbackTexto.text = texto;
-        feedbackTexto.color = exito ? colVerde : colRojo;
-    }
-
-    private GameObject NuevoUI(Transform parent, string nombre, Vector2 pos, Vector2 size)
-    {
-        var go = new GameObject(nombre, typeof(RectTransform));
-        go.transform.SetParent(parent, false);
-        var rt = (RectTransform)go.transform;
-        rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
-        rt.sizeDelta = size;
-        rt.anchoredPosition = pos;
-        return go;
-    }
-
-    private void Estirar(GameObject go)
-    {
-        var rt = (RectTransform)go.transform;
-        rt.anchorMin = Vector2.zero;
-        rt.anchorMax = Vector2.one;
-        rt.offsetMin = Vector2.zero;
-        rt.offsetMax = Vector2.zero;
-    }
-
-    private void Contorno(Transform parent, Color color)
-    {
-        float w = 920f, h = 640f, t = 3f;
-        var sup = NuevoUI(parent, "BordeSup", new Vector2(0f, h / 2f), new Vector2(w, t));
-        sup.AddComponent<Image>().color = color;
-        var inf = NuevoUI(parent, "BordeInf", new Vector2(0f, -h / 2f), new Vector2(w, t));
-        inf.AddComponent<Image>().color = color;
-        var izq = NuevoUI(parent, "BordeIzq", new Vector2(-w / 2f, 0f), new Vector2(t, h));
-        izq.AddComponent<Image>().color = color;
-        var der = NuevoUI(parent, "BordeDer", new Vector2(w / 2f, 0f), new Vector2(t, h));
-        der.AddComponent<Image>().color = color;
-    }
-
-    private Text CrearTexto(Transform parent, string nombre, string contenido, int size,
-                            TextAnchor align, Vector2 pos, Vector2 dimension, Color color)
-    {
-        var go = NuevoUI(parent, nombre, pos, dimension);
-        var txt = go.AddComponent<Text>();
-        txt.text = contenido;
-        txt.font = Fuente;
-        txt.fontSize = size;
-        txt.alignment = align;
-        txt.color = color;
-        txt.raycastTarget = false;
-        txt.horizontalOverflow = HorizontalWrapMode.Overflow;
-        return txt;
-    }
-
-    private Button CrearBoton(Transform parent, string nombre, string etiqueta, Vector2 pos, Vector2 size, Color? colorBase = null)
-    {
-        Color baseColor = colorBase ?? colBoton;
-
-        var go = NuevoUI(parent, nombre, pos, size);
-        var img = go.AddComponent<Image>();
-        img.color = baseColor;
-
-        var btn = go.AddComponent<Button>();
-        btn.targetGraphic = img;
-        btn.transition = Selectable.Transition.ColorTint;
-
-        // El tint REEMPLAZA el color del gráfico: por eso los colores del tint
-        // deben ser el color del propio botón (así se ven los cables/patrones de color)
-        var c = btn.colors;
-        c.normalColor = baseColor;
-        c.highlightedColor = Color.Lerp(baseColor, Color.white, 0.22f);
-        c.pressedColor = Color.Lerp(baseColor, Color.white, 0.45f);
-        c.selectedColor = baseColor;
-        c.disabledColor = Color.Lerp(baseColor, Color.black, 0.4f);
-        c.fadeDuration = 0.05f;
-        c.colorMultiplier = 1f;
-        btn.colors = c;
-        btn.image.color = baseColor;
-
-        var nav = btn.navigation;
-        nav.mode = Navigation.Mode.None;
-        btn.navigation = nav;
-
-        if (!string.IsNullOrEmpty(etiqueta))
-        {
-            var lbl = CrearTexto(btn.transform, "Texto", etiqueta, 22, TextAnchor.MiddleCenter,
-                                 Vector2.zero, size, Color.white);
-            lbl.fontStyle = FontStyle.Bold;
-        }
-
-        return btn;
-    }
-
-    private void AsegurarEventSystem()
-    {
-        if (FindFirstObjectByType<EventSystem>() != null) return;
-        var go = new GameObject("EventSystem");
-        go.AddComponent<EventSystem>();
-#if ENABLE_INPUT_SYSTEM
-        go.AddComponent<InputSystemUIInputModule>();
-#else
-        go.AddComponent<StandaloneInputModule>();
-#endif
+        if (exito) feedbackTexto.color = colVerde;
+        else feedbackTexto.color = colRojo;
     }
 
     private bool LeerEscape()

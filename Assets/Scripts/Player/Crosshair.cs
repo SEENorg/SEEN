@@ -47,8 +47,8 @@ public class Crosshair : MonoBehaviour
             Ray ray = new Ray(Camera.main.transform.position, Camera.main.transform.forward);
             if (Physics.Raycast(ray, out RaycastHit hit, alcance, ~0, QueryTriggerInteraction.Ignore))
             {
-                var interactuable  = hit.collider.GetComponentInParent<HackTerminal>();
-                if (interactuable != null && !interactuable.resuelto)
+                var interactuable = hit.collider.GetComponentInParent<IInteractuable>();
+                if (interactuable != null && interactuable.PuedeInteractuar)
                     objetivo = interactuable;
             }
 
@@ -61,7 +61,8 @@ public class Crosshair : MonoBehaviour
         }
 
         // Animación de tamaño
-        float objetivoRadio = objetivo != null ? radioActivo : radioNormal;
+        float objetivoRadio = radioNormal;
+        if (objetivo != null) objetivoRadio = radioActivo;
         radioActual = Mathf.Lerp(radioActual, objetivoRadio, Time.deltaTime * suavizado);
     }
 
@@ -69,9 +70,9 @@ public class Crosshair : MonoBehaviour
     {
         if (HackManager.Abierto || PauseMenu.Pausado) return;
 
-        Color c = objetivo != null
-            ? colorActivo
-            : (GameFeedback.NivelCompletadoVisible ? colorListo : colorNormal);
+        Color c = colorNormal;
+        if (objetivo != null) c = colorActivo;
+        else if (GameFeedback.NivelCompletadoVisible) c = colorListo;
 
         Color previa = GUI.color;
         GUI.color = c;
@@ -110,7 +111,8 @@ public class Crosshair : MonoBehaviour
                 float dy = y - centro;
                 float dist = Mathf.Sqrt(dx * dx + dy * dy);
                 bool anillo = dist <= radioExterno && dist >= radioInterno;
-                tex.SetPixel(x, y, anillo ? Color.white : new Color(0f, 0f, 0f, 0f));
+                if (anillo) tex.SetPixel(x, y, Color.white);
+                else tex.SetPixel(x, y, new Color(0f, 0f, 0f, 0f));
             }
         }
 

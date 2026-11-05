@@ -59,9 +59,14 @@ public class HackTerminal : MonoBehaviour, IInteractuable
 
     /// <summary>Llamado por la mirilla cuando el jugador mira la tableta y presiona E.</summary>
     
-    public string TextoPrompt => textoPrompt;
-    public bool PuedeInteractuar => !resuelto;
-
+    public string TextoPrompt
+    {
+        get { return textoPrompt; }
+    }
+    public bool PuedeInteractuar
+    {
+        get { return !resuelto; }
+    }
     public void Interactuar()
     {
         if (resuelto || HackManager.Abierto) return;

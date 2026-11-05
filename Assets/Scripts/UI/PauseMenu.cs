@@ -14,8 +14,12 @@ using UnityEngine.InputSystem;
 /// </summary>
 public class PauseMenu : MonoBehaviour
 {
-    /// <summary>True mientras el menú de pausa está abierto.</summary>
-    public static bool Pausado { get; private set; }
+    private static bool _pausado;
+    public static bool Pausado
+    {
+        get { return _pausado; }
+        private set { _pausado = value; }
+    }
 
     private PlayerController pc;
 
@@ -43,7 +47,6 @@ public class PauseMenu : MonoBehaviour
 
     private void Update()
     {
-        // No abrir pausa durante hackeo o pantalla de nivel completado
         if (HackManager.Abierto || GameFeedback.NivelCompletadoVisible)
             return;
 
@@ -60,8 +63,6 @@ public class PauseMenu : MonoBehaviour
         }
     }
 
-    // ── Apertura / cierre ────────────────────────────────────────
-
     private void AbrirPausa()
     {
         panelAbierto = true;
@@ -69,7 +70,6 @@ public class PauseMenu : MonoBehaviour
         enAjustes = false;
         confirmandoSalida = false;
 
-        // Snapshot de ajustes actuales
         perfilGrafico = AjustesJuego.PerfilGuardado;
         indiceResolucion = AjustesJuego.IndiceResolucionGuardado;
         pantallaCompleta = AjustesJuego.PantallaCompletaGuardada;
@@ -95,14 +95,11 @@ public class PauseMenu : MonoBehaviour
         if (pc != null) pc.enabled = true;
     }
 
-    // ── Dibujado ─────────────────────────────────────────────────
-
     private void OnGUI()
     {
         if (!panelAbierto) return;
         InicializarEstilos();
 
-        // Fondo oscuro
         GUI.color = new Color(0f, 0f, 0f, 0.8f);
         GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), Texture2D.whiteTexture);
         GUI.color = Color.white;
@@ -113,7 +110,13 @@ public class PauseMenu : MonoBehaviour
             return;
         }
 
-        float pw = 520f, ph = enAjustes ? 620f : 420f;
+        float ph;
+        if (enAjustes)
+            ph = 620f;
+        else
+            ph = 420f;
+
+        float pw = 520f;
         float px = (Screen.width - pw) / 2f;
         float py = (Screen.height - ph) / 2f;
 
@@ -149,7 +152,6 @@ public class PauseMenu : MonoBehaviour
         float x = px + 40f;
         float ancho = pw - 80f;
 
-        // ── Calidad gráfica ──
         GUI.Label(new Rect(x, py + 110f, ancho, 26f), "CALIDAD GRÁFICA", etiqueta);
         string[] etiquetas = { "Alta", "Media", "Baja" };
         int nuevoPerfil = GUI.Toolbar(new Rect(x, py + 140f, ancho, 44f), perfilGrafico, etiquetas, estBotonChico);
@@ -159,11 +161,9 @@ public class PauseMenu : MonoBehaviour
             AjustesJuego.AplicarPerfilGrafico(perfilGrafico);
         }
 
-        // ── Resolución ──
         GUI.Label(new Rect(x, py + 200f, ancho, 26f), "RESOLUCIÓN", etiqueta);
         float anchoBoton = 50f;
         bool cambioRes = false;
-        // ◀ = resolución más alta (índice menor), ▶ = más baja
         if (Boton(new Rect(x, py + 230f, anchoBoton, 44f), "◀") && indiceResolucion > 0)
         {
             indiceResolucion--;
@@ -180,7 +180,6 @@ public class PauseMenu : MonoBehaviour
         if (cambioRes)
             AjustesJuego.AplicarResolucion(indiceResolucion);
 
-        // ── Pantalla completa ──
         bool nuevaPantalla = GUI.Toggle(new Rect(x, py + 296f, 28f, 28f), pantallaCompleta, "");
         if (nuevaPantalla != pantallaCompleta)
         {
@@ -189,9 +188,8 @@ public class PauseMenu : MonoBehaviour
         }
         GUI.Label(new Rect(x + 40f, py + 294f, ancho - 40f, 28f), "PANTALLA COMPLETA", etiqueta);
 
-        // ── Volumen ──
         GUI.Label(new Rect(x, py + 344f, ancho, 26f),
-                  $"VOLUMEN MAESTRO   {Mathf.RoundToInt(volumen * 100)}%", etiqueta);
+                  "VOLUMEN MAESTRO   " + Mathf.RoundToInt(volumen * 100) + "%", etiqueta);
         float nuevoVol = GUI.HorizontalSlider(new Rect(x, py + 372f, ancho, 26f), volumen, 0f, 1f);
         if (!Mathf.Approximately(nuevoVol, volumen))
         {
@@ -199,9 +197,8 @@ public class PauseMenu : MonoBehaviour
             AjustesJuego.AplicarVolumen(volumen);
         }
 
-        // ── Sensibilidad ──
         GUI.Label(new Rect(x, py + 408f, ancho, 26f),
-                  $"SENSIBILIDAD RATÓN   {sensibilidad:0.00}", etiqueta);
+                  "SENSIBILIDAD RATÓN   " + sensibilidad.ToString("0.00"), etiqueta);
         float nuevaSens = GUI.HorizontalSlider(new Rect(x, py + 436f, ancho, 26f), sensibilidad, 0.02f, 0.5f);
         if (!Mathf.Approximately(nuevaSens, sensibilidad))
         {
@@ -209,7 +206,6 @@ public class PauseMenu : MonoBehaviour
             AjustesJuego.AplicarSensibilidad(sensibilidad);
         }
 
-        // ── Volver ──
         if (Boton(new Rect(x, py + 490f, ancho, 52f), "VOLVER AL JUEGO"))
             CerrarPausa();
 
@@ -241,13 +237,13 @@ public class PauseMenu : MonoBehaviour
             confirmandoSalida = false;
     }
 
-    // ── Utilidades ───────────────────────────────────────────────
-
     private bool Boton(Rect r, string texto)
     {
         bool hover = r.Contains(Event.current.mousePosition);
-        var estilo = hover ? estBotonChico : estBoton;
-        return GUI.Button(r, texto, estilo);
+        if (hover)
+            return GUI.Button(r, texto, estBotonChico);
+        else
+            return GUI.Button(r, texto, estBoton);
     }
 
     private void InicializarEstilos()

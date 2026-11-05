@@ -34,33 +34,38 @@ public class Antivirus : MonoBehaviour
     private readonly System.Collections.Generic.List<Transform> cubos = new System.Collections.Generic.List<Transform>();
     private Light luz;
 
-    public float Velocidad => velocidad;
+    public float Velocidad
+    {
+        get { return velocidad; }
+    }
 
     private void Start()
     {
         posicionInicial = transform.position;
         ConstruirAmalgama();
 
-        var pc = Object.FindFirstObjectByType<PlayerController>();
+        PlayerController pc = Object.FindFirstObjectByType<PlayerController>();
         if (pc != null) jugador = pc.transform;
     }
 
     private void ConstruirAmalgama()
     {
-        var mat = new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
+        Shader shaderElegido = Shader.Find("Universal Render Pipeline/Lit");
+        if (shaderElegido == null)
+            shaderElegido = Shader.Find("Standard");
+        Material mat = new Material(shaderElegido);
         mat.SetColor("_BaseColor", colorCubo * 0.4f);
         mat.color = colorCubo * 0.4f;
         mat.EnableKeyword("_EMISSION");
         mat.SetColor("_EmissionColor", colorCubo * 2.5f);
 
-        var rng = new System.Random(99);
+        System.Random rng = new System.Random(99);
         for (int i = 0; i < cantidadCubos; i++)
         {
-            var cubo = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            GameObject cubo = GameObject.CreatePrimitive(PrimitiveType.Cube);
             cubo.name = "Antivirus_Cubo_" + i;
             cubo.transform.SetParent(transform, true);
 
-            // Distribución esférica alrededor del centro
             float u = (float)rng.NextDouble();
             float v = (float)rng.NextDouble();
             float theta = u * Mathf.PI * 2f;
@@ -79,11 +84,15 @@ public class Antivirus : MonoBehaviour
             cubo.GetComponent<MeshRenderer>().sharedMaterial = mat;
             Object.DestroyImmediate(cubo.GetComponent<Collider>());
 
-            // Dígito 0 o 1 flotando sobre el cubo
-            var textoGO = new GameObject("Digito");
+            GameObject textoGO = new GameObject("Digito");
             textoGO.transform.SetParent(cubo.transform, true);
-            var tm = textoGO.AddComponent<TextMesh>();
-            tm.text = rng.Next(0, 2) == 0 ? "0" : "1";
+            TextMesh tm = textoGO.AddComponent<TextMesh>();
+
+            if (rng.Next(0, 2) == 0)
+                tm.text = "0";
+            else
+                tm.text = "1";
+
             tm.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             tm.fontSize = 48;
             tm.characterSize = 0.06f;
@@ -97,7 +106,6 @@ public class Antivirus : MonoBehaviour
             cubos.Add(cubo.transform);
         }
 
-        // Luz roja que emana
         luz = GetComponent<Light>();
         if (luz == null) luz = gameObject.AddComponent<Light>();
         luz.type = LightType.Point;
@@ -105,7 +113,6 @@ public class Antivirus : MonoBehaviour
         luz.range = 14f;
         luz.intensity = 6f;
 
-        // Pulso sutil de la luz
         InvokeRepeating(nameof(PulsoLuz), 0f, 0.12f);
     }
 
@@ -121,14 +128,16 @@ public class Antivirus : MonoBehaviour
     {
         if (jugador == null)
         {
-            var pc = Object.FindFirstObjectByType<PlayerController>();
+            PlayerController pc = Object.FindFirstObjectByType<PlayerController>();
             if (pc != null) jugador = pc.transform;
             if (jugador == null) return;
         }
 
-        // Rotación constante de la amalgama
-        foreach (var c in cubos)
-            if (c != null) c.Rotate(Vector3.one * 40f * Time.deltaTime, Space.Self);
+        foreach (Transform c in cubos)
+        {
+            if (c != null)
+                c.Rotate(Vector3.one * 40f * Time.deltaTime, Space.Self);
+        }
 
         if (!persiguiendo) return;
 
@@ -137,10 +146,8 @@ public class Antivirus : MonoBehaviour
 
         Vector3 destino = jugador.position + Vector3.up * 0.5f;
 
-        // Persecución directa — SIN límite de distancia, siempre te busca
         transform.position = Vector3.MoveTowards(transform.position, destino, velocidad * Time.deltaTime);
 
-        // ¿Atrapó al jugador?
         float dist = Vector3.Distance(transform.position, destino);
         if (dist < radioAtrapar)
         {

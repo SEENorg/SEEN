@@ -45,7 +45,6 @@ public class SkillIndicators : MonoBehaviour
         if (pc == null) return;
         if (HackManager.Abierto || PauseMenu.Pausado || CipherWheel.Abierta) return;
 
-        // El estilo se crea AQUÍ (GUI.skin solo es válido dentro de OnGUI)
         if (estiloEtiqueta == null)
         {
             estiloEtiqueta = new GUIStyle(GUI.skin.label)
@@ -59,19 +58,28 @@ public class SkillIndicators : MonoBehaviour
 
         float y = Screen.height - margen - diametro;
 
-        // ── Dash ── brillante cuando está listo, opaco en cooldown
         float cooldownTotal = Mathf.Max(0.01f, pc.DashCooldown);
         bool listo = !pc.IsDashing && pc.DashCooldownLeft <= 0f;
-        float disponible = listo ? 1f : Mathf.Clamp01(pc.DashCooldownLeft / cooldownTotal);
+
+        float disponible;
+        if (listo)
+            disponible = 1f;
+        else
+            disponible = Mathf.Clamp01(pc.DashCooldownLeft / cooldownTotal);
 
         Color cDash = colorDash;
         cDash.a = Mathf.Lerp(colorDashOcupado.a, colorDash.a, disponible);
         DibujarCirculo(margen, y, diametro, cDash);
         GUI.Label(new Rect(margen, y + diametro + 2f, diametro, 20f), etiquetaDash, estiloEtiqueta);
 
-        // ── Doble salto ── opaco cuando se gastó en el aire
         bool saldoDisponible = pc.IsGrounded || pc.JumpsLeft >= 1;
-        Color cSalto = saldoDisponible ? colorSalto : colorSaltoOcupado;
+
+        Color cSalto;
+        if (saldoDisponible)
+            cSalto = colorSalto;
+        else
+            cSalto = colorSaltoOcupado;
+
         DibujarCirculo(margen + diametro + separacion, y, diametro, cSalto);
         GUI.Label(new Rect(margen + diametro + separacion, y + diametro + 2f, diametro, 20f),
                   etiquetaSalto, estiloEtiqueta);
@@ -103,8 +111,8 @@ public class SkillIndicators : MonoBehaviour
 
                 Color c;
                 if (dist > radioExt) c = new Color(1f, 1f, 1f, 0f);
-                else if (dist > radioInt) c = new Color(1f, 1f, 1f, 0.85f);   // aro
-                else c = new Color(1f, 1f, 1f, 0.16f);                        // relleno tenue
+                else if (dist > radioInt) c = new Color(1f, 1f, 1f, 0.85f);
+                else c = new Color(1f, 1f, 1f, 0.16f);
                 tex.SetPixel(xx, yy, c);
             }
         }

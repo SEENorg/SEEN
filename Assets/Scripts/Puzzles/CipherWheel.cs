@@ -67,7 +67,15 @@ public class CipherWheel : MonoBehaviour
     private const float AnguloInicial = 90f;   // la A arriba del todo
 
     private static Font _fuente;
-    private static Font Fuente => _fuente ?? (_fuente = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf"));
+    private static Font Fuente
+    {
+        get
+        {
+            if (_fuente == null)
+                _fuente = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            return _fuente;
+        }
+    }
 
     private void Awake()
     {
@@ -586,7 +594,9 @@ public class CipherWheel : MonoBehaviour
     private Vector2 PosMouse()
     {
 #if ENABLE_INPUT_SYSTEM
-        return Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
+        if (Mouse.current != null)
+            return Mouse.current.position.ReadValue();
+        return Vector2.zero;
 #else
         return Input.mousePosition;
 #endif
