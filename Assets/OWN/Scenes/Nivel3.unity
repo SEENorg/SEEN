@@ -26723,7 +26723,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 313073c1bb9e8494581b626a7e4d10c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HackTerminal
-  modulos: 000000000000000000000000
+  modulos: 010000000200000004000000
   nombreAcceso: NODO 3
   resuelto: 0
   textoPrompt: Presione E para hackear
