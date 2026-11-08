@@ -9,6 +9,9 @@ public static class FabricaPuzzles
         {
             case HackableType.Escanear: return new PuzzleEscanear(ctx);
             case HackableType.UnirCables: return new PuzzleCables(ctx);
+            case HackableType.Secuencia: return new PuzzleSecuencia(ctx);
+            case HackableType.Patron: return new PuzzlePatron(ctx);
+            case HackableType.Sincronizar: return new PuzzleSincronizar(ctx);
             default: return null;   // todavia no migrado: lo sigue manejando HackManager
             
         }
