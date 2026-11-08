@@ -55,7 +55,6 @@ public class HackManager : MonoBehaviour, IContextoHack
     private readonly Color colAcento = new Color(0.15f, 0.85f, 1f);
     private readonly Color colVerde = new Color(0.15f, 1f, 0.4f);
     private readonly Color colRojo = new Color(1f, 0.25f, 0.25f);
-    private readonly Color colBoton = new Color(0.10f, 0.13f, 0.17f);
 
 
     /// <summary>Abre la interfaz de hackeo con la cadena de módulos dada.</summary>
@@ -99,13 +98,6 @@ public class HackManager : MonoBehaviour, IContextoHack
         if (puzzleActual != null) puzzleActual.Actualizar();
 
         // Avance entre módulos (tiempo real, el juego está pausado)
-        // Modulo de sincronizacion: animacion del marcador + tecla Espacio
-        if (sincroActivo)
-        {
-            ActualizarSincro();
-            if (LeerEspacio()) IntentarSincro();
-        }
-
         if (tiempoTransicion > 0f)
         {
             tiempoTransicion -= Time.unscaledDeltaTime;
@@ -192,7 +184,6 @@ public class HackManager : MonoBehaviour, IContextoHack
     {
         if (puzzleActual != null) puzzleActual.Detener();
         puzzleActual = null;
-        sincroActivo = false;
         activo = false;
         if (canvas != null) canvas.gameObject.SetActive(false);
         Time.timeScale = 1f;
@@ -312,28 +303,11 @@ public class HackManager : MonoBehaviour, IContextoHack
         if (puzzleActual != null) puzzleActual.Detener();
         tipoActual = modulos[indiceModulo];
         puzzleActual = FabricaPuzzles.Crear(tipoActual, this);
-        if (puzzleActual != null) { puzzleActual.Construir(); return; }
-
-        switch (modulos[indiceModulo])
-        {
-            case HackableType.DescifrarCodigo: PuzzleDescifrar(); break;
-            case HackableType.Patron: PuzzlePatron(); break;
-            case HackableType.Sincronizar: PuzzleSincronizar(); break;
-            case HackableType.Secuencia: PuzzleSecuencia(); break;
-        }
+        if (puzzleActual != null)
+            puzzleActual.Construir();
+        else
+            Debug.LogWarning("[HackManager] No hay puzzle para el módulo " + tipoActual);
     }
-
-    /// <summary>Regenera el modulo actual con datos nuevos (tras un error).</summary>
-    public void RegenerarModulo(HackableType tipo)
-    {
-        foreach (Transform t in contenido) Destroy(t.gameObject);
-        switch (tipo)
-        {
-            case HackableType.Secuencia: PuzzleSecuencia(); break;
-            case HackableType.Patron: PuzzlePatron(); break;
-        }
-    }
-
 
     // ═══════════════════ INSTRUCCIONES (tutorial) ═══════════════════
 
@@ -436,374 +410,6 @@ public class HackManager : MonoBehaviour, IContextoHack
         }
     }
 
-    // ═══════════════════════ MÓDULO 1: DESCIFRAR CÓDIGO ═══════════════════════
-
-    private string[] palabras = { "PUERTA", "DATOS", "SISTEMA", "RED", "CLAVE", "HACKER", "SEEN", "NUCLEO", "BOTS", "SENAL", "VIRUS", "CONEXION" };
-    private string respuestaActual;
-
-    private void PuzzleDescifrar()
-    {
-        // Dificultad: tutorial (0) fácil → Nivel 3 (2) difícil
-        int dificultad = Mathf.Clamp(DificultadBase + indiceModulo, 0, 5);
-        int desplazamiento = 3 + dificultad;                       // 3..8
-        int idx = UnityEngine.Random.Range(0, palabras.Length);
-        string palabra = palabras[idx];
-        respuestaActual = Desplazar(palabra, desplazamiento);
-
-        CrearTexto(contenido, "Lbl1", "CÓDIGO INTERCEPTADO", 24, TextAnchor.MiddleCenter,
-                   new Vector2(0f, 180f), new Vector2(700f, 36f), new Color(0.7f, 0.8f, 0.9f));
-
-        var codigo = CrearTexto(contenido, "Codigo", respuestaActual, 54, TextAnchor.MiddleCenter,
-                                new Vector2(0f, 115f), new Vector2(700f, 72f), colAcento);
-        codigo.fontStyle = FontStyle.Bold;
-
-        CrearTexto(contenido, "Lbl2", $"Desplazamiento César: -{desplazamiento}", 20, TextAnchor.MiddleCenter,
-                   new Vector2(0f, 58f), new Vector2(700f, 32f), new Color(0.6f, 0.7f, 0.8f));
-        CrearTexto(contenido, "Lbl3", "Escribe el código original y presiona VERIFICAR", 20, TextAnchor.MiddleCenter,
-                   new Vector2(0f, 20f), new Vector2(700f, 32f), new Color(0.6f, 0.7f, 0.8f));
-
-        // Campo de texto
-        var inputGO = NuevoUI(contenido, "Input", new Vector2(-80f, -50f), new Vector2(380f, 62f));
-        var inputImg = inputGO.AddComponent<Image>();
-        inputImg.color = colBoton;
-        var input = inputGO.AddComponent<InputField>();
-        input.textComponent = CrearTexto(inputGO.transform, "Text", "", 30, TextAnchor.MiddleLeft,
-                                         new Vector2(12f, 0f), new Vector2(360f, 56f), Color.white);
-        input.targetGraphic = inputImg;
-
-        var btn = CrearBoton(contenido, "BtnVerificar", "VERIFICAR", new Vector2(200f, -50f),
-                             new Vector2(200f, 62f));
-        btn.onClick.AddListener(() =>
-        {
-            string textoIngresado = input.text;
-            if (textoIngresado == null) textoIngresado = "";
-            string valor = textoIngresado.Trim().ToUpperInvariant();
-            if (valor == palabra)
-            {
-                MostrarFeedback("MÓDULO COMPLETADO", true);
-                tiempoTransicion = 0.9f;
-            }
-            else
-            {
-                MostrarFeedback("CÓDIGO INCORRECTO", false);
-            }
-        });
-    }
-
-    private string Desplazar(string texto, int n)
-    {
-        char[] c = texto.ToCharArray();
-        for (int i = 0; i < c.Length; i++)
-        {
-            if (c[i] >= 'A' && c[i] <= 'Z')
-                c[i] = (char)('A' + ((c[i] - 'A' + n) % 26));
-        }
-        return new string(c);
-    }
-
-    // ═══════════════════ MÓDULO 5: SINCRONIZAR (timing) ═══════════════════
-
-    private RectTransform marcadorSincro;
-    private RectTransform zonaSincro;
-    private float sincroT;
-    private float sincroVelocidad;
-    private float anchoSincro;
-    private int sincroHits;
-    private bool sincroActivo;
-    private int sincroObjetivo;
-    private Text textoSincro;
-
-    private void PuzzleSincronizar()
-    {
-        CrearTexto(contenido, "LblSinc", "SINCRONIZÁ LA SEÑAL EN LA ZONA VERDE", 26, TextAnchor.MiddleCenter,
-                   new Vector2(0f, 172f), new Vector2(760f, 36f), colAcento);
-        CrearTexto(contenido, "LblSincInfo", "Hacé clic en el botón (o presioná Espacio) cuando el marcador esté dentro", 18,
-                   TextAnchor.MiddleCenter, new Vector2(0f, 138f), new Vector2(760f, 26f), new Color(0.6f, 0.7f, 0.8f));
-        anchoSincro = 620f;
-        sincroObjetivo = 2 + DificultadBase;          // 2, 3 o 4 señales
-        sincroHits = 0;
-        sincroT = 0f;
-        sincroVelocidad = 380f + DificultadBase * 90f;
-        sincroActivo = true;
-
-        // Pista
-        var pista = NuevoUI(contenido, "PistaSinc", new Vector2(0f, 55f), new Vector2(anchoSincro, 34f));
-        pista.AddComponent<Image>().color = new Color(0.09f, 0.10f, 0.13f);
-
-        // Zona verde (se mueve en cada acierto)
-        float anchoZona = Mathf.Max(90f, 190f - DificultadBase * 40f);
-        zonaSincro = (RectTransform)NuevoUI(contenido, "ZonaSinc",
-            new Vector2(0f, 55f), new Vector2(anchoZona, 34f)).transform;
-        zonaSincro.gameObject.AddComponent<Image>().color = new Color(0.15f, 0.75f, 0.35f, 0.55f);
-
-        // Marcador
-        marcadorSincro = (RectTransform)NuevoUI(contenido, "MarcadorSinc",
-            new Vector2(0f, 55f), new Vector2(8f, 52f)).transform;
-        marcadorSincro.gameObject.AddComponent<Image>().color = colAcento;
-
-        // Contador
-        textoSincro = CrearTexto(contenido, "ContadorSinc",
-            "SEÑALES SINCRONIZADAS: 0/" + sincroObjetivo, 22, TextAnchor.MiddleCenter,
-            new Vector2(0f, -30f), new Vector2(560f, 32f), new Color(0.85f, 0.9f, 0.95f));
-
-        var btn = CrearBoton(contenido, "BtnSincronizar", "SINCRONIZAR", new Vector2(0f, -90f),
-                             new Vector2(280f, 60f));
-        btn.onClick.AddListener(IntentarSincro);
-    }
-
-    private void ActualizarSincro()
-    {
-        if (marcadorSincro == null) { sincroActivo = false; return; }
-        sincroT += Time.unscaledDeltaTime;
-        float x = Mathf.PingPong(sincroT * sincroVelocidad, anchoSincro) - anchoSincro / 2f;
-        marcadorSincro.anchoredPosition = new Vector2(x, marcadorSincro.anchoredPosition.y);
-    }
-
-    private void IntentarSincro()
-    {
-        if (!sincroActivo || marcadorSincro == null || zonaSincro == null) return;
-
-        float mx = marcadorSincro.anchoredPosition.x;
-        float zw = zonaSincro.sizeDelta.x;
-        float zx = zonaSincro.anchoredPosition.x;
-
-        if (Mathf.Abs(mx - zx) <= zw / 2f)
-        {
-            sincroHits++;
-            sincroVelocidad += 90f;
-
-            float nuevoX = UnityEngine.Random.Range(-anchoSincro / 2f + zw / 2f, anchoSincro / 2f - zw / 2f);
-            zonaSincro.anchoredPosition = new Vector2(nuevoX, zonaSincro.anchoredPosition.y);
-
-            if (textoSincro != null)
-                textoSincro.text = "SEÑALES SINCRONIZADAS: " + sincroHits + "/" + sincroObjetivo;
-
-            if (sincroHits >= sincroObjetivo)
-            {
-                sincroActivo = false;
-                MostrarFeedback("MÓDULO COMPLETADO", true);
-                tiempoTransicion = 0.9f;
-            }
-            else
-            {
-                MostrarFeedback("SEÑAL SINCRONIZADA " + sincroHits + "/" + sincroObjetivo, true);
-            }
-        }
-        else
-        {
-            sincroHits = 0;
-            if (textoSincro != null)
-                textoSincro.text = "SEÑALES SINCRONIZADAS: 0/" + sincroObjetivo;
-            MostrarFeedback("SEÑAL PERDIDA", false);
-        }
-    }
-
-    // ═══════════════════ MÓDULO 6: SECUENCIA LÓGICA ═══════════════════
-
-    private string respuestaSecuencia;
-
-    private void PuzzleSecuencia()
-    {
-        CrearTexto(contenido, "LblLog", "COMPLETÁ LA SECUENCIA", 26, TextAnchor.MiddleCenter,
-                   new Vector2(0f, 165f), new Vector2(700f, 36f), colAcento);
-
-        int tipo = UnityEngine.Random.Range(0, 4);
-        string pregunta = "";
-        string respuesta = "";
-        var distractores = new System.Collections.Generic.List<string>();
-
-        if (tipo == 0)
-        {
-            int a = UnityEngine.Random.Range(2, 6);
-            pregunta = a + "   " + (a * 2) + "   " + (a * 4) + "   ?";
-            respuesta = (a * 8).ToString();
-            distractores.Add((a * 8 + 2).ToString());
-            distractores.Add((a * 8 - 2).ToString());
-            distractores.Add((a * 6).ToString());
-        }
-        else if (tipo == 1)
-        {
-            int d = UnityEngine.Random.Range(2, 7);
-            int s = UnityEngine.Random.Range(1, 8);
-            pregunta = s + "   " + (s + d) + "   " + (s + 2 * d) + "   " + (s + 3 * d) + "   ?";
-            respuesta = (s + 4 * d).ToString();
-            distractores.Add((s + 4 * d + d).ToString());
-            distractores.Add((s + 3 * d).ToString());
-            distractores.Add((s + 4 * d - d).ToString());
-        }
-        else if (tipo == 2)
-        {
-            pregunta = "1   4   9   16   ?";
-            respuesta = "25";
-            distractores.Add("20");
-            distractores.Add("24");
-            distractores.Add("30");
-        }
-        else
-        {
-            int salto = UnityEngine.Random.Range(2, 4);
-            int inicio = UnityEngine.Random.Range(0, 20 - 4 * salto);
-            char c0 = (char)('A' + inicio);
-            char c1 = (char)('A' + inicio + salto);
-            char c2 = (char)('A' + inicio + 2 * salto);
-            char c3 = (char)('A' + inicio + 3 * salto);
-            pregunta = c0 + "   " + c1 + "   " + c2 + "   " + c3 + "   ?";
-            respuesta = ((char)('A' + inicio + 4 * salto)).ToString();
-            distractores.Add(((char)('A' + inicio + 4 * salto + salto)).ToString());
-            distractores.Add(((char)('A' + inicio + 3 * salto)).ToString());
-            distractores.Add("Z");
-        }
-
-        // Sin distractores repetidos con la respuesta
-        for (int i = distractores.Count - 1; i >= 0; i--)
-            if (distractores[i] == respuesta) distractores.RemoveAt(i);
-        while (distractores.Count < 3) distractores.Add("?");
-
-        respuestaSecuencia = respuesta;
-
-        var textoPregunta = CrearTexto(contenido, "PreguntaSec", pregunta, 42, TextAnchor.MiddleCenter,
-                                       new Vector2(0f, 80f), new Vector2(760f, 60f), new Color(0.9f, 0.95f, 1f));
-        textoPregunta.fontStyle = FontStyle.Bold;
-
-        var opciones = new System.Collections.Generic.List<string> { respuesta };
-        opciones.AddRange(distractores);
-
-        for (int i = 0; i < opciones.Count; i++)
-        {
-            int fila = i / 2, col = i % 2;
-            float x = 170f;
-            if (col == 0) x = -170f;
-            float y = 0f - fila * 70f;
-            var b = CrearBoton(contenido, "Opcion_" + i, opciones[i], new Vector2(x, y),
-                               new Vector2(280f, 60f));
-            int idx = i;
-            b.onClick.AddListener(() =>
-            {
-                if (opciones[idx] == respuestaSecuencia)
-                {
-                    MostrarFeedback("MÓDULO COMPLETADO", true);
-                    tiempoTransicion = 0.9f;
-                }
-                else
-                {
-                    MostrarFeedback("RESPUESTA INCORRECTA", false);
-                    RegenerarModulo(HackableType.Secuencia);   // pregunta nueva
-                }
-            });
-        }
-    }
-    // ═══════════════════════ MÓDULO 3: PATRÓN ═══════════════════════
-
-    private List<int> secuencia = new List<int>();
-    private int indiceJugador;
-    private bool mostrandoSecuencia;
-    private Button[] botonesPatron;
-
-    private void PuzzlePatron()
-    {
-        int largo = Mathf.Clamp(3 + DificultadBase + indiceModulo, 3, 8);
-        CrearTexto(contenido, "LblPatron", "REPITE LA SECUENCIA DE LUCES", 26, TextAnchor.MiddleCenter,
-                   new Vector2(0f, 195f), new Vector2(760f, 40f), colAcento);
-
-        Color[] colores = {
-            new Color(1f, 0.25f, 0.25f), new Color(0.25f, 0.8f, 1f),
-            new Color(1f, 0.85f, 0.2f), new Color(0.4f, 1f, 0.35f)
-        };
-        Color[] apagados = {
-            new Color(0.3f, 0.1f, 0.1f), new Color(0.1f, 0.25f, 0.3f),
-            new Color(0.3f, 0.26f, 0.08f), new Color(0.12f, 0.3f, 0.13f)
-        };
-
-        var grid = NuevoUI(contenido, "Grid", new Vector2(0f, -10f), new Vector2(360f, 260f)).transform;
-        botonesPatron = new Button[4];
-        for (int i = 0; i < 4; i++)
-        {
-            float x = 90f;
-            if (i % 2 == 0) x = -90f;
-            float y = -65f;
-            if (i < 2) y = 65f;
-            var b = CrearBoton(grid, $"Boton_{i}", "", new Vector2(x, y), new Vector2(170f, 120f), apagados[i]);
-            b.image.color = apagados[i];
-            int idx = i;
-            b.onClick.AddListener(() => ClickPatron(idx, colores, apagados));
-            botonesPatron[i] = b;
-        }
-
-        // Generar y mostrar secuencia
-        secuencia.Clear();
-        for (int i = 0; i < largo; i++) secuencia.Add(UnityEngine.Random.Range(0, 4));
-        indiceJugador = 0;
-        mostrandoSecuencia = true;
-        StartCoroutine(MostrarSecuencia(colores, apagados));
-    }
-
-    private IEnumerator MostrarSecuencia(Color[] encendidos, Color[] apagados)
-    {
-        MostrarFeedback("OBSERVA LA SECUENCIA...", false);
-        yield return new WaitForSecondsRealtime(0.7f);
-
-        foreach (int idx in secuencia)
-        {
-            if (botonesPatron[idx] != null) botonesPatron[idx].image.color = encendidos[idx];
-            yield return new WaitForSecondsRealtime(0.45f);
-            if (botonesPatron[idx] != null) botonesPatron[idx].image.color = apagados[idx];
-            yield return new WaitForSecondsRealtime(0.22f);
-        }
-
-        mostrandoSecuencia = false;
-        MostrarFeedback("REPITE LA SECUENCIA", false);
-    }
-
-    private void ClickPatron(int idx, Color[] encendidos, Color[] apagados)
-    {
-        if (mostrandoSecuencia || tiempoTransicion > 0f || bloqueoInput > 0f) return;
-
-        // Flash del botón
-        StartCoroutine(FlashBoton(idx, encendidos[idx], apagados[idx]));
-
-        if (secuencia[indiceJugador] == idx)
-        {
-            indiceJugador++;
-            if (indiceJugador >= secuencia.Count)
-            {
-                MostrarFeedback("MÓDULO COMPLETADO", true);
-                tiempoTransicion = 0.9f;
-            }
-        }
-        else
-        {
-            MostrarFeedback("SECUENCIA INCORRECTA", false);
-                    indiceJugador = 0;
-                    StartCoroutine(ReiniciarSecuenciaNueva());
-        }
-    }
-
-    private IEnumerator FlashBoton(int idx, Color encendido, Color apagado)
-    {
-        if (botonesPatron[idx] != null) botonesPatron[idx].image.color = encendido;
-        yield return new WaitForSecondsRealtime(0.18f);
-        if (botonesPatron[idx] != null) botonesPatron[idx].image.color = apagado;
-    }
-
-    // (ReiniciarSecuencia antiguo eliminado: al fallar se genera una secuencia nueva)
-    /// <summary>Al fallar, genera una secuencia NUEVA (no repite la misma).</summary>
-    private IEnumerator ReiniciarSecuenciaNueva()
-    {
-        yield return new WaitForSecondsRealtime(0.8f);
-        if (!activo) yield break;
-
-        // Regenerar el orden al azar
-        int largo = secuencia.Count;
-        secuencia.Clear();
-        for (int i = 0; i < largo; i++) secuencia.Add(UnityEngine.Random.Range(0, 4));
-        indiceJugador = 0;
-
-        mostrandoSecuencia = true;
-        yield return StartCoroutine(MostrarSecuencia(
-            new[] { new Color(1f, 0.25f, 0.25f), new Color(0.25f, 0.8f, 1f), new Color(1f, 0.85f, 0.2f), new Color(0.4f, 1f, 0.35f) },
-            new[] { new Color(0.3f, 0.1f, 0.1f), new Color(0.1f, 0.25f, 0.3f), new Color(0.3f, 0.26f, 0.08f), new Color(0.12f, 0.3f, 0.13f) }));
-    }
-
     // ═══════════════════════ Utilidades de UI ═══════════════════════
 
     private void MostrarFeedback(string texto, bool exito)
@@ -821,16 +427,6 @@ public class HackManager : MonoBehaviour, IContextoHack
         return kb != null && kb.escapeKey.wasPressedThisFrame;
 #else
         return Input.GetKeyDown(KeyCode.Escape);
-#endif
-    }
-
-    private bool LeerEspacio()
-    {
-#if ENABLE_INPUT_SYSTEM
-        var kb = Keyboard.current;
-        return kb != null && kb.spaceKey.wasPressedThisFrame;
-#else
-        return Input.GetKeyDown(KeyCode.Space);
 #endif
     }
 }
