@@ -3410,7 +3410,7 @@ MonoBehaviour:
   nombreAcceso: CANDADO 1
   resuelto: 0
   textoPrompt: Presione E para hackear
-  esTutorial: 0
+  esTutorial: 1
   puertas:
   - {fileID: 789723295}
   - {fileID: 1674216470}
