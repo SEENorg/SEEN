@@ -1616,19 +1616,14 @@ public static class SEENLevelBuilder
         go.GetComponent<BoxCollider>().isTrigger = true;
         var rot = go.AddComponent<RotatingHazard>();
         rot.rotationSpeed = new Vector3(0f, 0f, speed);
-        var glow = go.AddComponent<HazardGlow>();
-        glow.crearLuz = false;
+       
     }
 
     /// <summary>Rejilla/ventilación de energía verde peligrosa (no se mueve).</summary>
     static void L1Vent(GameObject parent, string name, Vector3 pos, Vector3 scale)
     {
         var go = Platform(parent, name, pos, scale, matHazard);
-        var glow = go.AddComponent<HazardGlow>();
-        glow.crearLuz = false;
-        glow.minIntensidad = 1.2f;
-        glow.maxIntensidad = 2.6f;
-        glow.velocidad = 1.4f;
+       
     }
 
     /// <summary>
@@ -1638,11 +1633,7 @@ public static class SEENLevelBuilder
     static void L1Obstaculo(GameObject parent, string name, Vector3 pos, float ancho, float alto, float profundidad)
     {
         var go = Platform(parent, name, pos, new Vector3(ancho, alto, profundidad), matHazard);
-        var glow = go.AddComponent<HazardGlow>();
-        glow.crearLuz = false;
-        glow.minIntensidad = 1.0f;
-        glow.maxIntensidad = 2.2f;
-        glow.velocidad = 1.8f;
+       
     }
 
     static void L1Patrol(GameObject parent, string name, Vector3 a, Vector3 b, float speed)
@@ -1653,7 +1644,6 @@ public static class SEENLevelBuilder
         p.pointA = a;
         p.pointB = b;
         p.speed = speed;
-        go.AddComponent<HazardGlow>();
     }
 
     static void L1MovingPlatform(GameObject parent, string name, Vector3 pos, Vector3 scale, Vector3 move, float speed)
