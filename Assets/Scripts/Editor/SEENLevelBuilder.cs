@@ -608,8 +608,6 @@ public static class SEENLevelBuilder
         // Efectos de cámara (bob, viento del dash, onda del doble salto)
         if (player.GetComponent<HeadBob>() == null) player.AddComponent<HeadBob>();
         if (player.GetComponent<SpeedLines>() == null) player.AddComponent<SpeedLines>();
-        if (player.GetComponent<JumpRing>() == null) player.AddComponent<JumpRing>();
-
         // Indicadores de habilidades (esquina inferior izquierda)
         if (player.GetComponent<SkillIndicators>() == null) player.AddComponent<SkillIndicators>();
 

@@ -10,16 +10,16 @@ public class SpeedLines : MonoBehaviour
 {
     [Header("Apariencia")]
     [Tooltip("Cantidad de partículas")]
-    [SerializeField] private int cantidad = 30;
+    [SerializeField] private int cantidad = 70;
     [Tooltip("Radio inicial (fracción del alto de pantalla)")]
-    [SerializeField] private float radioInicial = 0.25f;
+    [SerializeField] private float radioInicial = 0.3f;
     [Tooltip("Largo del trazo")]
-    [SerializeField] private float largo = 90f;
-    [SerializeField] private float grosor = 5f;
+    [SerializeField] private float largo = 200f;
+    [SerializeField] private float grosor = 1.5f;
     [SerializeField] private Color color = new Color(0.78f, 0.93f, 1f, 0.7f);
 
     [Header("Comportamiento")]
-    [SerializeField] private float velocidadFade = 2.5f;
+    [SerializeField] private float velocidadFade = 5f;
     [SerializeField] private float velocidadExpansion = 0.85f;
 
     private PlayerController pc;

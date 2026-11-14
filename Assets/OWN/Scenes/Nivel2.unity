@@ -9359,7 +9359,6 @@ GameObject:
   - component: {fileID: 1044334472}
   - component: {fileID: 1044334471}
   - component: {fileID: 1044334470}
-  - component: {fileID: 1044334469}
   - component: {fileID: 1044334468}
   - component: {fileID: 1044334467}
   - component: {fileID: 1044334466}
@@ -9449,23 +9448,6 @@ MonoBehaviour:
   margen: 34
   diametro: 62
   separacion: 18
---- !u!114 &1044334469
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1044334464}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 539ee086220be90498977a0f82654c93, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::JumpRing
-  color: {r: 0.25, g: 0.9, b: 1, a: 0.95}
-  duracion: 0.5
-  escalaInicial: 0.5
-  escalaFinal: 3.2
-  alturaSuelo: 0.06
 --- !u!114 &1044334470
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9478,12 +9460,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c742884982add1d45a1834f2df1d1c12, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SpeedLines
-  cantidad: 30
-  radioInicial: 0.25
-  largo: 90
-  grosor: 5
+  cantidad: 70
+  radioInicial: 0.3
+  largo: 200
+  grosor: 1.5
   color: {r: 0.78, g: 0.93, b: 1, a: 0.7}
-  velocidadFade: 2.5
+  velocidadFade: 5
   velocidadExpansion: 0.85
 --- !u!114 &1044334471
 MonoBehaviour:
@@ -9497,8 +9479,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2dc95891891fbfd41b0662e2b6195d19, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HeadBob
-  amplitudY: 0.04
-  amplitudX: 0.025
+  amplitudY: 0.08
+  amplitudX: 0.05
   frecuenciaCaminar: 7.5
   frecuenciaCorrer: 11
   suavizado: 6
@@ -9534,33 +9516,33 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e2054d36e3f92fc4ab974f65bfa35458, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
-  moveSpeed: 6
-  maxJumps: 2
-  aceleracion: 55
-  friccionSuelo: 20
-  friccionAgachado: 2.5
-  friccionAire: 1.2
-  bonusAgachado: 1.08
-  jumpForce: 7
-  doubleJumpMultiplier: 0.9
-  alturaAgachado: 0.55
-  velocidadAgacharse: 12
-  dashForce: 22
-  dashDuration: 0.15
-  dashCooldown: 1
-  dashCancelsGravity: 1
-  playerCamera: {fileID: 0}
-  mouseSensitivity: 0.15
-  minPitch: -80
-  maxPitch: 80
-  cameraHeight: 0.65
-  rotationSpeed: 10
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 0
-  groundSkin: 0.12
-  jumpBufferTime: 0.15
-  jumpGroundGuard: 0.12
+  mirada:
+    playerCamera: {fileID: 0}
+    mouseSensitivity: 0.15
+    minPitch: -80
+    maxPitch: 80
+    cameraHeight: 0.65
+  suelo:
+    groundMask:
+      serializedVersion: 2
+      m_Bits: 0
+    groundSkin: 0.12
+  movimiento:
+    moveSpeed: 6
+    aceleracion: 55
+    friccionSuelo: 20
+    friccionAire: 1.2
+  salto:
+    maxJumps: 2
+    jumpForce: 13.5
+    doubleJumpMultiplier: 0.9
+    jumpBufferTime: 0.15
+    jumpGroundGuard: 0.12
+  dash:
+    dashForce: 22
+    dashDuration: 0.15
+    dashCooldown: 1
+    dashCancelsGravity: 1
 --- !u!54 &1044334474
 Rigidbody:
   m_ObjectHideFlags: 0

@@ -7,15 +7,17 @@ using UnityEngine;
 public class RespawnOnFall : MonoBehaviour
 {
     [Tooltip("Altura por debajo de la cual el jugador reaparece")]
-    [SerializeField] private float killY = -14f;
+    [SerializeField] private float killY = -10f;
 
     private Vector3 spawnPoint;
     private Rigidbody rb;
+    private PlayerController jugador;
 
     private void Start()
     {
         spawnPoint = transform.position;
         rb = GetComponent<Rigidbody>();
+        jugador = GetComponent<PlayerController>();
     }
 
     private void OnEnable()
@@ -40,7 +42,7 @@ public class RespawnOnFall : MonoBehaviour
         spawnPoint = point + Vector3.up * 0.5f;
 
         // El antivirus vuelve a su posición original al tomar un checkpoint
-        var av = Object.FindFirstObjectByType<Antivirus>();
+        Antivirus av = Object.FindFirstObjectByType<Antivirus>();
         if (av != null) av.Reiniciar();
     }
 
@@ -53,6 +55,10 @@ public class RespawnOnFall : MonoBehaviour
             rb.angularVelocity = Vector3.zero;
         }
         transform.position = spawnPoint;
+
+        // Saltos, buffers, dash y agachado vuelven a su estado inicial
+        if (jugador != null) jugador.ResetEstado();
+
         Debug.Log("[Respawn] Reapareciendo en el último checkpoint.");
     }
 }

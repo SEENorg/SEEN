@@ -35,13 +35,17 @@ public class HeadBob : MonoBehaviour
         if (cam != null) alturaBase = cam.transform.localPosition;
     }
 
-    private void Update()
+    // LateUpdate: HeadBob es el ÚLTIMO en escribir la posición de la cámara en cada frame,
+    // así no compite con PlayerLook (que baja la cámara al agacharse) y no hay parpadeo.
+    private void LateUpdate()
     {
         if (cam == null || pc == null) return;
 
         // ¿Cuánto bob aplicamos? 0 quieto → 1 a toda velocidad
         float vel = pc.VelocidadHorizontal;
-        float objetivo = (pc.IsGrounded && vel > umbral) ? Mathf.Clamp01(vel / Mathf.Max(0.01f, pc.MoveSpeed)) : 0f;
+        float objetivo = 0f;
+        if (pc.IsGrounded && vel > umbral)
+            objetivo = Mathf.Clamp01(vel / Mathf.Max(0.01f, pc.MoveSpeed));
         peso = Mathf.MoveTowards(peso, objetivo, Time.deltaTime * suavizado);
 
         // Frecuencia según velocidad (caminar vs correr)
