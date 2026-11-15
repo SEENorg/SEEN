@@ -1,17 +1,15 @@
 using UnityEngine;
 
-/// <summary>
 /// Contrato para todo objeto con el que el jugador puede interactuar
-/// mirándolo y presionando E (terminales, cofres, palancas...).
-/// </summary>
+/// mirándolo y presionando E (terminales, cofres...).
 public interface IInteractuable
 {
-    /// <summary>Texto que se muestra al mirar el objeto.</summary>
+    ///Texto que se muestra al mirar el objeto.
     string TextoPrompt { get; }
 
-    /// <summary>Si es false, la mirilla ignora el objeto (ya resuelto, bloqueado...).</summary>
+    /// Si es false, la mirilla ignora el objeto (ya resuelto, bloqueado...).
     bool PuedeInteractuar { get; }
 
-    /// <summary>Se ejecuta cuando el jugador presiona E sobre el objeto.</summary>
+    /// Se ejecuta cuando el jugador presiona E sobre el objeto.
     void Interactuar();
 }

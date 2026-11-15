@@ -36,7 +36,7 @@ public class PlayerLook
     public void Iniciar(Transform jugador)
     {
         // La sensibilidad se puede cambiar desde el menú de Ajustes
-        mouseSensitivity = PlayerPrefs.GetFloat("sensibilidad", mouseSensitivity);
+        mouseSensitivity = PlayerPrefs.GetFloat(AjustesJuego.CLAVE_SENSIBILIDAD, mouseSensitivity);
 
         yaw = jugador.eulerAngles.y;
 

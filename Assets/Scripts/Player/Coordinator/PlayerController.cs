@@ -29,11 +29,18 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private PlayerDash dash = new PlayerDash();
 
     private PlayerInputReader entrada = new PlayerInputReader();
+
     private Rigidbody rb;
     private CapsuleCollider capsule;
     private static PhysicsMaterial _playerPhysMat;
 
     private Vector2 moveInput;
+
+    // ── Camera Shake ──
+    private float shakeTimer = 0f;
+    private float shakeMagnitud = 0f;
+    private Vector3 camPosOriginal;
+    private bool camaraIniciada = false;
 
     // ───────────────────────────────────────────────────────────── Setup
 
@@ -56,18 +63,25 @@ public class PlayerController : MonoBehaviour
         Cursor.visible = false;
     }
 
+    private void OnEnable()
+    {
+        // Nos suscribimos a la muerte para hacer el Camera Shake automáticamente
+        PlayerKill.OnKill += ReaccionarMuerte;
+    }
+
+    private void OnDisable()
+    {
+        PlayerKill.OnKill -= ReaccionarMuerte;
+    }
+
     private void ConfigurarFisica()
     {
-        // ── Anti-temblor de cámara ─────────────────────────────
-        // (no solo del jugador). Se dejan aquí a propósito: el juego tiene un único jugador.
         Physics.defaultSolverIterations = 12;
         Physics.defaultSolverVelocityIterations = 6;
 
-        // CONGELAR TODA la rotación (los 3 ejes): el yaw lo asigna este script
         rb.constraints = RigidbodyConstraints.FreezeRotation;
         rb.angularDamping = 1f;
 
-        // Fricción baja en la cápsula: al rozar un borde, desliza en vez de trabarse
         if (_playerPhysMat == null)
         {
             _playerPhysMat = new PhysicsMaterial("PlayerPhysMat");
@@ -123,11 +137,40 @@ public class PlayerController : MonoBehaviour
         suelo.GuardarEstado();
     }
 
-    // ─────────────────────────────────────────────────── Reaparición
+    private void LateUpdate()
+    {
+        // Aplicar Camera Shake
+        if (shakeTimer > 0f)
+        {
+            Camera cam = Camera.main;
+            if (cam != null)
+            {
+                // Guardar posición original en el primer frame de vibración
+                if (!camaraIniciada)
+                {
+                    camPosOriginal = cam.transform.localPosition;
+                    camaraIniciada = true;
+                }
 
-    /// <summary>
-    /// Limpia el estado interno (saltos, buffers, dash, agachado) al reaparecer. Lo llama RespawnOnFall.
-    /// </summary>
+                shakeTimer -= Time.deltaTime;
+                
+                // Movimiento aleatorio en X e Y
+                float offsetX = Random.Range(-1f, 1f) * shakeMagnitud;
+                float offsetY = Random.Range(-1f, 1f) * shakeMagnitud;
+                cam.transform.localPosition = camPosOriginal + new Vector3(offsetX, offsetY, 0f);
+
+                // Si terminó el tiempo, restaurar posición
+                if (shakeTimer <= 0f)
+                {
+                    cam.transform.localPosition = camPosOriginal;
+                    camaraIniciada = false;
+                }
+            }
+        }
+    }
+
+    // ─────────────────────────────────────────────────── Reaparición y Muerte
+
     public void ResetEstado()
     {
         salto.Reiniciar();
@@ -135,9 +178,15 @@ public class PlayerController : MonoBehaviour
         moveInput = Vector2.zero;
     }
 
+    private void ReaccionarMuerte()
+    {
+        // Activar vibración de cámara (duración, magnitud)
+        shakeTimer = 0.4f;
+        shakeMagnitud = 0.15f; 
+    }
+
     // ─────────────────────────────────────────────────── Eventos
 
-    /// <summary>Se dispara al hacer un doble salto (lo usa JumpRing).</summary>
     public event System.Action<Vector3> OnDobleSalto;
 
     private void AlHacerDobleSalto(Vector3 posicion)
@@ -148,13 +197,6 @@ public class PlayerController : MonoBehaviour
 
     // ─────────────────────────────────────────────────── Estado derivado
 
-    /// <summary>
-    /// Estado del jugador en este instante, derivado de sus flags.
-    /// Prioridad: Dashing > Crouching > Grounded/Airborne.
-    /// Es una VISTA calculada (no una FSM): no altera el comportamiento, solo lo expone
-    /// para que los consumidores (HeadBob, SpeedLines, Crosshair...) usen switch en lugar
-    /// de encadenar booleanos.
-    /// </summary>
     public PlayerState Estado
     {
         get
@@ -167,52 +209,15 @@ public class PlayerController : MonoBehaviour
 
     // ─────────────────────────────────────────────────── Estado público
 
-    public bool IsGrounded
-    {
-        get { return suelo.EstaEnSuelo; }
-    }
-
-    public bool IsDashing
-    {
-        get { return dash.IsDashing; }
-    }
-
-    public float DashCooldownLeft
-    {
-        get { return dash.DashCooldownLeft; }
-    }
-
-    public float DashCooldown
-    {
-        get { return dash.DashCooldown; }
-    }
-
-    public int JumpsLeft
-    {
-        get { return salto.JumpsLeft; }
-    }
-
-    public int MaxJumps
-    {
-        get { return salto.MaxJumps; }
-    }
-
-    public float MoveSpeed
-    {
-        get { return movimiento.MoveSpeed; }
-    }
-
-    /// <summary>Altura actual de la cámara (baja al agacharse).</summary>
-    public float AlturaCamara
-    {
-        get { return mirada.AlturaCamara; }
-    }
-
-    /// <summary>Magnitud de la velocidad horizontal actual.</summary>
-    public float VelocidadHorizontal
-    {
-        get { return new Vector2(rb.linearVelocity.x, rb.linearVelocity.z).magnitude; }
-    }
+    public bool IsGrounded { get { return suelo.EstaEnSuelo; } }
+    public bool IsDashing { get { return dash.IsDashing; } }
+    public float DashCooldownLeft { get { return dash.DashCooldownLeft; } }
+    public float DashCooldown { get { return dash.DashCooldown; } }
+    public int JumpsLeft { get { return salto.JumpsLeft; } }
+    public int MaxJumps { get { return salto.MaxJumps; } }
+    public float MoveSpeed { get { return movimiento.MoveSpeed; } }
+    public float AlturaCamara { get { return mirada.AlturaCamara; } }
+    public float VelocidadHorizontal { get { return new Vector2(rb.linearVelocity.x, rb.linearVelocity.z).magnitude; } }
 
     public float MouseSensitivity
     {
