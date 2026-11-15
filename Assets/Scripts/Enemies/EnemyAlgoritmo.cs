@@ -39,10 +39,10 @@ public class EnemyAlgoritmo : EnemyBase
         // 1. Rotación constante sobre su propio eje
         transform.Rotate(Vector3.up * velocidadRotacion * Time.deltaTime, Space.Self);
 
-        // 2. Movimiento suave hacia el destino
-        transform.position = Vector3.MoveTowards(transform.position, destinoActual, velocidadVuelo * Time.deltaTime);
+        // 2. Movimiento suave hacia el destino, sin atravesar paredes
+        bool avanzo = MoverHacia(destinoActual, velocidadVuelo);
 
-        if (Vector3.Distance(transform.position, destinoActual) < 0.1f)
+        if (!avanzo || Vector3.Distance(transform.position, destinoActual) < 0.1f)
         {
             ElegirNuevoDestino();
         }
@@ -65,8 +65,25 @@ public class EnemyAlgoritmo : EnemyBase
 
     private void ElegirNuevoDestino()
     {
-        Vector2 circulo = Random.insideUnitCircle * radioVuelo;
-        destinoActual = posicionInicial + new Vector3(circulo.x, alturaVuelo, circulo.y);
+        // Prueba varios puntos y se queda con el primero al que se puede llegar sin chocar
+        for (int intento = 0; intento < 8; intento++)
+        {
+            Vector2 circulo = Random.insideUnitCircle * radioVuelo;
+            Vector3 candidato = posicionInicial + new Vector3(circulo.x, alturaVuelo, circulo.y);
+
+            Vector3 haciaCandidato = candidato - transform.position;
+            float distancia = haciaCandidato.magnitude;
+            if (distancia < 0.5f) continue;
+
+            if (!HayObstaculo(haciaCandidato / distancia, distancia))
+            {
+                destinoActual = candidato;
+                return;
+            }
+        }
+
+        // Todos los caminos estaban bloqueados: se queda quieto y lo intenta de nuevo luego
+        destinoActual = transform.position;
     }
 
     private void ActualizarCubos()

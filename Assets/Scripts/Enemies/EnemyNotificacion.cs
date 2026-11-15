@@ -33,8 +33,8 @@ public class EnemyNotificacion : EnemyBase
         // 1. Movimiento directo hacia el jugador (esto es a prueba de fallos)
         Vector3 destino = new Vector3(jugador.position.x, alturaFijaY, jugador.position.z);
         
-        // MoveTowards mueve el objeto desde su posición actual hacia el destino
-        transform.position = Vector3.MoveTowards(transform.position, destino, velocidad * Time.deltaTime);
+        // Se mueve hacia el destino sin atravesar paredes (si una pared lo bloquea, se detiene)
+        MoverHacia(destino, velocidad);
 
         // 2. Rotación (solo si se está moviendo y no está justo encima)
         Vector3 direccion = destino - transform.position;
@@ -56,6 +56,6 @@ public class EnemyNotificacion : EnemyBase
 
     private void Atacar()
     {
-        PlayerKill.KillPlayer();
+        IntentarMatarJugador();
     }
 }

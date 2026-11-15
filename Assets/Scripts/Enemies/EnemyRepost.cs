@@ -30,11 +30,11 @@ public class EnemyRepost : EnemyBase
         base.Update();
         if (muerto) return;
 
-        // Movimiento suave hacia el destino
-        transform.position = Vector3.MoveTowards(transform.position, destinoDeriva, velocidadDeriva * Time.deltaTime);
+        // Movimiento suave hacia el destino, sin atravesar paredes
+        bool avanzo = MoverHacia(destinoDeriva, velocidadDeriva);
 
-        // Si llega al destino o pasa el tiempo, elegir uno nuevo
-        if (Vector3.Distance(transform.position, destinoDeriva) < 0.1f || Time.time > tiempoSiguienteDestino)
+        // Si llega al destino, una pared lo bloquea o pasa el tiempo, elegir uno nuevo
+        if (!avanzo || Vector3.Distance(transform.position, destinoDeriva) < 0.1f || Time.time > tiempoSiguienteDestino)
         {
             ElegirNuevoDestino();
         }

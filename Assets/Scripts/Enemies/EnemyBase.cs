@@ -26,11 +26,25 @@ public abstract class EnemyBase : MonoBehaviour
     [SerializeField] protected Color colorLuzNormal = Color.green;
     [SerializeField] protected Color colorLuzBuffeado = new Color(1f, 0.4f, 0f); // Naranja
 
+    [Header("Contacto con el jugador")]
+    [Tooltip("Distancia extra alrededor del enemigo que cuenta como tocar al jugador")]
+    [SerializeField] protected float margenContacto = 0.3f;
+    [Tooltip("Segundos mínimos entre dos muertes causadas por este enemigo")]
+    [SerializeField] protected float cooldownContacto = 1f;
+
+    [Header("Colisión con el entorno")]
+    [Tooltip("Capas que el enemigo no puede atravesar (paredes, suelo, plataformas)")]
+    [SerializeField] protected LayerMask capasObstaculo = ~0;
+    [Tooltip("Radio con el que se comprueba el choque contra el entorno")]
+    [SerializeField] protected float radioColision = 0.6f;
+
     protected Transform jugador;
     protected bool muerto;
     protected bool buffeado;
 
     private Material materialInstancia; // Para no afectar a otros enemigos
+    private Collider jugadorCollider;
+    private float tiempoUltimoContacto = -10f;
 
     public EnemyType Tipo { get { return tipo; } }
     public int VidaActual { get { return vidaActual; } }
@@ -56,13 +70,21 @@ public abstract class EnemyBase : MonoBehaviour
     {
         if (jugador == null && !muerto)
             BuscarJugador();
+
+        // Contacto por cercanía: funciona aunque el collider del enemigo no sea trigger
+        // o esté en un objeto hijo (en esos casos OnTriggerEnter nunca se dispara).
+        if (!muerto && mataAlTocar && TocandoJugador())
+            IntentarMatarJugador();
     }
 
     protected void BuscarJugador()
     {
         PlayerController pc = Object.FindFirstObjectByType<PlayerController>();
         if (pc != null)
+        {
             jugador = pc.transform;
+            jugadorCollider = pc.GetComponent<Collider>();
+        }
     }
 
     public virtual void RecibirDaño(int cantidad, DamageType tipoDaño)
@@ -88,12 +110,87 @@ public abstract class EnemyBase : MonoBehaviour
     {
         if (muerto) return;
         if (!mataAlTocar) return;
-        
+
         if (other.CompareTag("Player"))
+            IntentarMatarJugador();
+    }
+
+    /// <summary>
+    /// Mata al jugador (RespawnOnFall escucha PlayerKill.OnKill y lo reaparece).
+    /// El cooldown evita matarlo dos veces seguidas por el mismo contacto.
+    /// </summary>
+    protected void IntentarMatarJugador()
+    {
+        if (muerto || !mataAlTocar) return;
+        if (Time.time - tiempoUltimoContacto < cooldownContacto) return;
+
+        tiempoUltimoContacto = Time.time;
+        PlayerKill.KillPlayer();
+    }
+
+    /// <summary>
+    /// True si el collider del jugador toca (o casi toca) al enemigo. Compara las cajas
+    /// envolventes, así que no depende de triggers, Rigidbody ni de dónde esté el collider.
+    /// </summary>
+    protected bool TocandoJugador()
+    {
+        if (jugadorCollider == null) return false;
+        if (Time.deltaTime <= 0f) return false;   // juego en pausa (hackeo, menú...)
+
+        Bounds limites;
+        if (esferaRenderer != null)
+            limites = esferaRenderer.bounds;
+        else
+            limites = new Bounds(transform.position, Vector3.one);
+        limites.Expand(margenContacto * 2f);
+
+        return jugadorCollider.bounds.Intersects(limites);
+    }
+
+    /// <summary>
+    /// Mueve al enemigo hacia el destino SIN atravesar el entorno.
+    /// Devuelve false si una pared lo bloqueó (no se mueve ese frame).
+    /// </summary>
+    protected bool MoverHacia(Vector3 destino, float velocidad)
+    {
+        Vector3 haciaDestino = destino - transform.position;
+        float distanciaDestino = haciaDestino.magnitude;
+        if (distanciaDestino < 0.001f) return true;
+
+        Vector3 direccion = haciaDestino / distanciaDestino;
+        float paso = velocidad * Time.deltaTime;
+        if (paso > distanciaDestino) paso = distanciaDestino;
+
+        if (HayObstaculo(direccion, paso))
+            return false;
+
+        transform.position += direccion * paso;
+        return true;
+    }
+
+    /// <summary>Comprueba si hay algo sólido en el camino (ignora al propio enemigo, a otros enemigos y al jugador).</summary>
+    protected bool HayObstaculo(Vector3 direccion, float distancia)
+    {
+        RaycastHit[] golpes = Physics.SphereCastAll(transform.position, radioColision, direccion,
+                                                    distancia + 0.02f, capasObstaculo,
+                                                    QueryTriggerInteraction.Ignore);
+
+        bool movimientoHorizontal = Mathf.Abs(direccion.y) < 0.2f;
+
+        for (int i = 0; i < golpes.Length; i++)
         {
-            // Matar al jugador (RespawnOnFall escucha PlayerKill.OnKill y lo reaparece)
-            PlayerKill.KillPlayer();
+            Collider c = golpes[i].collider;
+            if (c.transform.IsChildOf(transform)) continue;          // sus propios cubos y colliders
+            if (c.CompareTag("Player")) continue;
+            if (c.GetComponentInParent<EnemyBase>() != null) continue; // otros enemigos
+
+            // Al moverse en horizontal, el suelo y el techo no lo frenan
+            bool superficieHorizontal = Mathf.Abs(Vector3.Dot(golpes[i].normal, Vector3.up)) > 0.9f;
+            if (movimientoHorizontal && superficieHorizontal) continue;
+
+            return true;
         }
+        return false;
     }
 
     public void AplicarBuff(bool aplicar)
@@ -105,7 +202,8 @@ public abstract class EnemyBase : MonoBehaviour
 
     protected void ActualizarColorLuz()
     {
-        Color colorObjetivo = buffeado ? colorLuzBuffeado : colorLuzNormal;
+        Color colorObjetivo = colorLuzNormal;
+        if (buffeado) colorObjetivo = colorLuzBuffeado;
 
         // 1. Cambiar la luz
         if (luzPropia != null)
