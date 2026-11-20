@@ -18,9 +18,7 @@ public class EnemyRepost : EnemyBase
     protected override void Start()
     {
         base.Start();
-        vidaMaxima = 1;
-        vidaActual = vidaMaxima;
-        
+
         centroDeriva = transform.position;
         ElegirNuevoDestino();
     }
@@ -51,11 +49,8 @@ public class EnemyRepost : EnemyBase
     {
         if (muerto) return;
 
-        if (tipoDaño != DamageType.Cargado)
-        {
+        if (tipoDaño != DamageType.Cargado && prefabRepost != null)
             Duplicar();
-            return;
-        }
 
         base.RecibirDaño(cantidad, tipoDaño);
     }

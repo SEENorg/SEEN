@@ -67,7 +67,7 @@ public class RespawnOnFall : MonoBehaviour
         if (jugador != null) jugador.ResetEstado();
         if (VidaJugador.Instancia != null) VidaJugador.Instancia.RestaurarVida();
 
-        EnemyBase[] enemigos = Object.FindObjectsByType<EnemyBase>(FindObjectsSortMode.None);
+        EnemyBase[] enemigos = Object.FindObjectsByType<EnemyBase>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         for (int i = 0; i < enemigos.Length; i++)
             if (enemigos[i] != null) enemigos[i].ReiniciarPosicion();
 

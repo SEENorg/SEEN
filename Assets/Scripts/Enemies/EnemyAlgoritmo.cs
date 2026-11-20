@@ -95,7 +95,6 @@ public class EnemyAlgoritmo : EnemyBase
     public override void RecibirDaño(int cantidad, DamageType tipoDaño)
     {
         if (muerto) return;
-        if (!expuesto) return;
         base.RecibirDaño(cantidad, tipoDaño);
     }
 }

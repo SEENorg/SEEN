@@ -50,6 +50,11 @@ public abstract class EnemyBase : MonoBehaviour
     private Material materialInstancia; // Para no afectar a otros enemigos
     private Collider jugadorCollider;
     private float tiempoUltimoContacto = -10f;
+    private float tiempoUltimoDañoRecibido = -10f;
+    private Renderer[] renderersVisuales;
+    private Collider[] collidersPropios;
+
+    private static GUIStyle estiloNombreBarra;
 
     public EnemyType Tipo { get { return tipo; } }
     public int VidaActual { get { return vidaActual; } }
@@ -61,7 +66,19 @@ public abstract class EnemyBase : MonoBehaviour
     protected virtual void Start()
     {
         posicionOrigen = transform.position;
+        if (vidaMaxima <= 0) vidaMaxima = 3;
         vidaActual = vidaMaxima;
+
+        Rigidbody[] rbs = GetComponentsInChildren<Rigidbody>(true);
+        for (int i = 0; i < rbs.Length; i++)
+        {
+            rbs[i].isKinematic = true;
+            rbs[i].useGravity = false;
+        }
+
+        renderersVisuales = GetComponentsInChildren<Renderer>(true);
+        collidersPropios = GetComponentsInChildren<Collider>(true);
+
         BuscarJugador();
 
         // Clonamos el material para que el cambio de color sea único para este enemigo
@@ -75,7 +92,10 @@ public abstract class EnemyBase : MonoBehaviour
 
     public virtual void ReiniciarPosicion()
     {
+        muerto = false;
+        vidaActual = vidaMaxima;
         transform.position = posicionOrigen;
+        gameObject.SetActive(true);
     }
 
     protected virtual void Update()
@@ -102,7 +122,8 @@ public abstract class EnemyBase : MonoBehaviour
     public virtual void RecibirDaño(int cantidad, DamageType tipoDaño)
     {
         if (muerto) return;
-        vidaActual -= cantidad;
+        tiempoUltimoDañoRecibido = Time.unscaledTime;
+        vidaActual = Mathf.Max(0, vidaActual - cantidad);
 
         if (vidaActual <= 0)
             Morir();
@@ -113,10 +134,136 @@ public abstract class EnemyBase : MonoBehaviour
         if (muerto) return;
         muerto = true;
         OnMuerte();
-        Destroy(gameObject);
+        gameObject.SetActive(false);
     }
 
     protected virtual void OnMuerte() { }
+
+    protected Bounds ObtenerLimitesVisuales()
+    {
+        bool tiene = false;
+        Bounds b = default;
+
+        if (renderersVisuales != null)
+        {
+            for (int i = 0; i < renderersVisuales.Length; i++)
+            {
+                Renderer r = renderersVisuales[i];
+                if (r == null || !r.enabled) continue;
+                if (!tiene) { b = r.bounds; tiene = true; }
+                else b.Encapsulate(r.bounds);
+            }
+        }
+
+        if (!tiene && collidersPropios != null)
+        {
+            for (int i = 0; i < collidersPropios.Length; i++)
+            {
+                Collider c = collidersPropios[i];
+                if (c == null || !c.enabled || c.isTrigger) continue;
+                if (!tiene) { b = c.bounds; tiene = true; }
+                else b.Encapsulate(c.bounds);
+            }
+        }
+
+        if (!tiene) b = new Bounds(transform.position, Vector3.one);
+        return b;
+    }
+
+    protected virtual void OnGUI()
+    {
+        if (muerto) return;
+        if (HackManager.Abierto || PauseMenu.Pausado || CipherWheel.Abierta ||
+            GameFeedback.NivelCompletadoVisible || GameFeedback.GameOverVisible)
+            return;
+
+        Camera cam = Camera.main;
+        if (cam == null) return;
+
+        Bounds b = ObtenerLimitesVisuales();
+        if (Vector3.Distance(cam.transform.position, b.center) > 35f) return;
+
+        Vector3 posBarra = new Vector3(b.center.x, b.max.y + 0.45f, b.center.z);
+        Vector3 sp = cam.WorldToScreenPoint(posBarra);
+        if (sp.z <= 0f) return;
+
+        if (estiloNombreBarra == null)
+        {
+            estiloNombreBarra = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 11,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter
+            };
+        }
+
+        float ancho = 112f;
+        float altoBarra = 10f;
+        float altoTotal = 28f;
+        float x = sp.x - ancho * 0.5f;
+        float y = (Screen.height - sp.y) - altoTotal;
+
+        int maxV = Mathf.Max(1, vidaMaxima);
+        float ratio = Mathf.Clamp01((float)vidaActual / maxV);
+
+        Color colorRelleno = new Color(0.15f, 0.95f, 0.45f, 0.95f);
+        if (ratio <= 0.35f) colorRelleno = new Color(1f, 0.22f, 0.28f, 0.95f);
+        else if (ratio <= 0.70f) colorRelleno = new Color(1f, 0.70f, 0.15f, 0.95f);
+
+        bool impactoReciente = (Time.unscaledTime - tiempoUltimoDañoRecibido) < 0.22f;
+        Color colorBorde = impactoReciente
+            ? new Color(1f, 0.25f, 0.30f, 1f)
+            : new Color(0.15f, 0.85f, 1f, 0.9f);
+
+        Color previo = GUI.color;
+
+        // Fondo y borde estilo SEEN
+        GUI.color = new Color(0.03f, 0.04f, 0.07f, 0.88f);
+        GUI.DrawTexture(new Rect(x - 4f, y, ancho + 8f, altoTotal), Texture2D.whiteTexture);
+
+        GUI.color = colorBorde;
+        GUI.DrawTexture(new Rect(x - 4f, y, ancho + 8f, 1.5f), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(x - 4f, y + altoTotal - 1.5f, ancho + 8f, 1.5f), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(x - 4f, y, 1.5f, altoTotal), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(x + ancho + 2.5f, y, 1.5f, altoTotal), Texture2D.whiteTexture);
+
+        // Nombre del enemigo
+        estiloNombreBarra.normal.textColor = new Color(0.85f, 0.95f, 1f, 0.95f);
+        GUI.color = Color.white;
+        GUI.Label(new Rect(x - 4f, y + 1f, ancho + 8f, 14f), ObtenerNombreBarra(), estiloNombreBarra);
+
+        // Fondo de barra
+        float barY = y + 15f;
+        GUI.color = new Color(0.22f, 0.08f, 0.10f, 0.9f);
+        GUI.DrawTexture(new Rect(x, barY, ancho, altoBarra), Texture2D.whiteTexture);
+
+        // Relleno de vida
+        if (ratio > 0f)
+        {
+            GUI.color = impactoReciente ? Color.white : colorRelleno;
+            GUI.DrawTexture(new Rect(x, barY, ancho * ratio, altoBarra), Texture2D.whiteTexture);
+        }
+
+        // Separadores por segmento
+        float seg = ancho / maxV;
+        GUI.color = new Color(0.03f, 0.04f, 0.07f, 0.95f);
+        for (int i = 1; i < maxV; i++)
+            GUI.DrawTexture(new Rect(x + seg * i - 0.75f, barY, 1.5f, altoBarra), Texture2D.whiteTexture);
+
+        GUI.color = previo;
+    }
+
+    private string ObtenerNombreBarra()
+    {
+        switch (tipo)
+        {
+            case EnemyType.Hashtag: return "HASHTAG";
+            case EnemyType.Repost: return "REPOST";
+            case EnemyType.Notificacion: return "NOTIFICACIÓN";
+            case EnemyType.Algoritmo: return "ALGORITMO";
+            default: return "AMENAZA";
+        }
+    }
 
     protected virtual void OnTriggerEnter(Collider other)
     {
