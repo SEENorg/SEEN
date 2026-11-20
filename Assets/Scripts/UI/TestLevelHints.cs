@@ -64,6 +64,6 @@ public class TestLevelHints : MonoBehaviour
             "Espacio   →   Saltar (doble salto)\n" +
             "Shift / Clic der   →   Dash";
 
-        GUI.Box(new Rect(12f, 12f, 470f, 132f), contenido, style);
+        GUI.Box(new Rect(12f, 108f, 470f, 132f), contenido, style);
     }
 }

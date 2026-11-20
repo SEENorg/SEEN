@@ -38,9 +38,14 @@ public abstract class EnemyBase : MonoBehaviour
     [Tooltip("Radio con el que se comprueba el choque contra el entorno")]
     [SerializeField] protected float radioColision = 0.6f;
 
+    [Header("Activación por puerta")]
+    [Tooltip("Si se asigna una puerta, el enemigo no se mueve hasta que esa puerta se abra")]
+    [SerializeField] protected DoorController puertaActivadora;
+
     protected Transform jugador;
     protected bool muerto;
     protected bool buffeado;
+    protected Vector3 posicionOrigen;
 
     private Material materialInstancia; // Para no afectar a otros enemigos
     private Collider jugadorCollider;
@@ -51,9 +56,11 @@ public abstract class EnemyBase : MonoBehaviour
     public int VidaMaxima { get { return vidaMaxima; } }
     public bool Muerto { get { return muerto; } }
     public bool Buffeado { get { return buffeado; } }
+    public bool PuedeMoverse { get { return puertaActivadora == null || puertaActivadora.Abierta; } }
 
     protected virtual void Start()
     {
+        posicionOrigen = transform.position;
         vidaActual = vidaMaxima;
         BuscarJugador();
 
@@ -64,6 +71,11 @@ public abstract class EnemyBase : MonoBehaviour
         }
 
         ActualizarColorLuz();
+    }
+
+    public virtual void ReiniciarPosicion()
+    {
+        transform.position = posicionOrigen;
     }
 
     protected virtual void Update()
@@ -153,6 +165,7 @@ public abstract class EnemyBase : MonoBehaviour
     /// </summary>
     protected bool MoverHacia(Vector3 destino, float velocidad)
     {
+        if (!PuedeMoverse) return false;
         Vector3 haciaDestino = destino - transform.position;
         float distanciaDestino = haciaDestino.magnitude;
         if (distanciaDestino < 0.001f) return true;

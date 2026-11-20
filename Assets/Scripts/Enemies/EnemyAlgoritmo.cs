@@ -34,7 +34,7 @@ public class EnemyAlgoritmo : EnemyBase
     protected override void Update()
     {
         base.Update();
-        if (muerto) return;
+        if (muerto || !PuedeMoverse) return;
 
         // 1. Rotación constante sobre su propio eje
         transform.Rotate(Vector3.up * velocidadRotacion * Time.deltaTime, Space.Self);

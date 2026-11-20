@@ -54,6 +54,12 @@ public class PlayerController : MonoBehaviour
         mirada.Iniciar(transform);
         suelo.Iniciar(capsule);
         salto.OnDobleSalto += AlHacerDobleSalto;
+        salto.Inicializar();
+
+        if (GetComponent<VidaJugador>() == null)
+            gameObject.AddComponent<VidaJugador>();
+        if (FindFirstObjectByType<HUDSistema>() == null)
+            gameObject.AddComponent<HUDSistema>();
 
         // Primera persona: no ver la cápsula desde adentro
         MeshRenderer mr = GetComponent<MeshRenderer>();
@@ -61,6 +67,10 @@ public class PlayerController : MonoBehaviour
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+
+        // ── Integración: Registro de acciones del jugador en Pila (LIFO) ──
+        var ed = EstructurasDatosJuego.Instancia;
+        if (ed != null) ed.RegistrarAccionJugador("Jugador spawnado en el mundo distópico");
     }
 
     private void OnEnable()
@@ -110,7 +120,12 @@ public class PlayerController : MonoBehaviour
         salto.RegistrarEntrada(entrada.SaltoPresionado());
 
         if (entrada.DashPresionado() && dash.PuedeIniciar())
+        {
             dash.Iniciar(rb, mirada.Yaw, moveInput);
+            // ── Integración: Registrar dash en Pila ──
+            var edDash = EstructurasDatosJuego.Instancia;
+            if (edDash != null) edDash.RegistrarAccionJugador("Dash ejecutado (impulso de vigilancia)");
+        }
     }
 
     private void FixedUpdate()
@@ -124,6 +139,10 @@ public class PlayerController : MonoBehaviour
             movimiento.Mover(rb, moveInput, mirada.Yaw, suelo.EstaEnSuelo);
             suelo.TransportarConPlataforma(rb);
             salto.IntentarSaltar(rb, transform.position);
+
+            // ── Integración: Registrar salto en Pila ──
+            var edJump = EstructurasDatosJuego.Instancia;
+            if (edJump != null) edJump.RegistrarAccionJugador("Salto ejecutado (evasión de amenaza)");
         }
 
         dash.ActualizarFisica();

@@ -30,16 +30,17 @@ public class PuzzleSincronizar : IPuzzle
     {
         Transform contenido = ctx.Contenido;
 
-        CrearTexto(contenido, "LblSinc", "SINCRONIZÁ LA SEÑAL EN LA ZONA VERDE", 26, TextAnchor.MiddleCenter,
+        CrearTexto(contenido, "LblSinc", "SINCRONIZA LA SEÑAL EN LA ZONA VERDE", 26, TextAnchor.MiddleCenter,
                    new Vector2(0f, 172f), new Vector2(760f, 36f), ColAcento);
-        CrearTexto(contenido, "LblSincInfo", "Hacé clic en el botón (o presioná Espacio) cuando el marcador esté dentro", 18,
+        CrearTexto(contenido, "LblSincInfo", "Haz clic en el botón (o presiona Espacio) cuando el marcador esté dentro", 18,
                    TextAnchor.MiddleCenter, new Vector2(0f, 138f), new Vector2(760f, 26f), new Color(0.6f, 0.7f, 0.8f));
 
         ancho = 620f;
-        objetivo = 2 + ctx.DificultadBase;                 // 2, 3 o 4 señales
+        int dificultad = Mathf.Clamp(ctx.DificultadBase + ctx.IndiceModulo, 0, 5);
+        objetivo = 2 + Mathf.Clamp(ctx.DificultadBase + ctx.IndiceModulo / 2, 0, 3);
         aciertos = 0;
         tiempo = 0f;
-        velocidad = 380f + ctx.DificultadBase * 90f;
+        velocidad = 380f + dificultad * 65f;
         activo = true;
 
         // Pista
@@ -47,7 +48,7 @@ public class PuzzleSincronizar : IPuzzle
         pista.AddComponent<Image>().color = new Color(0.09f, 0.10f, 0.13f);
 
         // Zona verde (se mueve en cada acierto)
-        float anchoZona = Mathf.Max(90f, 190f - ctx.DificultadBase * 40f);
+        float anchoZona = Mathf.Max(80f, 190f - dificultad * 25f);
         zona = (RectTransform)NuevoUI(contenido, "ZonaSinc",
             new Vector2(0f, 55f), new Vector2(anchoZona, 34f)).transform;
         zona.gameObject.AddComponent<Image>().color = new Color(0.15f, 0.75f, 0.35f, 0.55f);

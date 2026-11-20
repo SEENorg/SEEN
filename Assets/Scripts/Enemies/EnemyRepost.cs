@@ -28,7 +28,7 @@ public class EnemyRepost : EnemyBase
     protected override void Update()
     {
         base.Update();
-        if (muerto) return;
+        if (muerto || !PuedeMoverse) return;
 
         // Movimiento suave hacia el destino, sin atravesar paredes
         bool avanzo = MoverHacia(destinoDeriva, velocidadDeriva);

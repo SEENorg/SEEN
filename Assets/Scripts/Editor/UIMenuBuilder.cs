@@ -176,12 +176,12 @@ public static class UIMenuBuilder
         tituloNiveles.fontStyle = FontStyle.Bold;
         CrearLinea(panelNiveles.transform, new Vector2(0f, 200f), new Vector2(560f, 3f), colMagenta);
 
-        var botonesNivel = new Button[5];
-        string[] nombresNivel = { "1", "2", "3", "4", "5" };
-        for (int i = 0; i < 5; i++)
+        var botonesNivel = new Button[3];
+        string[] nombresNivel = { "1", "2", "3" };
+        for (int i = 0; i < 3; i++)
         {
             int num = i + 1;
-            float x = -320f + i * 160f;
+            float x = -160f + i * 160f;
             botonesNivel[i] = CrearBoton(panelNiveles.transform, "BotonNivel" + num, nombresNivel[i],
                                          new Vector2(x, 80f), new Vector2(120f, 120f), colAcento);
 
@@ -191,22 +191,18 @@ public static class UIMenuBuilder
                 case 1: UnityEditor.Events.UnityEventTools.AddPersistentListener(botonesNivel[i].onClick, menu.CargarNivel1); break;
                 case 2: UnityEditor.Events.UnityEventTools.AddPersistentListener(botonesNivel[i].onClick, menu.CargarNivel2); break;
                 case 3: UnityEditor.Events.UnityEventTools.AddPersistentListener(botonesNivel[i].onClick, menu.CargarNivel3); break;
-                case 4: UnityEditor.Events.UnityEventTools.AddPersistentListener(botonesNivel[i].onClick, menu.CargarNivel4); break;
-                case 5: UnityEditor.Events.UnityEventTools.AddPersistentListener(botonesNivel[i].onClick, menu.CargarNivel5); break;
             }
         }
 
         menu.botonNivel1 = botonesNivel[0];
         menu.botonNivel2 = botonesNivel[1];
         menu.botonNivel3 = botonesNivel[2];
-        menu.botonNivel4 = botonesNivel[3];
-        menu.botonNivel5 = botonesNivel[4];
 
         var btnVolverNiveles = CrearBoton(panelNiveles.transform, "BotonVolverNiveles", "VOLVER",
                                           new Vector2(0f, -80f), new Vector2(280f, 62f), colMagenta);
         UnityEditor.Events.UnityEventTools.AddPersistentListener(btnVolverNiveles.onClick, menu.MostrarMenuPrincipal);
 
-        CrearTexto(panelNiveles.transform, "NotaNiveles", "Elegí un nivel para empezar", 20,
+        CrearTexto(panelNiveles.transform, "NotaNiveles", "Elige un nivel para empezar", 20,
                    TextAnchor.MiddleCenter, new Vector2(0f, -160f), new Vector2(700f, 30f), colTextoSec);
 
         panelNiveles.SetActive(false);

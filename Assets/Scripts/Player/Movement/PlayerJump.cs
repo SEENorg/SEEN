@@ -62,12 +62,20 @@ public class PlayerJump
         }
     }
 
-    /// <summary>Limpia el estado al reaparecer: sin saltos pendientes ni residuos del buffer.</summary>
+    /// <summary>Limpia el estado al reaparecer: restaura salto y doble salto sin residuos del buffer.</summary>
     public void Reiniciar()
     {
-        jumpsLeft = 0;
+        if (maxJumps < 2) maxJumps = 2;
+        jumpsLeft = maxJumps;
         jumpBufferTimer = 0f;
         groundGuardTimer = 0f;
+    }
+
+    /// <summary>Inicializa los saltos disponibles al empezar el nivel.</summary>
+    public void Inicializar()
+    {
+        if (maxJumps < 2) maxJumps = 2;
+        jumpsLeft = maxJumps;
     }
 
     /// <summary>Salta si hay un salto pendiente en el buffer y quedan saltos. Se llama en FixedUpdate.</summary>

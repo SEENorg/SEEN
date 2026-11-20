@@ -22,12 +22,19 @@ public class RespawnOnFall : MonoBehaviour
 
     private void OnEnable()
     {
-        PlayerKill.OnKill += DoRespawn;
+        PlayerKill.OnKill += AlRecibirKill;
     }
 
     private void OnDisable()
     {
-        PlayerKill.OnKill -= DoRespawn;
+        PlayerKill.OnKill -= AlRecibirKill;
+    }
+
+    private void AlRecibirKill()
+    {
+        // Si hay sistema de vida activo, VidaJugador controla cuándo reiniciar (al llegar a 0)
+        if (VidaJugador.Instancia != null) return;
+        DoRespawn();
     }
 
     private void Update()
@@ -58,6 +65,11 @@ public class RespawnOnFall : MonoBehaviour
 
         // Saltos, buffers, dash y agachado vuelven a su estado inicial
         if (jugador != null) jugador.ResetEstado();
+        if (VidaJugador.Instancia != null) VidaJugador.Instancia.RestaurarVida();
+
+        EnemyBase[] enemigos = Object.FindObjectsByType<EnemyBase>(FindObjectsSortMode.None);
+        for (int i = 0; i < enemigos.Length; i++)
+            if (enemigos[i] != null) enemigos[i].ReiniciarPosicion();
 
         Debug.Log("[Respawn] Reapareciendo en el último checkpoint.");
     }

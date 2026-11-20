@@ -21,7 +21,7 @@ public class PuzzleSecuencia : IPuzzle
     {
         Transform contenido = ctx.Contenido;
 
-        CrearTexto(contenido, "LblLog", "COMPLETÁ LA SECUENCIA", 26, TextAnchor.MiddleCenter,
+        CrearTexto(contenido, "LblLog", "COMPLETA LA SECUENCIA", 26, TextAnchor.MiddleCenter,
                    new Vector2(0f, 165f), new Vector2(700f, 36f), ColAcento);
 
         int tipo = Random.Range(0, 4);

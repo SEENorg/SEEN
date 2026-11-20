@@ -23,6 +23,10 @@ public class LevelInfo : MonoBehaviour
         GameFeedback.NombreNivelActual = nombreNivel;
         GameFeedback.EscenaSiguiente = escenaSiguiente;
         HackManager.DificultadBase = dificultad;
+
+        // ── Integración: Registrar nivel y dificultad en Diccionario ──
+        var edDiff = EstructurasDatosJuego.Instancia;
+        if (edDiff != null) edDiff.SetearDificultadNivel(nombreNivel, dificultad);
     }
 }
 

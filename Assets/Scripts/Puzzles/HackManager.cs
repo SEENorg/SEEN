@@ -158,10 +158,21 @@ public class HackManager : MonoBehaviour, IContextoHack
     {
         if (activo) return;
 
-        if (mods != null && mods.Length > 0)
-            modulos = mods;
+        int cantidad = (mods != null && mods.Length > 0) ? mods.Length : 1;
+        if (tutorial)
+        {
+            if (mods != null && mods.Length > 0)
+                modulos = mods;
+            else
+                modulos = new[] { HackableType.DescifrarCodigo };
+        }
         else
-            modulos = new[] { HackableType.DescifrarCodigo };
+        {
+            int totalTipos = Enum.GetValues(typeof(HackableType)).Length;
+            modulos = new HackableType[cantidad];
+            for (int i = 0; i < cantidad; i++)
+                modulos[i] = (HackableType)UnityEngine.Random.Range(0, totalTipos);
+        }
         onCompletado = onResuelto;
         esTutorial = tutorial;
         indiceModulo = 0;
@@ -202,6 +213,11 @@ public class HackManager : MonoBehaviour, IContextoHack
             MostrarFeedback("ACCESO CONCEDIDO", true);
             finalizando = true;
             tiempoTransicion = 1.2f;
+
+            // ── Integración: Registrar hackeo completado en Pila (LIFO) ──
+            var edHackeo = EstructurasDatosJuego.Instancia;
+            if (edHackeo != null) edHackeo.RegistrarAccionJugador("Hackeo de cuenta completado (dato privado extraído)");
+
             return;
         }
         ConstruirModuloActual();
@@ -302,6 +318,11 @@ public class HackManager : MonoBehaviour, IContextoHack
 
         if (puzzleActual != null) puzzleActual.Detener();
         tipoActual = modulos[indiceModulo];
+
+        // ── Integración: Registrar módulo de hackeo en Lista (List<T>) ──
+        var edModulo = EstructurasDatosJuego.Instancia;
+        if (edModulo != null) edModulo.RegistrarModuloHackeoResuelto(tipoActual.ToString());
+
         puzzleActual = FabricaPuzzles.Crear(tipoActual, this);
         if (puzzleActual != null)
             puzzleActual.Construir();
@@ -356,6 +377,9 @@ public class HackManager : MonoBehaviour, IContextoHack
             case HackableType.DescifrarCodigo: nombreTipo = "DESCIFRAR CÓDIGO"; break;
             case HackableType.UnirCables: nombreTipo = "UNIR CABLES"; break;
             case HackableType.Patron: nombreTipo = "REPETIR PATRÓN"; break;
+            case HackableType.Escanear: nombreTipo = "ESCANEAR MATRIZ"; break;
+            case HackableType.Sincronizar: nombreTipo = "SINCRONIZAR SEÑAL"; break;
+            case HackableType.Secuencia: nombreTipo = "SECUENCIA LÓGICA"; break;
             default: nombreTipo = "HACKEO"; break;
         }
 
@@ -391,19 +415,19 @@ public class HackManager : MonoBehaviour, IContextoHack
 
             case HackableType.Escanear:
                 return "Una cuadrícula de glifos idénticos esconde UNO diferente." +
-                       "\n\nHacé clic en el glifo distinto para completar el módulo. " +
-                       "Si te equivocás, la cuadrícula se reescanea.";
+                       "\n\nHaz clic en el glifo distinto para completar el módulo. " +
+                       "Si te equivocas, la cuadrícula se reescanea.";
 
             case HackableType.Sincronizar:
                 return "El marcador se mueve por la pista y hay una ZONA VERDE." +
-                       "\n\nPresioná SINCRONIZAR (o la barra espaciadora) cuando el " +
+                       "\n\nPresiona SINCRONIZAR (o la barra espaciadora) cuando el " +
                        "marcador esté dentro de la zona. Las señales necesarias y la " +
                        "velocidad aumentan con la dificultad del nivel.";
 
             case HackableType.Secuencia:
                 return "Se muestra una serie con un elemento faltante." +
-                       "\n\nDescubrí la regla (multiplicación, suma constante, " +
-                       "cuadrados o letras con salto) y elegí la opción correcta " +
+                       "\n\nDescubre la regla (multiplicación, suma constante, " +
+                       "cuadrados o letras con salto) y elige la opción correcta " +
                        "entre las cuatro disponibles.";
             default:
                 return "Resuelve el módulo para continuar.";

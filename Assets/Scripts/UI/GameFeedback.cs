@@ -153,6 +153,10 @@ public class GameFeedback : MonoBehaviour
         mensajes.Add(nuevo);
         while (mensajes.Count > maxMensajes)
             mensajes.RemoveAt(0);
+
+        // ── Integración: Encolar notificación del sistema en Cola (FIFO) ──
+        var edNotif = EstructurasDatosJuego.Instancia;
+        if (edNotif != null) edNotif.EncolarNotificacion(texto);
     }
 
     private void MostrarPantallaFinal()

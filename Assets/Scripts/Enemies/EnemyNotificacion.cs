@@ -23,7 +23,7 @@ public class EnemyNotificacion : EnemyBase
     protected override void Update()
     {
         base.Update();
-        if (muerto || jugador == null) return;
+        if (muerto || jugador == null || !PuedeMoverse) return;
 
         // Distancia real al jugador
         float dist = Vector3.Distance(transform.position, jugador.position);

@@ -21,10 +21,10 @@ public class PuzzleEscanear : IPuzzle
 
     public void Construir()
     {
-        HackUI.CrearTexto(ctx.Contenido, "LblScan", "HACÉ CLIC EN EL GLIFO DIFERENTE", 26, TextAnchor.MiddleCenter,
+        HackUI.CrearTexto(ctx.Contenido, "LblScan", "HAZ CLIC EN EL GLIFO DIFERENTE", 26, TextAnchor.MiddleCenter,
                    new Vector2(0f, 186f), new Vector2(760f, 36f), HackUI.ColAcento);
 
-        int filas = 4 + Mathf.Clamp(ctx.DificultadBase, 0, 1);
+        int filas = 4 + Mathf.Clamp(ctx.DificultadBase + ctx.IndiceModulo, 0, 2);
         HackUI.CrearTexto(ctx.Contenido, "LblScanInfo", "Cuadrícula " + filas + "x" + filas, 18, TextAnchor.MiddleCenter,
                    new Vector2(0f, 150f), new Vector2(400f, 26f), new Color(0.6f, 0.7f, 0.8f));
 

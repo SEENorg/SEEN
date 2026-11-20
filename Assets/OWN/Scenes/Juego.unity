@@ -1943,25 +1943,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 163588, guid: 0bb9da675ed6e4cd4829f553f9ae44f1, type: 3}
   m_PrefabInstance: {fileID: 2020126334}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &147828622
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 147828620}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 313073c1bb9e8494581b626a7e4d10c1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HackTerminal
-  modulos: 02000000
-  nombreAcceso: PUERTA 2
-  resuelto: 0
-  textoPrompt: Presione E para hackear
-  esTutorial: 0
-  puertas:
-  - {fileID: 0}
 --- !u!65 &147828623
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -11577,9 +11558,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 121674, guid: 031729a7ef10c4aa1b5e0060c2f63acd, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1357509865}
-    - targetCorrespondingSourceObject: {fileID: 121674, guid: 031729a7ef10c4aa1b5e0060c2f63acd, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 1357509864}
     - targetCorrespondingSourceObject: {fileID: 181008, guid: 031729a7ef10c4aa1b5e0060c2f63acd, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1560568094}
@@ -12370,11 +12348,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 313073c1bb9e8494581b626a7e4d10c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HackTerminal
-  modulos: 01000000
-  nombreAcceso: PUERTA 2
+  modulos: 02000000
+  nombreAcceso: PUERTA 3
   resuelto: 0
   textoPrompt: Presione E para hackear
-  esTutorial: 0
+  esTutorial: 1
   puertas:
   - {fileID: 7590359}
 --- !u!65 &1096577386
@@ -14570,24 +14548,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 121674, guid: 031729a7ef10c4aa1b5e0060c2f63acd, type: 3}
   m_PrefabInstance: {fileID: 1038782667}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1357509864
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1357509863}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 313073c1bb9e8494581b626a7e4d10c1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HackTerminal
-  modulos: 04000000
-  nombreAcceso: PUERTA
-  resuelto: 0
-  textoPrompt: Presione E para hackear
-  esTutorial: 0
-  puertas: []
 --- !u!65 &1357509865
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -17175,10 +17135,10 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HackTerminal
   modulos: 00000000
-  nombreAcceso: PUERTA
+  nombreAcceso: PUERTA 1
   resuelto: 0
-  textoPrompt: Presione E para ingresa
-  esTutorial: 0
+  textoPrompt: Presione E para hackear
+  esTutorial: 1
   puertas:
   - {fileID: 1750441090}
   - {fileID: 1964055909}
@@ -19139,11 +19099,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 313073c1bb9e8494581b626a7e4d10c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HackTerminal
-  modulos: 00000000
-  nombreAcceso: PUERTA 1
+  modulos: 01000000
+  nombreAcceso: PUERTA 2
   resuelto: 0
   textoPrompt: Presione E para hackear
-  esTutorial: 0
+  esTutorial: 1
   puertas:
   - {fileID: 1654928447}
   - {fileID: 709774011}
@@ -20007,33 +19967,33 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e2054d36e3f92fc4ab974f65bfa35458, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
-  moveSpeed: 6
-  maxJumps: 2
-  aceleracion: 55
-  friccionSuelo: 20
-  friccionAgachado: 2.5
-  friccionAire: 1.2
-  bonusAgachado: 1.08
-  jumpForce: 7
-  doubleJumpMultiplier: 0.9
-  alturaAgachado: 0.55
-  velocidadAgacharse: 12
-  dashForce: 22
-  dashDuration: 0.2
-  dashCooldown: 1
-  dashCancelsGravity: 1
-  playerCamera: {fileID: 0}
-  mouseSensitivity: 0.15
-  minPitch: -80
-  maxPitch: 80
-  cameraHeight: 0.65
-  rotationSpeed: 10
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 0
-  groundSkin: 0.12
-  jumpBufferTime: 0.15
-  jumpGroundGuard: 0.12
+  mirada:
+    playerCamera: {fileID: 0}
+    mouseSensitivity: 0.15
+    minPitch: -80
+    maxPitch: 80
+    cameraHeight: 0.65
+  suelo:
+    groundMask:
+      serializedVersion: 2
+      m_Bits: 0
+    groundSkin: 0.12
+  movimiento:
+    moveSpeed: 6
+    aceleracion: 55
+    friccionSuelo: 20
+    friccionAire: 1.2
+  salto:
+    maxJumps: 2
+    jumpForce: 13.5
+    doubleJumpMultiplier: 0.9
+    jumpBufferTime: 0.15
+    jumpGroundGuard: 0.12
+  dash:
+    dashForce: 22
+    dashDuration: 0.15
+    dashCooldown: 1
+    dashCancelsGravity: 1
 --- !u!54 &1947066176
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -20043,7 +20003,7 @@ Rigidbody:
   m_GameObject: {fileID: 1947066174}
   serializedVersion: 5
   m_Mass: 1
-  m_LinearDamping: 2
+  m_LinearDamping: 0
   m_AngularDamping: 0.05
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
@@ -20842,9 +20802,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 163588, guid: 0bb9da675ed6e4cd4829f553f9ae44f1, type: 3}
       insertIndex: -1
       addedObject: {fileID: 147828623}
-    - targetCorrespondingSourceObject: {fileID: 163588, guid: 0bb9da675ed6e4cd4829f553f9ae44f1, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 147828622}
     - targetCorrespondingSourceObject: {fileID: 176536, guid: 0bb9da675ed6e4cd4829f553f9ae44f1, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2143387094}

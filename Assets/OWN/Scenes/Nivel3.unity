@@ -13397,7 +13397,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HackTerminal
   modulos: 00000000000000000100000005000000
-  nombreAcceso: NODO 2
+  nombreAcceso: NODO 4
   resuelto: 0
   textoPrompt: Presione E para hackear
   esTutorial: 0
@@ -18460,7 +18460,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 313073c1bb9e8494581b626a7e4d10c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HackTerminal
-  modulos: 00000000020000000100000003000000
+  modulos: 000000000200000001000000
   nombreAcceso: NODO 3
   resuelto: 0
   textoPrompt: Presione E para hackear
@@ -23654,33 +23654,33 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: e2054d36e3f92fc4ab974f65bfa35458, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerController
-  moveSpeed: 6
-  maxJumps: 2
-  aceleracion: 55
-  friccionSuelo: 20
-  friccionAgachado: 2.5
-  friccionAire: 1.2
-  bonusAgachado: 1.08
-  jumpForce: 7
-  doubleJumpMultiplier: 0.9
-  alturaAgachado: 0.55
-  velocidadAgacharse: 12
-  dashForce: 22
-  dashDuration: 0.15
-  dashCooldown: 1
-  dashCancelsGravity: 1
-  playerCamera: {fileID: 0}
-  mouseSensitivity: 0.15
-  minPitch: -80
-  maxPitch: 80
-  cameraHeight: 0.65
-  rotationSpeed: 10
-  groundMask:
-    serializedVersion: 2
-    m_Bits: 0
-  groundSkin: 0.12
-  jumpBufferTime: 0.15
-  jumpGroundGuard: 0.12
+  mirada:
+    playerCamera: {fileID: 0}
+    mouseSensitivity: 0.15
+    minPitch: -80
+    maxPitch: 80
+    cameraHeight: 0.65
+  suelo:
+    groundMask:
+      serializedVersion: 2
+      m_Bits: 0
+    groundSkin: 0.12
+  movimiento:
+    moveSpeed: 6
+    aceleracion: 55
+    friccionSuelo: 20
+    friccionAire: 1.2
+  salto:
+    maxJumps: 2
+    jumpForce: 13.5
+    doubleJumpMultiplier: 0.9
+    jumpBufferTime: 0.15
+    jumpGroundGuard: 0.12
+  dash:
+    dashForce: 22
+    dashDuration: 0.15
+    dashCooldown: 1
+    dashCancelsGravity: 1
 --- !u!54 &1633137454
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -26723,8 +26723,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 313073c1bb9e8494581b626a7e4d10c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HackTerminal
-  modulos: 010000000200000004000000
-  nombreAcceso: NODO 3
+  modulos: 0100000002000000040000000300000005000000
+  nombreAcceso: "N\xDACLEO"
   resuelto: 0
   textoPrompt: Presione E para hackear
   esTutorial: 0
@@ -29645,7 +29645,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HackTerminal
   modulos: 0100000004000000000000000300000005000000
-  nombreAcceso: NODO 3
+  nombreAcceso: NODO 5
   resuelto: 0
   textoPrompt: Presione E para hackear
   esTutorial: 0
@@ -30041,7 +30041,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelInfo
   nombreNivel: "Nivel 3 \u2014 El N\xFAcleo"
-  escenaSiguiente: Nivel4
+  escenaSiguiente: 
   dificultad: 2
 --- !u!1001 &2009095174
 PrefabInstance:

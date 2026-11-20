@@ -202,8 +202,8 @@ public class CipherWheel : MonoBehaviour
 
         CrearTexto(panel.transform, "Titulo", "TABLA DE DESCIFRADO CÉSAR", 28, TextAnchor.UpperCenter,
                    new Vector2(0f, 425f), new Vector2(780f, 40f), colorBorde).fontStyle = FontStyle.Bold;
-        CrearTexto(panel.transform, "Ayuda", "Girá el disco interior con el mouse (horario = horario)\n" +
-                                             "o con ← → / A D.  Alineá el desplazamiento y leé debajo de cada letra", 18,
+        CrearTexto(panel.transform, "Ayuda", "Gira el disco interior con el mouse (horario = horario)\n" +
+                                             "o con ← → / A D.  Alinea el desplazamiento y lee debajo de cada letra", 18,
                    TextAnchor.UpperCenter, new Vector2(0f, 386f), new Vector2(800f, 54f),
                    new Color(0.62f, 0.52f, 0.36f));
 
@@ -334,7 +334,7 @@ public class CipherWheel : MonoBehaviour
         campoNotas.caretColor = colorTinta;
 
         // Placeholder
-        var ph = CrearTexto(campoGO.transform, "Placeholder", "Escribí aquí la decodificación...", 24,
+        var ph = CrearTexto(campoGO.transform, "Placeholder", "Escribe aquí la decodificación...", 24,
                             TextAnchor.UpperLeft, Vector2.zero, new Vector2(580f, 640f), new Color(0.45f, 0.42f, 0.36f));
         campoNotas.placeholder = ph;
         campoNotas.text = "";

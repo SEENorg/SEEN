@@ -39,20 +39,47 @@ public class PlayerGround
         if (groundMask.value != 0) mascara = groundMask.value;
     }
 
-    /// <summary>Lanza un rayo hacia abajo desde los pies. Se llama en FixedUpdate.</summary>
+    /// <summary>Lanza detección hacia abajo desde los pies usando el bounds en mundo. Se llama en FixedUpdate.</summary>
     public void Detectar(Transform jugador)
     {
-        float bottomCenter = jugador.position.y - (capsule.height * 0.5f - capsule.radius);
-        Vector3 origin = new Vector3(jugador.position.x, bottomCenter, jugador.position.z);
-        float dist = capsule.radius + groundSkin;
-
-        RaycastHit hit;
-        enSuelo = Physics.Raycast(origin, Vector3.down, out hit, dist, mascara, QueryTriggerInteraction.Ignore);
-
-        if (enSuelo && hit.collider != null)
-            plataforma = hit.collider.GetComponentInParent<MovingPlatform>();
-        else
+        if (capsule == null)
+        {
+            enSuelo = false;
             plataforma = null;
+            return;
+        }
+
+        Bounds b = capsule.bounds;
+        float radioEsfera = Mathf.Min(b.extents.x, b.extents.z) * 0.85f;
+        float distEsfera = Mathf.Max(0.05f, (b.extents.y - radioEsfera) + groundSkin + 0.08f);
+
+        enSuelo = false;
+        plataforma = null;
+
+        RaycastHit[] hits = Physics.SphereCastAll(b.center, radioEsfera, Vector3.down, distEsfera, mascara, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < hits.Length; i++)
+        {
+            Collider c = hits[i].collider;
+            if (c == null || c == capsule || c.transform.IsChildOf(jugador)) continue;
+            if (hits[i].normal.y <= 0.35f) continue;
+
+            enSuelo = true;
+            plataforma = c.GetComponentInParent<MovingPlatform>();
+            return;
+        }
+
+        float distRayo = b.extents.y + groundSkin + 0.08f;
+        RaycastHit[] rayHits = Physics.RaycastAll(b.center, Vector3.down, distRayo, mascara, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < rayHits.Length; i++)
+        {
+            Collider c = rayHits[i].collider;
+            if (c == null || c == capsule || c.transform.IsChildOf(jugador)) continue;
+            if (rayHits[i].normal.y <= 0.35f) continue;
+
+            enSuelo = true;
+            plataforma = c.GetComponentInParent<MovingPlatform>();
+            return;
+        }
     }
 
     /// <summary>Guarda el estado de este paso de física para el siguiente. Se llama al final de FixedUpdate.</summary>
