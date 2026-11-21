@@ -13,6 +13,7 @@ public static class FabricaPuzzles
             case HackableType.Patron: return new PuzzlePatron(ctx);
             case HackableType.Sincronizar: return new PuzzleSincronizar(ctx);
             case HackableType.DescifrarCodigo: return new PuzzleDescifrar(ctx);
+            case HackableType.CodigoSecreto: return new PuzzleIngresarCodigo(ctx);
             default: return null;   // todavia no migrado: lo sigue manejando HackManager
             
         }

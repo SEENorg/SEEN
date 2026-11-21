@@ -24,6 +24,9 @@ public class HackTerminal : MonoBehaviour, IInteractuable
     [Tooltip("Si es true, muestra una pantalla de instrucciones antes de cada módulo (tutorial)")]
     public bool esTutorial;
 
+    [Tooltip("Si es true, el texto flotante 3D desaparece al resolver el hack (en vez de quedar 'ACCESO CONCEDIDO')")]
+    public bool ocultarTextoAlResolver = true;
+
     [Tooltip("Puertas que se abren al completar todos los módulos")]
     public DoorController[] puertas;
 
@@ -80,8 +83,15 @@ public class HackTerminal : MonoBehaviour, IInteractuable
 
         if (etiqueta != null)
         {
-            etiqueta.text = "ACCESO CONCEDIDO";
-            etiqueta.color = new Color(0.15f, 1f, 0.35f);
+            if (ocultarTextoAlResolver)
+            {
+                etiqueta.gameObject.SetActive(false);
+            }
+            else
+            {
+                etiqueta.text = "ACCESO CONCEDIDO";
+                etiqueta.color = new Color(0.15f, 1f, 0.35f);
+            }
         }
         if (puertas != null)
         {

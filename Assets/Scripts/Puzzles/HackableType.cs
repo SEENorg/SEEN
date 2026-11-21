@@ -21,5 +21,11 @@ public enum HackableType
     Sincronizar,
 
     /// <summary>Completar una secuencia lógica eligiendo la opción correcta.</summary>
-    Secuencia
+    Secuencia,
+
+    /// <summary>
+    /// Pide el código secreto que muestra la pantalla de la sala (PuzzleCodigo)
+    /// una vez que se habilita. Es el único módulo de un terminal que lo use.
+    /// </summary>
+    CodigoSecreto
 }

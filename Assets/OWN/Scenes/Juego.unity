@@ -141,6 +141,9 @@ MonoBehaviour:
   margenExtra: 0.5
   velocidad: 3.5
   apertura: 4.5
+  abrirConE: 0
+  textoPrompt: Presione E para abrir la puerta
+  puertasSincronizadas: []
 --- !u!64 &7590360
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -937,17 +940,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d0590bdc46e4d84cb8f874c160877f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HazardGlow
-  minIntensidad: 1.6
-  maxIntensidad: 4.5
-  velocidad: 2.2
-  crearLuz: 0
-  mat: {fileID: 0}
-  emisionBase:
-    r: 0
-    g: 0
-    b: 0
-    a: 0
-  luz: {fileID: 0}
 --- !u!114 &52822898
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3808,17 +3800,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d0590bdc46e4d84cb8f874c160877f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HazardGlow
-  minIntensidad: 1.6
-  maxIntensidad: 4.5
-  velocidad: 2.2
-  crearLuz: 1
-  mat: {fileID: 0}
-  emisionBase:
-    r: 0
-    g: 0
-    b: 0
-    a: 0
-  luz: {fileID: 0}
 --- !u!114 &291756322
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3959,17 +3940,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d0590bdc46e4d84cb8f874c160877f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HazardGlow
-  minIntensidad: 1
-  maxIntensidad: 2.2
-  velocidad: 1.8
-  crearLuz: 0
-  mat: {fileID: 0}
-  emisionBase:
-    r: 0
-    g: 0
-    b: 0
-    a: 0
-  luz: {fileID: 0}
 --- !u!23 &297814064
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -5177,6 +5147,85 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 1548552022}
   m_SourcePrefab: {fileID: 100100000, guid: ed279349019c5455baddba5fd2e515ee, type: 3}
+--- !u!1 &406130736
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 406130737}
+  - component: {fileID: 406130739}
+  - component: {fileID: 406130738}
+  m_Layer: 0
+  m_Name: TextoCodigo
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &406130737
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 406130736}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1774238125}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 160, y: 30}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &406130738
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 406130736}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5f7201a12d95ffc409449d95f23cf332, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Text
+  m_Material: {fileID: 0}
+  m_Color: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_FontData:
+    m_Font: {fileID: 10102, guid: 0000000000000000e000000000000000, type: 0}
+    m_FontSize: 1
+    m_FontStyle: 0
+    m_BestFit: 0
+    m_MinSize: 1
+    m_MaxSize: 40
+    m_Alignment: 0
+    m_AlignByGeometry: 0
+    m_RichText: 1
+    m_HorizontalOverflow: 0
+    m_VerticalOverflow: 0
+    m_LineSpacing: 1
+  m_Text: New Text
+--- !u!222 &406130739
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 406130736}
+  m_CullTransparentMesh: 1
 --- !u!1001 &409744588
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -9014,6 +9063,9 @@ MonoBehaviour:
   margenExtra: 0.5
   velocidad: 3.5
   apertura: 4.5
+  abrirConE: 0
+  textoPrompt: Presione E para abrir la puerta
+  puertasSincronizadas: []
 --- !u!64 &709774012
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -10457,6 +10509,85 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
+--- !u!1 &924251219
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 924251222}
+  - component: {fileID: 924251221}
+  - component: {fileID: 924251220}
+  m_Layer: 0
+  m_Name: EventSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &924251220
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 924251219}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 01614664b831546d2ae94a42149d80ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.UI.InputSystemUIInputModule
+  m_SendPointerHoverToParent: 1
+  m_MoveRepeatDelay: 0.5
+  m_MoveRepeatRate: 0.1
+  m_XRTrackingOrigin: {fileID: 0}
+  m_ActionsAsset: {fileID: -944628639613478452, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
+  m_PointAction: {fileID: -1654692200621890270, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
+  m_MoveAction: {fileID: -8784545083839296357, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
+  m_SubmitAction: {fileID: 392368643174621059, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
+  m_CancelAction: {fileID: 7727032971491509709, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
+  m_LeftClickAction: {fileID: 3001919216989983466, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
+  m_MiddleClickAction: {fileID: -2185481485913320682, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
+  m_RightClickAction: {fileID: -4090225696740746782, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
+  m_ScrollWheelAction: {fileID: 6240969308177333660, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
+  m_TrackedDevicePositionAction: {fileID: 6564999863303420839, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
+  m_TrackedDeviceOrientationAction: {fileID: 7970375526676320489, guid: ca9f5fa95ffab41fb9a615ab714db018, type: 3}
+  m_DeselectOnBackgroundClick: 1
+  m_PointerBehavior: 0
+  m_CursorLockBehavior: 0
+  m_ScrollDeltaPerTick: 6
+--- !u!114 &924251221
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 924251219}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 76c392e42b5098c458856cdf6ecaaaa1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.EventSystems.EventSystem
+  m_FirstSelected: {fileID: 0}
+  m_sendNavigationEvents: 1
+  m_DragThreshold: 10
+--- !u!4 &924251222
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 924251219}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &929155827
 GameObject:
   m_ObjectHideFlags: 0
@@ -10597,6 +10728,130 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 355635730}
   m_SourcePrefab: {fileID: 100100000, guid: a3a28df7da6da4deea03a2a2f34a54ac, type: 3}
+--- !u!1 &939168728
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 939168729}
+  - component: {fileID: 939168733}
+  - component: {fileID: 939168732}
+  - component: {fileID: 939168731}
+  - component: {fileID: 939168730}
+  m_Layer: 0
+  m_Name: PantallaCodigo
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &939168729
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 939168728}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: -16}
+  m_LocalScale: {x: 0.01, y: 0.01, z: 0.01}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1774238125}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: -0.25961494, y: 3.992642}
+  m_SizeDelta: {x: 430, y: 292}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &939168730
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 939168728}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ac558273ff7e754cbce9e1b2841ef43, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PuzzleCodigo
+  textoUI: {fileID: 406130738}
+  textoMesh: {fileID: 0}
+  longitud: 4
+  mensajeBloqueado: "C\xD3DIGO BLOQUEADO"
+  tamanoBloqueado: 1
+  tamanoCodigo: 1
+  colorBloqueado: {r: 1, g: 0.3, b: 0.3, a: 1}
+  colorCodigo: {r: 0.3, g: 1, b: 0.45, a: 1}
+  forzarHabilitado: 0
+--- !u!114 &939168731
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 939168728}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GraphicRaycaster
+  m_IgnoreReversedGraphics: 1
+  m_BlockingObjects: 0
+  m_BlockingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+--- !u!114 &939168732
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 939168728}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
+  m_UiScaleMode: 0
+  m_ReferencePixelsPerUnit: 100
+  m_ScaleFactor: 1
+  m_ReferenceResolution: {x: 800, y: 600}
+  m_ScreenMatchMode: 0
+  m_MatchWidthOrHeight: 0
+  m_PhysicalUnit: 3
+  m_FallbackScreenDPI: 96
+  m_DefaultSpriteDPI: 96
+  m_DynamicPixelsPerUnit: 1
+  m_PresetInfoIsWorld: 1
+--- !u!223 &939168733
+Canvas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 939168728}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_RenderMode: 2
+  m_Camera: {fileID: 0}
+  m_PlaneDistance: 100
+  m_PixelPerfect: 0
+  m_ReceivesEvents: 1
+  m_OverrideSorting: 0
+  m_OverridePixelPerfect: 0
+  m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
+  m_AdditionalShaderChannelsFlag: 0
+  m_UpdateRectTransformForStandalone: 0
+  m_SortingLayerID: 0
+  m_SortingOrder: 0
+  m_TargetDisplay: 0
 --- !u!1 &940422240 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 121940, guid: 70875bfee8728450189136f0533aabe0, type: 3}
@@ -13742,17 +13997,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d0590bdc46e4d84cb8f874c160877f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HazardGlow
-  minIntensidad: 1.2
-  maxIntensidad: 2.6
-  velocidad: 1.4
-  crearLuz: 0
-  mat: {fileID: 0}
-  emisionBase:
-    r: 0
-    g: 0
-    b: 0
-    a: 0
-  luz: {fileID: 0}
 --- !u!23 &1251802309
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -15540,17 +15784,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d0590bdc46e4d84cb8f874c160877f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HazardGlow
-  minIntensidad: 1.2
-  maxIntensidad: 2.6
-  velocidad: 1.4
-  crearLuz: 0
-  mat: {fileID: 0}
-  emisionBase:
-    r: 0
-    g: 0
-    b: 0
-    a: 0
-  luz: {fileID: 0}
 --- !u!23 &1443932569
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -17530,6 +17763,9 @@ MonoBehaviour:
   margenExtra: 0.5
   velocidad: 3.5
   apertura: 4.5
+  abrirConE: 0
+  textoPrompt: Presione E para abrir la puerta
+  puertasSincronizadas: []
 --- !u!64 &1654928448
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -17599,17 +17835,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d0590bdc46e4d84cb8f874c160877f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HazardGlow
-  minIntensidad: 1.2
-  maxIntensidad: 2.6
-  velocidad: 1.4
-  crearLuz: 0
-  mat: {fileID: 0}
-  emisionBase:
-    r: 0
-    g: 0
-    b: 0
-    a: 0
-  luz: {fileID: 0}
 --- !u!23 &1670546595
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -17991,17 +18216,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d0590bdc46e4d84cb8f874c160877f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HazardGlow
-  minIntensidad: 1.6
-  maxIntensidad: 4.5
-  velocidad: 2.2
-  crearLuz: 0
-  mat: {fileID: 0}
-  emisionBase:
-    r: 0
-    g: 0
-    b: 0
-    a: 0
-  luz: {fileID: 0}
 --- !u!114 &1693874575
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18464,6 +18678,9 @@ MonoBehaviour:
   margenExtra: 0.5
   velocidad: 3.5
   apertura: 4.5
+  abrirConE: 0
+  textoPrompt: Presione E para abrir la puerta
+  puertasSincronizadas: []
 --- !u!64 &1750441091
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -18596,6 +18813,82 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
+--- !u!1 &1774238124
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1774238125}
+  - component: {fileID: 1774238127}
+  - component: {fileID: 1774238126}
+  m_Layer: 0
+  m_Name: Panel
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1774238125
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1774238124}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 406130737}
+  m_Father: {fileID: 939168729}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1774238126
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1774238124}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
+  m_Material: {fileID: 2100000, guid: 1d40344795265e54988ebc1267cb9417, type: 2}
+  m_Color: {r: 0.21960784, g: 0.21960784, b: 0.21960784, a: 0}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 0}
+  m_Type: 1
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!222 &1774238127
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1774238124}
+  m_CullTransparentMesh: 1
 --- !u!1 &1774593323
 GameObject:
   m_ObjectHideFlags: 0
@@ -18644,17 +18937,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d0590bdc46e4d84cb8f874c160877f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HazardGlow
-  minIntensidad: 1.6
-  maxIntensidad: 4.5
-  velocidad: 2.2
-  crearLuz: 0
-  mat: {fileID: 0}
-  emisionBase:
-    r: 0
-    g: 0
-    b: 0
-    a: 0
-  luz: {fileID: 0}
 --- !u!114 &1774593326
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20205,11 +20487,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 539ee086220be90498977a0f82654c93, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::JumpRing
-  color: {r: 0.25, g: 0.9, b: 1, a: 0.95}
-  duracion: 0.5
-  escalaInicial: 0.5
-  escalaFinal: 3.2
-  alturaSuelo: 0.06
 --- !u!114 &1947066186
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -20407,6 +20684,9 @@ MonoBehaviour:
   margenExtra: 0.5
   velocidad: 3.5
   apertura: 4.5
+  abrirConE: 0
+  textoPrompt: Presione E para abrir la puerta
+  puertasSincronizadas: []
 --- !u!64 &1964055910
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -20969,17 +21249,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d0590bdc46e4d84cb8f874c160877f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HazardGlow
-  minIntensidad: 1.6
-  maxIntensidad: 4.5
-  velocidad: 2.2
-  crearLuz: 0
-  mat: {fileID: 0}
-  emisionBase:
-    r: 0
-    g: 0
-    b: 0
-    a: 0
-  luz: {fileID: 0}
 --- !u!114 &2037540891
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -21119,17 +21388,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d0590bdc46e4d84cb8f874c160877f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HazardGlow
-  minIntensidad: 1.6
-  maxIntensidad: 4.5
-  velocidad: 2.2
-  crearLuz: 0
-  mat: {fileID: 0}
-  emisionBase:
-    r: 0
-    g: 0
-    b: 0
-    a: 0
-  luz: {fileID: 0}
 --- !u!114 &2049565575
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -21269,17 +21527,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d0590bdc46e4d84cb8f874c160877f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HazardGlow
-  minIntensidad: 1.6
-  maxIntensidad: 4.5
-  velocidad: 2.2
-  crearLuz: 0
-  mat: {fileID: 0}
-  emisionBase:
-    r: 0
-    g: 0
-    b: 0
-    a: 0
-  luz: {fileID: 0}
 --- !u!114 &2054357419
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -22210,17 +22457,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1d0590bdc46e4d84cb8f874c160877f3, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HazardGlow
-  minIntensidad: 1.6
-  maxIntensidad: 4.5
-  velocidad: 2.2
-  crearLuz: 0
-  mat: {fileID: 0}
-  emisionBase:
-    r: 0
-    g: 0
-    b: 0
-    a: 0
-  luz: {fileID: 0}
 --- !u!114 &2140935545
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -22420,6 +22656,7 @@ SceneRoots:
   m_Roots:
   - {fileID: 839471569}
   - {fileID: 552296690}
+  - {fileID: 939168729}
   - {fileID: 1947066180}
   - {fileID: 2132349295}
   - {fileID: 1679806950}
@@ -22462,8 +22699,8 @@ SceneRoots:
   - {fileID: 50168646}
   - {fileID: 580756622}
   - {fileID: 1750441088}
-  - {fileID: 246407354}
   - {fileID: 1964055906}
+  - {fileID: 246407354}
   - {fileID: 150770895}
   - {fileID: 1403941064}
   - {fileID: 378270474}
@@ -22513,3 +22750,4 @@ SceneRoots:
   - {fileID: 814098859}
   - {fileID: 1838348292}
   - {fileID: 1473278924}
+  - {fileID: 924251222}

@@ -154,12 +154,24 @@ public class HackManager : MonoBehaviour, IContextoHack
         if (pc != null) pc.enabled = true;
     }
 
+    /// <summary>
+    /// True si la lista trae el módulo CodigoSecreto. En ese caso se usan exactamente los módulos
+    /// indicados en el terminal (en los demás casos se eligen al azar).
+    /// </summary>
+    private static bool ContieneCodigoSecreto(HackableType[] mods)
+    {
+        if (mods == null) return false;
+        foreach (var m in mods)
+            if (m == HackableType.CodigoSecreto) return true;
+        return false;
+    }
+
     private void Iniciar(HackableType[] mods, string nombreAcceso, Action onResuelto, bool tutorial = false)
     {
         if (activo) return;
 
         int cantidad = (mods != null && mods.Length > 0) ? mods.Length : 1;
-        if (tutorial)
+        if (tutorial || ContieneCodigoSecreto(mods))
         {
             if (mods != null && mods.Length > 0)
                 modulos = mods;
@@ -168,10 +180,14 @@ public class HackManager : MonoBehaviour, IContextoHack
         }
         else
         {
-            int totalTipos = Enum.GetValues(typeof(HackableType)).Length;
+            // CodigoSecreto no sale al azar: solo aparece si el terminal lo trae en su lista
+            var disponibles = new List<HackableType>();
+            foreach (HackableType t in Enum.GetValues(typeof(HackableType)))
+                if (t != HackableType.CodigoSecreto) disponibles.Add(t);
+
             modulos = new HackableType[cantidad];
             for (int i = 0; i < cantidad; i++)
-                modulos[i] = (HackableType)UnityEngine.Random.Range(0, totalTipos);
+                modulos[i] = disponibles[UnityEngine.Random.Range(0, disponibles.Count)];
         }
         onCompletado = onResuelto;
         esTutorial = tutorial;
@@ -305,7 +321,8 @@ public class HackManager : MonoBehaviour, IContextoHack
         feedbackTexto.text = "";
 
         // Tutorial (Nivel 1): primero las instrucciones, después el módulo
-        if (esTutorial && !forzarModulo)
+        // (CodigoSecreto se salta las instrucciones: va directo a pedir el código)
+        if (esTutorial && !forzarModulo && modulos[indiceModulo] != HackableType.CodigoSecreto)
         {
             MostrarInstrucciones(modulos[indiceModulo]);
             return;
