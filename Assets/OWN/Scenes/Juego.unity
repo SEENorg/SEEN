@@ -2454,9 +2454,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4319e122f2b4a134fbd11fdf13f1be41, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiagnosticoEnemigo
-  enemigo: {fileID: 0}
-  ultimaPos: {x: 0, y: 0, z: 0}
-  proximoLog: 0
 --- !u!114 &106506024
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4179,9 +4176,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4319e122f2b4a134fbd11fdf13f1be41, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiagnosticoEnemigo
-  enemigo: {fileID: 0}
-  ultimaPos: {x: 0, y: 0, z: 0}
-  proximoLog: 0
 --- !u!114 &200561475
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9524,9 +9518,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4319e122f2b4a134fbd11fdf13f1be41, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiagnosticoEnemigo
-  enemigo: {fileID: 0}
-  ultimaPos: {x: 0, y: 0, z: 0}
-  proximoLog: 0
 --- !u!114 &499461673
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14153,9 +14144,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4319e122f2b4a134fbd11fdf13f1be41, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiagnosticoEnemigo
-  enemigo: {fileID: 0}
-  ultimaPos: {x: 0, y: 0, z: 0}
-  proximoLog: 0
 --- !u!114 &743963287
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -28304,9 +28292,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4319e122f2b4a134fbd11fdf13f1be41, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiagnosticoEnemigo
-  enemigo: {fileID: 0}
-  ultimaPos: {x: 0, y: 0, z: 0}
-  proximoLog: 0
 --- !u!114 &1628138298
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -31024,7 +31009,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 313073c1bb9e8494581b626a7e4d10c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HackTerminal
-  modulos: 01000000
+  modulos: 00000000
   nombreAcceso: PUERTA 2
   resuelto: 0
   textoPrompt: Presione E para hackear
@@ -33321,22 +33306,22 @@ MonoBehaviour:
   diametroInterior: 400
   radioLetrasExt: 262
   radioLetrasInt: 158
-  radioNumeros: 118
   radioLineaDesde: 95
   radioLineaHasta: 292
   tamanioLetraExt: 34
   tamanioLetraInt: 26
-  tamanioNumero: 22
-  colorDisco: {r: 0.906, g: 0.867, b: 0.769, a: 1}
-  colorBorde: {r: 0.556, g: 0.478, b: 0.361, a: 1}
-  colorLetraExt: {r: 0.29, g: 0.22, b: 0.14, a: 1}
-  colorLetraInt: {r: 0.29, g: 0.22, b: 0.14, a: 1}
-  colorNumero: {r: 0.45, g: 0.35, b: 0.2, a: 1}
-  colorFondo: {r: 0.03, g: 0.04, b: 0.06, a: 0.97}
-  colorHoja: {r: 0.965, g: 0.945, b: 0.875, a: 1}
-  colorTinta: {r: 0.2, g: 0.16, b: 0.1, a: 1}
-  xRueda: -250
-  xTablero: 580
+  colorFondoPantalla: {r: 0.02, g: 0.03, b: 0.06, a: 0.94}
+  colorPanel: {r: 0.04, g: 0.06, b: 0.1, a: 1}
+  colorAcento: {r: 0.15, g: 0.85, b: 1, a: 1}
+  colorCodigo: {r: 0.45, g: 0.92, b: 1, a: 1}
+  colorOriginal: {r: 0.3, g: 1, b: 0.5, a: 1}
+  colorDiscoExt: {r: 0.06, g: 0.09, b: 0.14, a: 1}
+  colorDiscoInt: {r: 0.04, g: 0.13, b: 0.11, a: 1}
+  colorNotas: {r: 0.03, g: 0.05, b: 0.08, a: 1}
+  colorTextoNotas: {r: 0.8, g: 1, b: 0.9, a: 1}
+  escalaPantalla: 0.8
+  posXRueda: -310
+  posXCuaderno: 350
 --- !u!114 &1947066185
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -34288,9 +34273,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4319e122f2b4a134fbd11fdf13f1be41, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DiagnosticoEnemigo
-  enemigo: {fileID: 0}
-  ultimaPos: {x: 0, y: 0, z: 0}
-  proximoLog: 0
 --- !u!114 &2010905691
 MonoBehaviour:
   m_ObjectHideFlags: 0
