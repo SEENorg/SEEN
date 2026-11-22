@@ -409,11 +409,11 @@ public class HackManager : MonoBehaviour, IContextoHack
         switch (tipo)
         {
             case HackableType.DescifrarCodigo:
-                return "El código interceptado está cifrado con un desplazamiento César.\n\n" +
-                       "Si el desplazamiento es -3, cada letra se movió 3 lugares hacia adelante " +
-                       "en el abecedario. Para recuperar la palabra original, mueve cada letra " +
-                       "hacia atrás esa misma cantidad.\n\n" +
-                       "Ejemplo:  'D' con desplazamiento -3  =  'A'\n\n" +
+                return "El código interceptado está cifrado con un desplazamiento César muy simple: +1.\n\n" +
+                       "Cada letra del código está UNA letra antes de la original. Para recuperar " +
+                       "la palabra, avanza cada letra 1 lugar en el abecedario.\n\n" +
+                       "Ejemplo:  'B'  =  'C'     'M'  =  'N'\n\n" +
+                       "Puedes abrir la tabla de ayuda con TAB.\n" +
                        "Escribe la palabra original en el campo de texto y presiona VERIFICAR.";
 
             case HackableType.UnirCables:
