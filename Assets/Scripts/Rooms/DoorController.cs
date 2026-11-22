@@ -6,6 +6,7 @@ using UnityEngine;
 /// o hacia los lados para puertas corredizas) y TODOS sus colliders (el de la
 /// raíz y los de los hijos) se desactivan. Funciona con puertas simples (un cubo)
 /// y con prefabs de assets (modelo en un hijo, collider en otro hijo).
+/// Opcional: "Cerrar Al Pasar" hace que la puerta se vuelva a cerrar cuando el jugador la cruza.
 /// </summary>
 [RequireComponent(typeof(Collider))]
 public class DoorController : MonoBehaviour, IInteractuable
@@ -33,10 +34,27 @@ public class DoorController : MonoBehaviour, IInteractuable
     public string textoPrompt = "Presione E para abrir la puerta";
     public DoorController[] puertasSincronizadas;
 
+    [Header("Cerrar al pasar (opcional)")]
+    [Tooltip("DESACTIVADO por defecto: la puerta se queda abierta. Si lo activas, la puerta se vuelve a cerrar cuando el jugador la cruza.")]
+    public bool cerrarAlPasar = false;
+
+    [Tooltip("Metros que el jugador debe alejarse del otro lado de la puerta antes de que se cierre")]
+    public float distanciaParaCerrar = 1.5f;
+
+    [Tooltip("Velocidad con la que se cierra (unidades/segundo)")]
+    public float velocidadCierre = 6f;
+
     private bool abierta;
     private Collider[] colliders;
     private Vector3 destino;
     private TextMesh etiqueta;
+
+    // Para "cerrar al pasar"
+    private Vector3 posicionCerrada;
+    private Vector3 normalPaso;      // eje por donde atraviesa el jugador (el lado delgado de la puerta)
+    private Transform jugador;
+    private bool ladoGuardado;
+    private float ladoAlAbrir;
 
     public bool Abierta
     {
@@ -67,6 +85,8 @@ public class DoorController : MonoBehaviour, IInteractuable
         if (recorrido <= 0f)
             recorrido = MedirEnDireccion(dirMundo) + margenExtra;
 
+        posicionCerrada = transform.position;
+        normalPaso = CalcularNormalDePaso();
         destino = transform.position + dirMundo * recorrido;
 
         if (abrirConE)
@@ -97,8 +117,87 @@ public class DoorController : MonoBehaviour, IInteractuable
                 etiqueta.transform.rotation = Quaternion.LookRotation(etiqueta.transform.position - cam.transform.position);
         }
 
-        if (!abierta) return;
+        if (!abierta)
+        {
+            // Si estaba abierta y se mandó cerrar, vuelve a su sitio
+            if (transform.position != posicionCerrada)
+                transform.position = Vector3.MoveTowards(transform.position, posicionCerrada, velocidadCierre * Time.deltaTime);
+            return;
+        }
+
         transform.position = Vector3.MoveTowards(transform.position, destino, velocidad * Time.deltaTime);
+
+        if (cerrarAlPasar)
+            RevisarSiJugadorPaso();
+    }
+
+    /// <summary>Cierra la puerta (vuelve a su posición y recupera sus colliders).</summary>
+    public void Cerrar()
+    {
+        if (!abierta) return;
+        abierta = false;
+        ladoGuardado = false;
+
+        if (colliders != null)
+        {
+            for (int i = 0; i < colliders.Length; i++)
+                colliders[i].enabled = true;
+        }
+
+        if (abrirConE && etiqueta != null)
+            etiqueta.gameObject.SetActive(true);
+
+        Debug.Log("[DoorController] Cerrar() llamado en " + name);
+    }
+
+    /// <summary>
+    /// Detecta que el jugador cruzó la puerta: primero anota de qué lado venía
+    /// y cuando ya está del lado contrario (y un poco lejos), la cierra.
+    /// </summary>
+    private void RevisarSiJugadorPaso()
+    {
+        if (jugador == null)
+        {
+            PlayerController pc = Object.FindFirstObjectByType<PlayerController>();
+            if (pc == null) return;
+            jugador = pc.transform;
+        }
+
+        Vector3 relativo = jugador.position - posicionCerrada;
+        float lado = Vector3.Dot(relativo, normalPaso);          // + o - según el lado de la puerta
+
+        // Si está muy lejos de la puerta, no cuenta
+        Vector3 lateral = relativo - normalPaso * lado;
+        lateral.y = 0f;
+        if (lateral.magnitude > 8f) return;
+
+        // 1) Anotar el lado desde el que se acerca
+        if (!ladoGuardado)
+        {
+            if (Mathf.Abs(lado) > 0.3f)
+            {
+                ladoAlAbrir = Mathf.Sign(lado);
+                ladoGuardado = true;
+            }
+            return;
+        }
+
+        // 2) Ya está del lado contrario y lo bastante lejos: cerrar
+        if (Mathf.Sign(lado) != ladoAlAbrir && Mathf.Abs(lado) > distanciaParaCerrar)
+            Cerrar();
+    }
+
+    /// <summary>Eje horizontal por el que se cruza la puerta: el lado más delgado de la puerta.</summary>
+    private Vector3 CalcularNormalDePaso()
+    {
+        Renderer[] renderers = GetComponentsInChildren<Renderer>();
+        if (renderers.Length == 0) return transform.forward;
+
+        Bounds limites = renderers[0].bounds;
+        for (int i = 1; i < renderers.Length; i++)
+            limites.Encapsulate(renderers[i].bounds);
+
+        return limites.size.x < limites.size.z ? Vector3.right : Vector3.forward;
     }
 
     public void Interactuar()
@@ -118,6 +217,7 @@ public class DoorController : MonoBehaviour, IInteractuable
         Debug.Log("[DoorController] Abrir() llamado en " + name);
         if (abierta) return;
         abierta = true;
+        ladoGuardado = false;
 
         if (etiqueta != null)
             etiqueta.gameObject.SetActive(false);
