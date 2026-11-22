@@ -33,6 +33,9 @@ public static class Boot
         // Si ya estamos en el menú, todo bien
         if (escenaActual == EscenaMenu)
             return;
+            
+        if (escenaActual == "IntroScene")
+            return;
 
         // Se inició el juego desde una escena de nivel → ir al menú
         if (Application.CanStreamedLevelBeLoaded(EscenaMenu))
