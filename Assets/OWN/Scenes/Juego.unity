@@ -144,6 +144,9 @@ MonoBehaviour:
   abrirConE: 0
   textoPrompt: Presione E para abrir la puerta
   puertasSincronizadas: []
+  cerrarAlPasar: 0
+  distanciaParaCerrar: 1.5
+  velocidadCierre: 6
 --- !u!64 &7590360
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -1727,6 +1730,9 @@ MonoBehaviour:
   abrirConE: 0
   textoPrompt: Presione E para abrir la puerta
   puertasSincronizadas: []
+  cerrarAlPasar: 1
+  distanciaParaCerrar: 1.5
+  velocidadCierre: 6
 --- !u!64 &72893732
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -4124,7 +4130,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 313073c1bb9e8494581b626a7e4d10c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HackTerminal
-  modulos: 00000000
+  modulos: 01000000
   nombreAcceso: PUERTA 1
   resuelto: 0
   textoPrompt: Presione E para hackear
@@ -13498,6 +13504,9 @@ MonoBehaviour:
   abrirConE: 0
   textoPrompt: Presione E para abrir la puerta
   puertasSincronizadas: []
+  cerrarAlPasar: 0
+  distanciaParaCerrar: 1.5
+  velocidadCierre: 6
 --- !u!64 &709774012
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -21153,6 +21162,9 @@ MonoBehaviour:
   puertasSincronizadas:
   - {fileID: 0}
   - {fileID: 0}
+  cerrarAlPasar: 1
+  distanciaParaCerrar: 1.5
+  velocidadCierre: 6
 --- !u!64 &1168794873
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -28838,6 +28850,9 @@ MonoBehaviour:
   abrirConE: 0
   textoPrompt: Presione E para abrir la puerta
   puertasSincronizadas: []
+  cerrarAlPasar: 0
+  distanciaParaCerrar: 1.5
+  velocidadCierre: 6
 --- !u!64 &1654928448
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -30277,6 +30292,9 @@ MonoBehaviour:
   abrirConE: 0
   textoPrompt: Presione E para abrir la puerta
   puertasSincronizadas: []
+  cerrarAlPasar: 0
+  distanciaParaCerrar: 1.5
+  velocidadCierre: 6
 --- !u!64 &1750441091
 MeshCollider:
   m_ObjectHideFlags: 0
@@ -31009,7 +31027,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 313073c1bb9e8494581b626a7e4d10c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HackTerminal
-  modulos: 00000000
+  modulos: 01000000
   nombreAcceso: PUERTA 2
   resuelto: 0
   textoPrompt: Presione E para hackear
@@ -33687,6 +33705,9 @@ MonoBehaviour:
   abrirConE: 0
   textoPrompt: Presione E para abrir la puerta
   puertasSincronizadas: []
+  cerrarAlPasar: 0
+  distanciaParaCerrar: 1.5
+  velocidadCierre: 6
 --- !u!64 &1964055910
 MeshCollider:
   m_ObjectHideFlags: 0
