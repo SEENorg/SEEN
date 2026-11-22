@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9260618098840934993a07b60ef2e4ab, type: 3}
+  m_Name: ScannerConfig
+  m_EditorClassIdentifier: Assembly-CSharp::Game.Scanner.ScannerConfig
+  teclaActivar: 31
+  bloquearEnPausa: 1
+  cerrarAlPausar: 1
+  distancia: 0.7
+  desplazamiento: {x: 0.56, y: -0.05}
+  inclinacionExtra: {x: 3, y: 6}
+  suavizadoPosicion: 18
+  suavizadoRotacion: 14
+  alcance: 40
+  radioDeteccion: 0.25
+  capasDeteccion:
+    serializedVersion: 2
+    m_Bits: 4294967035
+  intervaloDeteccion: 0.1
+  tiempoGracia: 0.35
+  alphaFondo: 0.45
+  colorFondo: {r: 0.02, g: 0.04, b: 0.07, a: 1}
+  colorNeon: {r: 0.15, g: 0.95, b: 1, a: 1}
+  colorTexto: {r: 0.85, g: 1, b: 1, a: 1}
+  colorAlerta: {r: 1, g: 0.25, b: 0.3, a: 1}
+  duracionFade: 0.25
+  colorAmenazaBaja: {r: 0.4, g: 1, b: 0.5, a: 1}
+  colorAmenazaMedia: {r: 1, g: 0.9, b: 0.3, a: 1}
+  colorAmenazaAlta: {r: 1, g: 0.55, b: 0.2, a: 1}
+  colorAmenazaCritica: {r: 1, g: 0.2, b: 0.3, a: 1}
+  intensidadFlicker: 0.08
+  velocidadPulso: 3
+  alphaBrillo: 0.3
+  cantidadLineas: 120
+  velocidadScanlines: 0.6
+  alphaScanlines: 0.12
+  alphaRuido: 0.06
+  caracteresCifrado: '!@#$%&*0123456789ABCDEF'
+  velocidadDescifrado: 40
+  intervaloCambio: 0.04
+  retrasoEntreCampos: 0.08
