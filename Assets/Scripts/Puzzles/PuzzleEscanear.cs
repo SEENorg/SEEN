@@ -1,78 +1,163 @@
 using UnityEngine;
 using UnityEngine.UI;
-/// <summary>Minijuego: encontrar el glifo distinto en una cuadrícula.</summary>
+using UnityEngine.EventSystems;
+
+/// <summary>
+/// Minijuego: encontrar el glifo distinto (◈) entre todos los iguales (◆) de una cuadrícula.
+/// La diferencia es de FORMA, no de color, así que sirve para personas con daltonismo.
+///
+/// Controles: ratón (clic), mando (cruceta + A) o teclado (flechas + Enter).
+/// Si eliges un glifo equivocado, la celda se marca en rojo y la cuadrícula se vuelve a generar.
+/// </summary>
 public class PuzzleEscanear : IPuzzle
 {
+    private const float AnchoTarjeta = 560f;
+    private const float AltoTarjeta = 560f;
+    private const float LadoCuadricula = 340f;
+    private const float YCuadricula = -32f;
+    private const float DuracionError = 0.8f;
+    private const string GlifoIgual = "◆";
+    private const string GlifoDistinto = "◈";
+
     private readonly IContextoHack ctx;
-    private int indiceEscaneado;
+    private CajasRedondeadasUI cajas;
+    private TarjetaHackUI tarjeta;
+    private Transform cuadricula;
+    private Button[] celdas;
+    private GameObject ultimaSeleccion;
+    private int filas;
+    private int indiceDistinto;
+    private int indiceAnterior;
+    private float tiempoError;
+    private bool resuelto;
 
     public PuzzleEscanear(IContextoHack ctx)
     {
         this.ctx = ctx;
     }
 
+    public void Construir()
+    {
+        cajas = new CajasRedondeadasUI();
+        ctx.MostrarMarco(false);
+        tarjeta = new TarjetaHackUI(ctx, cajas, AnchoTarjeta, AltoTarjeta, "ESCANEO DE MATRIZ: ENCUENTRA EL GLIFO DIFERENTE");
+
+        filas = 4 + Mathf.Clamp(ctx.DificultadBase + ctx.IndiceModulo, 0, 2);
+        tiempoError = 0f;
+        resuelto = false;
+        indiceAnterior = 0;
+
+        ConstruirCuadricula();
+    }
+
     public void Actualizar()
     {
+        if (tiempoError > 0f)
+        {
+            tiempoError -= Time.unscaledDeltaTime;
+            if (tiempoError <= 0f) ConstruirCuadricula();   // reescaneo
+        }
+        MantenerSeleccion();
     }
 
     public void Detener()
     {
+        ctx.MostrarMarco(true);
+        if (cajas != null) cajas.Liberar();
+        cajas = null;
+        tarjeta = null;
+        celdas = null;
+        cuadricula = null;
+        ultimaSeleccion = null;
     }
 
-    public void Construir()
+    // ── Cuadrícula ──────────────────────────────────────────────────
+
+    private void ConstruirCuadricula()
     {
-        HackUI.CrearTexto(ctx.Contenido, "LblScan", "HAZ CLIC EN EL GLIFO DIFERENTE", 26, TextAnchor.MiddleCenter,
-                   new Vector2(0f, 186f), new Vector2(760f, 36f), HackUI.ColAcento);
+        if (tarjeta == null) return;
+        if (cuadricula != null) Object.Destroy(cuadricula.gameObject);
 
-        int filas = 4 + Mathf.Clamp(ctx.DificultadBase + ctx.IndiceModulo, 0, 2);
-        HackUI.CrearTexto(ctx.Contenido, "LblScanInfo", "Cuadrícula " + filas + "x" + filas, 18, TextAnchor.MiddleCenter,
-                   new Vector2(0f, 150f), new Vector2(400f, 26f), new Color(0.6f, 0.7f, 0.8f));
+        cuadricula = HackUI.NuevoUI(tarjeta.Raiz, "Cuadricula", new Vector2(0f, YCuadricula),
+                                    new Vector2(LadoCuadricula, LadoCuadricula)).transform;
 
-        ConstruirCuadricula(filas);
-    }
+        int total = filas * filas;
+        indiceDistinto = Random.Range(0, total);
+        celdas = new Button[total];
 
-    private void ConstruirCuadricula(int filas)
-    {
-        Transform viejo = ctx.Contenido.Find("GridScan");
-        if (viejo != null) Object.Destroy(viejo.gameObject);
+        float paso = LadoCuadricula / filas;
+        float tamanoCelda = paso - 8f;
+        int tamanoGlifo = Mathf.RoundToInt(tamanoCelda * 0.55f);
 
-        float lado = 360f;
-        float tam = lado / filas;
-        Transform grid = HackUI.NuevoUI(ctx.Contenido, "GridScan", new Vector2(0f, -45f), new Vector2(360f, 360f)).transform;
-
-        indiceEscaneado = Random.Range(0, filas * filas);
-        Color colorCelda = new Color(0.13f, 0.15f, 0.19f);
-
-        for (int i = 0; i < filas * filas; i++)
+        for (int i = 0; i < total; i++)
         {
-            int f = i / filas;
-            int c = i % filas;
-            float x = -lado / 2f + tam / 2f + c * tam;
-            float y = lado / 2f - tam / 2f - f * tam;
-            bool esDiferente = i == indiceEscaneado;
+            int fila = i / filas;
+            int columna = i % filas;
+            float x = -LadoCuadricula / 2f + paso / 2f + columna * paso;
+            float y = LadoCuadricula / 2f - paso / 2f - fila * paso;
 
-            string glifo;
-            if (esDiferente)
-                glifo = "◈";
-            else
-                glifo = "◆";
+            celdas[i] = tarjeta.CrearBoton(cuadricula, "Celda_" + i, new Vector2(x, y),
+                                           new Vector2(tamanoCelda, tamanoCelda),
+                                           tarjeta.ColorBoton, tarjeta.ColorBotonSeleccion, tarjeta.ColorBordeBoton,
+                                           i.ToString(), ElegirCelda, true);
 
-            Button b = HackUI.CrearBoton(grid, "Celda_" + i, glifo,
-                               new Vector2(x, y), new Vector2(tam - 8f, tam - 8f), colorCelda);
-            int idx = i;
-            b.onClick.AddListener(delegate
-            {
-                if (idx == indiceEscaneado)
-                {
-                    ctx.MostrarFeedback("MÓDULO COMPLETADO", true);
-                    ctx.CompletarModulo();
-                }
-                else
-                {
-                    ctx.MostrarFeedback("GLIFO INCORRECTO — REESCANEANDO", false);
-                    ConstruirCuadricula(filas);
-                }
-            });
+            string glifo = GlifoIgual;
+            if (i == indiceDistinto) glifo = GlifoDistinto;
+            HackUI.CrearTexto(celdas[i].transform, "Glifo", glifo, tamanoGlifo, TextAnchor.MiddleCenter,
+                              Vector2.zero, new Vector2(tamanoCelda, tamanoCelda), Color.white);
         }
+
+        tiempoError = 0f;
+        tarjeta.MostrarEstadoNormal("BUSCA EL GLIFO DIFERENTE  (" + filas + " x " + filas + ")");
+
+        // La selección se queda en la misma celda donde estaba (cómodo con el mando)
+        int indiceSeleccion = Mathf.Clamp(indiceAnterior, 0, total - 1);
+        ultimaSeleccion = celdas[indiceSeleccion].gameObject;
+        if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(ultimaSeleccion);
+    }
+
+    private void ElegirCelda(string valor)
+    {
+        if (ctx.InputBloqueado || ctx.EnTransicion) return;
+        if (resuelto || tiempoError > 0f) return;
+
+        int indice = int.Parse(valor);
+        indiceAnterior = indice;
+        TeclaCodigoUI celda = celdas[indice].GetComponent<TeclaCodigoUI>();
+
+        if (indice == indiceDistinto)
+        {
+            resuelto = true;
+            if (celda != null) celda.CambiarColoresBorde(HackUI.ColVerde, HackUI.ColVerde);
+            tarjeta.MostrarEstado("GLIFO ENCONTRADO: MATRIZ ESCANEADA", HackUI.ColVerde);
+            ctx.CompletarModulo();
+        }
+        else
+        {
+            if (celda != null) celda.CambiarColoresBorde(HackUI.ColRojo, HackUI.ColRojo);
+            tarjeta.MostrarEstado("GLIFO INCORRECTO: REESCANEANDO...", HackUI.ColRojo);
+            tiempoError = DuracionError;
+        }
+    }
+
+    // ── Selección (para el mando) ───────────────────────────────────
+
+    private void MantenerSeleccion()
+    {
+        if (EventSystem.current == null || celdas == null) return;
+        GameObject actual = EventSystem.current.currentSelectedGameObject;
+
+        for (int i = 0; i < celdas.Length; i++)
+        {
+            if (celdas[i] != null && celdas[i].gameObject == actual)
+            {
+                ultimaSeleccion = actual;
+                indiceAnterior = i;
+                return;
+            }
+        }
+
+        if (actual == null && ultimaSeleccion != null)
+            EventSystem.current.SetSelectedGameObject(ultimaSeleccion);
     }
 }

@@ -106,7 +106,7 @@ public class Crosshair : MonoBehaviour
 
     private void OnGUI()
     {
-        if (HackManager.Abierto || PauseMenu.Pausado) return;
+        if (HackManager.Abierto || EstadoMenus.HayMenuAbierto) return;
 
         Color c = colorNormal;
         if (objetivo != null) c = colorActivo;
@@ -147,4 +147,4 @@ public class Crosshair : MonoBehaviour
         tex.Apply();
         return tex;
     }
-}
+}

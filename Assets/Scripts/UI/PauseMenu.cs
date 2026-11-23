@@ -1,93 +1,121 @@
-using System;
 using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 #endif
 
 /// <summary>
-/// Menú de pausa (Esc durante el juego):
-///   • CONTINUAR    → vuelve al juego sin perder nada
-///   • AJUSTES      → gráficos/resolución/volumen/sensibilidad SIN perder progreso
-///   • MENÚ         → vuelve al menú principal (se pierde el progreso, con confirmación)
+/// Menú de pausa (ESC en el teclado o START en el mando):
+///   • CONTINUAR      → vuelve al juego sin perder nada
+///   • AJUSTES        → gráficos, resolución, pantalla completa, volumen y sensibilidad
+///   • MENÚ PRINCIPAL → vuelve al menú (pide confirmación, se pierde el progreso del nivel)
 /// Mientras está abierto, el juego queda en pausa real y el ratón libre.
+/// Se maneja con ratón, teclado y mando: el elemento seleccionado crece y se ilumina.
+/// B / ESC vuelve atrás (o cierra la pausa desde la pantalla principal).
 /// </summary>
 public class PauseMenu : MonoBehaviour
 {
-    private static bool _pausado;
+    private static bool pausado;
+
     public static bool Pausado
     {
-        get { return _pausado; }
-        private set { _pausado = value; }
+        get { return pausado; }
+        private set { pausado = value; }
     }
 
+    private enum Pantalla { Cerrada, Principal, Ajustes, Confirmar }
+
+    private readonly Vector2 tamanoFila = new Vector2(640f, 60f);
+
     private PlayerController pc;
+    private Pantalla pantalla = Pantalla.Cerrada;
+    private int frameApertura = -10;
 
-    // Estado de paneles
-    private bool panelAbierto;
-    private bool enAjustes;
-    private bool confirmandoSalida;
-
-    // Estado de ajustes
-    private int perfilGrafico;
-    private int indiceResolucion;
-    private bool pantallaCompleta;
-    private float volumen;
-    private float sensibilidad;
-    private string[] resoluciones;
-
-    // Estilos
-    private GUIStyle estTitulo, estBoton, estBotonChico, etiqueta, estTituloAjustes;
-    private bool estilosListos;
+    private ConstructorMenuJuego constructor;
+    private GameObject canvas;
+    private GameObject panelPrincipal;
+    private GameObject panelAjustes;
+    private GameObject panelConfirmar;
+    private Button botonContinuar;
+    private Button botonAjustes;
+    private Button botonSalir;
+    private Button botonCancelarSalida;
+    private SelectorOpcionUI selectorCalidad;
+    private SelectorOpcionUI selectorResolucion;
+    private SelectorOpcionUI selectorPantalla;
+    private Slider sliderVolumen;
+    private Slider sliderSensibilidad;
+    private Text textoVolumen;
+    private Text textoSensibilidad;
+    private Button botonVolverAjustes;
+    private bool cargandoValores;
 
     private void Awake()
     {
         pc = GetComponent<PlayerController>();
+        Pausado = false;
+    }
+
+    private void OnDestroy()
+    {
+        if (pantalla != Pantalla.Cerrada)
+        {
+            Pausado = false;
+            Time.timeScale = 1f;
+        }
+        if (canvas != null) Destroy(canvas);
+        if (constructor != null) constructor.Liberar();
     }
 
     private void Update()
     {
-        if (HackManager.Abierto || GameFeedback.NivelCompletadoVisible)
+        if (HackManager.Abierto || GameFeedback.NivelCompletadoVisible || GameFeedback.GameOverVisible ||
+            PantallaControles.Visible || CipherWheel.Abierta)
             return;
 
-        if (LeerEscape())
+        if (pantalla == Pantalla.Cerrada)
         {
-            if (!panelAbierto)
-                AbrirPausa();
-            else if (enAjustes)
-                enAjustes = false;
-            else if (confirmandoSalida)
-                confirmandoSalida = false;
-            else
-                CerrarPausa();
+            if (LeerPausa()) AbrirPausa();
+            return;
         }
+
+        Time.timeScale = 0f;
+        MantenerSeleccion();
+
+        if (Time.frameCount == frameApertura) return;
+        if (LeerPausa() && pantalla == Pantalla.Principal)
+        {
+            CerrarPausa();
+            return;
+        }
+        if (LeerAtras()) Atras();
     }
+
+    // ── Abrir / cerrar ──────────────────────────────────────────────
 
     private void AbrirPausa()
     {
-        panelAbierto = true;
+        if (canvas == null) Construir();
+
         Pausado = true;
-        enAjustes = false;
-        confirmandoSalida = false;
-
-        perfilGrafico = AjustesJuego.PerfilGuardado;
-        indiceResolucion = AjustesJuego.IndiceResolucionGuardado;
-        pantallaCompleta = AjustesJuego.PantallaCompletaGuardada;
-        volumen = AjustesJuego.VolumenGuardado;
-        sensibilidad = AjustesJuego.SensibilidadGuardada;
-        resoluciones = AjustesJuego.ListaResoluciones();
-        if (indiceResolucion >= resoluciones.Length) indiceResolucion = 0;
-
+        frameApertura = Time.frameCount;
         Time.timeScale = 0f;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
         if (pc != null) pc.enabled = false;
+
+        canvas.SetActive(true);
+        MostrarPantalla(Pantalla.Principal);
     }
 
     private void CerrarPausa()
     {
-        panelAbierto = false;
+        pantalla = Pantalla.Cerrada;
         Pausado = false;
+        if (canvas != null) canvas.SetActive(false);
+        if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(null);
 
         Time.timeScale = 1f;
         Cursor.lockState = CursorLockMode.Locked;
@@ -95,192 +123,305 @@ public class PauseMenu : MonoBehaviour
         if (pc != null) pc.enabled = true;
     }
 
-    private void OnGUI()
+    private void Atras()
     {
-        if (!panelAbierto) return;
-        InicializarEstilos();
+        if (pantalla == Pantalla.Principal) CerrarPausa();
+        else if (pantalla == Pantalla.Ajustes) MostrarPantalla(Pantalla.Principal);
+        else if (pantalla == Pantalla.Confirmar) MostrarPantalla(Pantalla.Principal);
+    }
 
-        GUI.color = new Color(0f, 0f, 0f, 0.8f);
-        GUI.DrawTexture(new Rect(0f, 0f, Screen.width, Screen.height), Texture2D.whiteTexture);
-        GUI.color = Color.white;
+    private void MostrarPantalla(Pantalla nueva)
+    {
+        Pantalla anterior = pantalla;
+        pantalla = nueva;
+        panelPrincipal.SetActive(nueva == Pantalla.Principal);
+        panelAjustes.SetActive(nueva == Pantalla.Ajustes);
+        panelConfirmar.SetActive(nueva == Pantalla.Confirmar);
 
-        if (confirmandoSalida)
+        GameObject seleccion = null;
+        if (nueva == Pantalla.Principal)
         {
-            DibujarConfirmacion();
-            return;
+            seleccion = botonContinuar.gameObject;
+            if (anterior == Pantalla.Ajustes) seleccion = botonAjustes.gameObject;
+            if (anterior == Pantalla.Confirmar) seleccion = botonSalir.gameObject;
+        }
+        else if (nueva == Pantalla.Ajustes)
+        {
+            CargarValores();
+            seleccion = selectorCalidad.gameObject;
+        }
+        else if (nueva == Pantalla.Confirmar)
+        {
+            seleccion = botonCancelarSalida.gameObject;
         }
 
-        float ph;
-        if (enAjustes)
-            ph = 620f;
-        else
-            ph = 420f;
-
-        float pw = 520f;
-        float px = (Screen.width - pw) / 2f;
-        float py = (Screen.height - ph) / 2f;
-
-        GUI.Box(new Rect(px, py, pw, ph), GUIContent.none, estBoton);
-
-        if (!enAjustes)
+        if (EventSystem.current != null)
         {
-            GUI.Label(new Rect(px, py + 24f, pw, 60f), "PAUSA", estTitulo);
-
-            if (Boton(new Rect(px + 60f, py + 110f, pw - 120f, 56f), "CONTINUAR"))
-                CerrarPausa();
-
-            if (Boton(new Rect(px + 60f, py + 182f, pw - 120f, 56f), "AJUSTES"))
-                enAjustes = true;
-
-            if (Boton(new Rect(px + 60f, py + 254f, pw - 120f, 56f), "MENÚ PRINCIPAL"))
-                confirmandoSalida = true;
-
-            GUI.Label(new Rect(px, py + ph - 50f, pw, 30f), "Esc para reanudar", etiqueta);
-        }
-        else
-        {
-            DibujarAjustes(px, py, pw);
+            EventSystem.current.SetSelectedGameObject(null);
+            EventSystem.current.SetSelectedGameObject(seleccion);
         }
     }
 
-    private void DibujarAjustes(float px, float py, float pw)
+    /// <summary>Para el mando: si se pierde la selección (p. ej. clic en el fondo), se recupera.</summary>
+    private void MantenerSeleccion()
     {
-        GUI.Label(new Rect(px, py + 22f, pw, 50f), "A J U S T E S", estTituloAjustes);
-        GUI.Label(new Rect(px, py + 68f, pw, 26f),
-                  "Podés ajustar sin perder tu progreso", etiqueta);
-
-        float x = px + 40f;
-        float ancho = pw - 80f;
-
-        GUI.Label(new Rect(x, py + 110f, ancho, 26f), "CALIDAD GRÁFICA", etiqueta);
-        string[] etiquetas = { "Alta", "Media", "Baja" };
-        int nuevoPerfil = GUI.Toolbar(new Rect(x, py + 140f, ancho, 44f), perfilGrafico, etiquetas, estBotonChico);
-        if (nuevoPerfil != perfilGrafico)
-        {
-            perfilGrafico = nuevoPerfil;
-            AjustesJuego.AplicarPerfilGrafico(perfilGrafico);
-        }
-
-        GUI.Label(new Rect(x, py + 200f, ancho, 26f), "RESOLUCIÓN", etiqueta);
-        float anchoBoton = 50f;
-        bool cambioRes = false;
-        if (Boton(new Rect(x, py + 230f, anchoBoton, 44f), "◀") && indiceResolucion > 0)
-        {
-            indiceResolucion--;
-            cambioRes = true;
-        }
-        if (Boton(new Rect(x + ancho - anchoBoton, py + 230f, anchoBoton, 44f), "▶") &&
-            indiceResolucion < resoluciones.Length - 1)
-        {
-            indiceResolucion++;
-            cambioRes = true;
-        }
-        GUI.Box(new Rect(x + anchoBoton + 8f, py + 230f, ancho - anchoBoton * 2f - 16f, 44f),
-                resoluciones[indiceResolucion], estBotonChico);
-        if (cambioRes)
-            AjustesJuego.AplicarResolucion(indiceResolucion);
-
-        bool nuevaPantalla = GUI.Toggle(new Rect(x, py + 296f, 28f, 28f), pantallaCompleta, "");
-        if (nuevaPantalla != pantallaCompleta)
-        {
-            pantallaCompleta = nuevaPantalla;
-            AjustesJuego.AplicarPantallaCompleta(pantallaCompleta);
-        }
-        GUI.Label(new Rect(x + 40f, py + 294f, ancho - 40f, 28f), "PANTALLA COMPLETA", etiqueta);
-
-        GUI.Label(new Rect(x, py + 344f, ancho, 26f),
-                  "VOLUMEN MAESTRO   " + Mathf.RoundToInt(volumen * 100) + "%", etiqueta);
-        float nuevoVol = GUI.HorizontalSlider(new Rect(x, py + 372f, ancho, 26f), volumen, 0f, 1f);
-        if (!Mathf.Approximately(nuevoVol, volumen))
-        {
-            volumen = nuevoVol;
-            AjustesJuego.AplicarVolumen(volumen);
-        }
-
-        GUI.Label(new Rect(x, py + 408f, ancho, 26f),
-                  "SENSIBILIDAD RATÓN   " + sensibilidad.ToString("0.00"), etiqueta);
-        float nuevaSens = GUI.HorizontalSlider(new Rect(x, py + 436f, ancho, 26f), sensibilidad, 0.02f, 0.5f);
-        if (!Mathf.Approximately(nuevaSens, sensibilidad))
-        {
-            sensibilidad = nuevaSens;
-            AjustesJuego.AplicarSensibilidad(sensibilidad);
-        }
-
-        if (Boton(new Rect(x, py + 490f, ancho, 52f), "VOLVER AL JUEGO"))
-            CerrarPausa();
-
-        if (Boton(new Rect(x, py + 552f, ancho, 46f), "MENÚ PRINCIPAL"))
-            confirmandoSalida = true;
+        if (EventSystem.current == null || EventSystem.current.currentSelectedGameObject != null) return;
+        if (pantalla == Pantalla.Principal) EventSystem.current.SetSelectedGameObject(botonContinuar.gameObject);
+        else if (pantalla == Pantalla.Ajustes) EventSystem.current.SetSelectedGameObject(selectorCalidad.gameObject);
+        else if (pantalla == Pantalla.Confirmar) EventSystem.current.SetSelectedGameObject(botonCancelarSalida.gameObject);
     }
 
-    private void DibujarConfirmacion()
+    // ── Botones ─────────────────────────────────────────────────────
+
+    private void AlContinuar()
     {
-        float pw = 480f, ph = 240f;
-        float px = (Screen.width - pw) / 2f;
-        float py = (Screen.height - ph) / 2f;
-
-        GUI.Box(new Rect(px, py, pw, ph), GUIContent.none, estBoton);
-        GUI.Label(new Rect(px, py + 26f, pw, 40f), "¿SALIR AL MENÚ PRINCIPAL?", estTituloAjustes);
-        GUI.Label(new Rect(px, py + 74f, pw, 50f),
-                  "Perderás el progreso de este nivel.\nLos ajustes se mantienen guardados.", etiqueta);
-
-        if (Boton(new Rect(px + 40f, py + 150f, 180f, 50f), "SÍ, SALIR"))
-        {
-            Time.timeScale = 1f;
-            Pausado = false;
-            panelAbierto = false;
-            if (pc != null) pc.enabled = true;
-            SceneManager.LoadScene("MainMenu");
-        }
-
-        if (Boton(new Rect(px + pw - 220f, py + 150f, 180f, 50f), "CANCELAR"))
-            confirmandoSalida = false;
+        CerrarPausa();
     }
 
-    private bool Boton(Rect r, string texto)
+    private void AlAjustes()
     {
-        bool hover = r.Contains(Event.current.mousePosition);
-        if (hover)
-            return GUI.Button(r, texto, estBotonChico);
-        else
-            return GUI.Button(r, texto, estBoton);
+        MostrarPantalla(Pantalla.Ajustes);
     }
 
-    private void InicializarEstilos()
+    private void AlMenuPrincipal()
     {
-        if (estilosListos) return;
-        estilosListos = true;
+        MostrarPantalla(Pantalla.Confirmar);
+    }
 
-        estTitulo = new GUIStyle(GUI.skin.label)
+    private void AlVolverAjustes()
+    {
+        MostrarPantalla(Pantalla.Principal);
+    }
+
+    private void AlConfirmarSalida()
+    {
+        Time.timeScale = 1f;
+        Pausado = false;
+        pantalla = Pantalla.Cerrada;
+        if (pc != null) pc.enabled = true;
+        Boot.PermitirInicioEscena = true;
+        SceneManager.LoadScene("MainMenu");
+    }
+
+    private void AlCancelarSalida()
+    {
+        MostrarPantalla(Pantalla.Principal);
+    }
+
+    // ── Ajustes ─────────────────────────────────────────────────────
+
+    private void CargarValores()
+    {
+        cargandoValores = true;
+        selectorCalidad.PonerIndice(AjustesJuego.PerfilGuardado);
+        selectorResolucion.PonerIndice(AjustesJuego.IndiceResolucionGuardado);
+        if (AjustesJuego.PantallaCompletaGuardada) selectorPantalla.PonerIndice(0);
+        else selectorPantalla.PonerIndice(1);
+        sliderVolumen.value = AjustesJuego.VolumenGuardado;
+        sliderSensibilidad.value = AjustesJuego.SensibilidadGuardada;
+        ActualizarTextoVolumen(sliderVolumen.value);
+        ActualizarTextoSensibilidad(sliderSensibilidad.value);
+        cargandoValores = false;
+    }
+
+    private void AlCambiarCalidad(int indice)
+    {
+        AjustesJuego.AplicarPerfilGrafico(indice);
+    }
+
+    private void AlCambiarResolucion(int indice)
+    {
+        AjustesJuego.AplicarResolucion(indice);
+    }
+
+    private void AlCambiarPantalla(int indice)
+    {
+        AjustesJuego.AplicarPantallaCompleta(indice == 0);
+    }
+
+    private void AlCambiarVolumen(float valor)
+    {
+        ActualizarTextoVolumen(valor);
+        if (!cargandoValores) AjustesJuego.AplicarVolumen(valor);
+    }
+
+    private void AlCambiarSensibilidad(float valor)
+    {
+        ActualizarTextoSensibilidad(valor);
+        if (!cargandoValores) AjustesJuego.AplicarSensibilidad(valor);
+    }
+
+    private void ActualizarTextoVolumen(float valor)
+    {
+        if (textoVolumen != null) textoVolumen.text = Mathf.RoundToInt(valor * 100f) + "%";
+    }
+
+    private void ActualizarTextoSensibilidad(float valor)
+    {
+        if (textoSensibilidad != null) textoSensibilidad.text = valor.ToString("0.00");
+    }
+
+    // ── Construcción ────────────────────────────────────────────────
+
+    private void Construir()
+    {
+        constructor = new ConstructorMenuJuego();
+        canvas = ConstructorMenuJuego.CrearCanvas(null, "CanvasPausa", 30000);
+        ConstructorMenuJuego.CrearVelo(canvas.transform, new Color(0f, 0.01f, 0.02f, 0.78f));
+
+        ConstruirPrincipal();
+        ConstruirAjustes();
+        ConstruirConfirmar();
+        canvas.SetActive(false);
+    }
+
+    private void ConstruirPrincipal()
+    {
+        panelPrincipal = NuevoPanel("PanelPrincipal");
+        Text titulo;
+        Text subtitulo;
+        Image borde;
+        Vector2 tamano = new Vector2(560f, 560f);
+        Transform t = constructor.CrearTarjeta(panelPrincipal.transform, "Tarjeta", Vector2.zero, tamano,
+                                               "[ CONEXIÓN EN ESPERA ]", "PAUSA", Color.white,
+                                               NombreNivel(), out titulo, out subtitulo, out borde);
+
+        Vector2 tamanoBoton = new Vector2(420f, 68f);
+        botonContinuar = constructor.CrearBoton(t, "BotonContinuar", "CONTINUAR", new Vector2(0f, 50f), tamanoBoton, HackUI.ColAcento);
+        botonAjustes = constructor.CrearBoton(t, "BotonAjustes", "AJUSTES", new Vector2(0f, -32f), tamanoBoton, HackUI.ColAcento);
+        botonSalir = constructor.CrearBoton(t, "BotonSalir", "MENÚ PRINCIPAL", new Vector2(0f, -114f), tamanoBoton,
+                                            ConstructorMenuJuego.ColorMagenta);
+        botonContinuar.onClick.AddListener(AlContinuar);
+        botonAjustes.onClick.AddListener(AlAjustes);
+        botonSalir.onClick.AddListener(AlMenuPrincipal);
+
+        Selectable[] orden = { botonContinuar, botonAjustes, botonSalir };
+        ConstructorMenuJuego.ConectarVertical(orden);
+
+        HackUI.CrearTexto(t, "Ayuda", "ESC / START: continuar      A / ENTER: aceptar      B: atrás", 14,
+                          TextAnchor.MiddleCenter, new Vector2(0f, -tamano.y / 2f + 34f), new Vector2(520f, 20f),
+                          ConstructorMenuJuego.ColorTextoSuave);
+    }
+
+    private void ConstruirAjustes()
+    {
+        panelAjustes = NuevoPanel("PanelAjustes");
+        Text titulo;
+        Text subtitulo;
+        Image borde;
+        Vector2 tamano = new Vector2(760f, 760f);
+        Transform t = constructor.CrearTarjeta(panelAjustes.transform, "Tarjeta", Vector2.zero, tamano,
+                                               "[ CONFIGURACIÓN DEL SISTEMA ]", "AJUSTES", Color.white,
+                                               "Puedes cambiarlos sin perder tu progreso", out titulo, out subtitulo, out borde);
+
+        string[] calidades = { "Alta", "Media", "Baja" };
+        string[] siNo = { "Activada", "Desactivada" };
+        string[] resoluciones = AjustesJuego.ListaResoluciones();
+        if (resoluciones == null || resoluciones.Length == 0) resoluciones = new string[] { "—" };
+
+        float y = 160f;
+        float paso = 72f;
+        selectorCalidad = constructor.CrearFilaSelector(t, "FilaCalidad", "CALIDAD GRÁFICA", new Vector2(0f, y), tamanoFila,
+                                                        calidades, 0, true, AlCambiarCalidad);
+        selectorResolucion = constructor.CrearFilaSelector(t, "FilaResolucion", "RESOLUCIÓN", new Vector2(0f, y - paso), tamanoFila,
+                                                           resoluciones, 0, false, AlCambiarResolucion);
+        selectorPantalla = constructor.CrearFilaSelector(t, "FilaPantalla", "PANTALLA COMPLETA", new Vector2(0f, y - paso * 2f),
+                                                         tamanoFila, siNo, 0, true, AlCambiarPantalla);
+        sliderVolumen = constructor.CrearFilaSlider(t, "FilaVolumen", "VOLUMEN MAESTRO", new Vector2(0f, y - paso * 3f), tamanoFila,
+                                                    0f, 1f, 1f, out textoVolumen);
+        sliderSensibilidad = constructor.CrearFilaSlider(t, "FilaSensibilidad", "SENSIBILIDAD", new Vector2(0f, y - paso * 4f),
+                                                         tamanoFila, 0.02f, 0.5f, 0.15f, out textoSensibilidad);
+        sliderVolumen.onValueChanged.AddListener(AlCambiarVolumen);
+        sliderSensibilidad.onValueChanged.AddListener(AlCambiarSensibilidad);
+
+        botonVolverAjustes = constructor.CrearBoton(t, "BotonVolver", "< VOLVER", new Vector2(0f, y - paso * 5f - 20f),
+                                                    new Vector2(300f, 60f), ConstructorMenuJuego.ColorMagenta);
+        botonVolverAjustes.onClick.AddListener(AlVolverAjustes);
+
+        Selectable[] orden =
         {
-            fontSize = 44, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter
+            selectorCalidad.GetComponent<Selectable>(), selectorResolucion.GetComponent<Selectable>(),
+            selectorPantalla.GetComponent<Selectable>(), sliderVolumen, sliderSensibilidad, botonVolverAjustes
         };
-        estTitulo.normal.textColor = new Color(0.85f, 0.95f, 1f);
+        ConstructorMenuJuego.ConectarVertical(orden);
 
-        estTituloAjustes = new GUIStyle(GUI.skin.label)
-        {
-            fontSize = 30, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter
-        };
-        estTituloAjustes.normal.textColor = new Color(0.15f, 0.85f, 1f);
-
-        etiqueta = new GUIStyle(GUI.skin.label)
-        {
-            fontSize = 18, alignment = TextAnchor.MiddleCenter
-        };
-        etiqueta.normal.textColor = new Color(0.75f, 0.85f, 0.95f);
-
-        estBoton = new GUIStyle(GUI.skin.box) { fontSize = 20, alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
-        estBoton.normal.textColor = Color.white;
-
-        estBotonChico = new GUIStyle(GUI.skin.box) { fontSize = 20, alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold };
-        estBotonChico.normal.textColor = new Color(0.35f, 0.9f, 1f);
+        HackUI.CrearTexto(t, "Ayuda", "↑ ↓ elegir opción      ◀ ▶ cambiar valor      B / ESC: volver", 14,
+                          TextAnchor.MiddleCenter, new Vector2(0f, -tamano.y / 2f + 30f), new Vector2(700f, 20f),
+                          ConstructorMenuJuego.ColorTextoSuave);
     }
 
-    private bool LeerEscape()
+    private void ConstruirConfirmar()
+    {
+        panelConfirmar = NuevoPanel("PanelConfirmar");
+        Text titulo;
+        Text subtitulo;
+        Image borde;
+        Vector2 tamano = new Vector2(620f, 380f);
+        Transform t = constructor.CrearTarjeta(panelConfirmar.transform, "Tarjeta", Vector2.zero, tamano,
+                                               "[ ADVERTENCIA ]", "¿SALIR AL MENÚ?", ConstructorMenuJuego.ColorMagenta,
+                                               "Perderás el progreso de este nivel. Los ajustes se mantienen.",
+                                               out titulo, out subtitulo, out borde);
+        titulo.fontSize = 42;
+        borde.color = new Color(1f, 0.18f, 0.62f, 0.5f);
+
+        Button botonSi = constructor.CrearBoton(t, "BotonSi", "SÍ, SALIR", new Vector2(-140f, -90f), new Vector2(240f, 64f),
+                                                ConstructorMenuJuego.ColorMagenta);
+        botonCancelarSalida = constructor.CrearBoton(t, "BotonCancelar", "CANCELAR", new Vector2(140f, -90f), new Vector2(240f, 64f),
+                                                     HackUI.ColAcento);
+        botonSi.onClick.AddListener(AlConfirmarSalida);
+        botonCancelarSalida.onClick.AddListener(AlCancelarSalida);
+
+        Navigation navegacionSi = new Navigation();
+        navegacionSi.mode = Navigation.Mode.Explicit;
+        navegacionSi.selectOnRight = botonCancelarSalida;
+        navegacionSi.selectOnLeft = botonCancelarSalida;
+        botonSi.navigation = navegacionSi;
+        Navigation navegacionNo = new Navigation();
+        navegacionNo.mode = Navigation.Mode.Explicit;
+        navegacionNo.selectOnLeft = botonSi;
+        navegacionNo.selectOnRight = botonSi;
+        botonCancelarSalida.navigation = navegacionNo;
+    }
+
+    private GameObject NuevoPanel(string nombre)
+    {
+        GameObject go = HackUI.NuevoUI(canvas.transform, nombre, Vector2.zero, Vector2.zero);
+        HackUI.Estirar(go);
+        return go;
+    }
+
+    private static string NombreNivel()
+    {
+        string nombre = GameFeedback.NombreNivelActual;
+        if (string.IsNullOrEmpty(nombre)) nombre = SceneManager.GetActiveScene().name;
+        return nombre.ToUpper();
+    }
+
+    // ── Entrada ─────────────────────────────────────────────────────
+
+    /// <summary>ESC (teclado) o START (mando).</summary>
+    private bool LeerPausa()
     {
 #if ENABLE_INPUT_SYSTEM
-        var kb = Keyboard.current;
-        return kb != null && kb.escapeKey.wasPressedThisFrame;
+        Keyboard teclado = Keyboard.current;
+        if (teclado != null && teclado.escapeKey.wasPressedThisFrame) return true;
+        Gamepad mando = Gamepad.current;
+        if (mando != null && mando.startButton.wasPressedThisFrame) return true;
+        return false;
+#else
+        return Input.GetKeyDown(KeyCode.Escape);
+#endif
+    }
+
+    /// <summary>B (mando) o ESC fuera de la pantalla principal.</summary>
+    private bool LeerAtras()
+    {
+#if ENABLE_INPUT_SYSTEM
+        Gamepad mando = Gamepad.current;
+        if (mando != null && mando.buttonEast.wasPressedThisFrame) return true;
+        Keyboard teclado = Keyboard.current;
+        if (teclado != null && teclado.escapeKey.wasPressedThisFrame) return true;
+        return false;
 #else
         return Input.GetKeyDown(KeyCode.Escape);
 #endif

@@ -59,6 +59,27 @@ public class CajasRedondeadasUI
         return borde;
     }
 
+    /// <summary>
+    /// Redondea un Image que ya existe (por ejemplo, un botón de la escena) y le agrega
+    /// un borde redondeado como hijo. Devuelve el Image del borde.
+    /// </summary>
+    public Image Redondear(Image imagen, Color colorBorde, float escalaEsquinas)
+    {
+        imagen.sprite = spriteRelleno;
+        imagen.type = Image.Type.Sliced;
+        imagen.pixelsPerUnitMultiplier = escalaEsquinas;
+
+        GameObject goBorde = HackUI.NuevoUI(imagen.transform, "Borde", Vector2.zero, Vector2.zero);
+        HackUI.Estirar(goBorde);
+        Image borde = goBorde.AddComponent<Image>();
+        borde.sprite = spriteBorde;
+        borde.type = Image.Type.Sliced;
+        borde.pixelsPerUnitMultiplier = escalaEsquinas;
+        borde.color = colorBorde;
+        borde.raycastTarget = false;
+        return borde;
+    }
+
     /// <summary>Crea solo un relleno redondeado (sin borde). Útil para puntos y barras.</summary>
     public Image CrearRelleno(Transform padre, string nombre, Vector2 posicion, Vector2 tamano,
                               Color color, float escalaEsquinas)

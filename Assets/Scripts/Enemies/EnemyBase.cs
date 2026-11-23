@@ -173,8 +173,7 @@ public abstract class EnemyBase : MonoBehaviour
     protected virtual void OnGUI()
     {
         if (muerto) return;
-        if (HackManager.Abierto || PauseMenu.Pausado || CipherWheel.Abierta ||
-            GameFeedback.NivelCompletadoVisible || GameFeedback.GameOverVisible)
+        if (HackManager.Abierto || CipherWheel.Abierta || EstadoMenus.HayMenuAbierto)
             return;
 
         Camera cam = Camera.main;
@@ -386,4 +385,4 @@ public abstract class EnemyBase : MonoBehaviour
             }
         }
     }
-}
+}

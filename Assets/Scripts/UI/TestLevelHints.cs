@@ -44,6 +44,7 @@ public class TestLevelHints : MonoBehaviour
     private void OnGUI()
     {
         if (goalReached) return;
+        if (EstadoMenus.HayMenuAbierto) return;
 
         if (style == null)
         {
@@ -66,4 +67,4 @@ public class TestLevelHints : MonoBehaviour
 
         GUI.Box(new Rect(12f, 108f, 470f, 132f), contenido, style);
     }
-}
+}

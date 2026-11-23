@@ -43,7 +43,7 @@ public class SkillIndicators : MonoBehaviour
     private void OnGUI()
     {
         if (pc == null) return;
-        if (HackManager.Abierto || PauseMenu.Pausado || CipherWheel.Abierta) return;
+        if (HackManager.Abierto || EstadoMenus.HayMenuAbierto || CipherWheel.Abierta) return;
 
         if (estiloEtiqueta == null)
         {
@@ -119,4 +119,4 @@ public class SkillIndicators : MonoBehaviour
         tex.Apply();
         return tex;
     }
-}
+}

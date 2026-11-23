@@ -548,10 +548,13 @@ public class HackManager : MonoBehaviour, IContextoHack
                      + "      <color=#26D9FF>TECLADO</color>  flechas + Enter" + salir;
             case HackableType.Patron:
             case HackableType.Secuencia:
+            case HackableType.Escanear:
+            case HackableType.Sincronizar:
                 return raton + "      <color=#26D9FF>MANDO</color>  cruceta + A"
                      + "      <color=#26D9FF>TECLADO</color>  flechas + Enter" + salir;
             case HackableType.DescifrarCodigo:
-                return raton + "      <color=#26D9FF>TECLADO</color>  escribe la palabra"
+                return "<color=#26D9FF>TECLADO</color>  escribe + Enter"
+                     + "      <color=#26D9FF>MANDO</color>  cruceta ↑ ↓ cambia letra + A"
                      + "      <color=#26D9FF>TAB</color>  tabla César" + salir;
             default:
                 return raton + " en los botones del módulo" + salir;
@@ -568,7 +571,7 @@ public class HackManager : MonoBehaviour, IContextoHack
                        "la palabra, avanza cada letra 1 lugar en el abecedario.\n\n" +
                        "Ejemplo:  'B'  =  'C'     'M'  =  'N'\n\n" +
                        "Puedes abrir la tabla de ayuda con TAB.\n" +
-                       "Escribe la palabra original en el campo de texto y presiona VERIFICAR.";
+                       "Escribe la palabra original en las casillas (una letra en cada una) y presiona VERIFICAR.";
 
             case HackableType.UnirCables:
                 return "Cada cable de ORIGEN (izquierda) tiene su pareja en DESTINO (derecha): " +
@@ -581,18 +584,19 @@ public class HackManager : MonoBehaviour, IContextoHack
             case HackableType.Patron:
                 return "El sistema muestra una secuencia de luces que debes memorizar.\n\n" +
                        "1. Observa el orden en que se encienden los botones.\n" +
-                       "2. Repite la secuencia haciendo clic en el mismo orden.\n" +
-                       "3. Si te equivocas, la secuencia se reinicia desde el principio.\n\n" +
+                       "2. Repite la secuencia pulsando los paneles en el mismo orden.\n" +
+                       "   Cada panel tiene un número y el nombre de su color.\n" +
+                       "3. Si te equivocas, aparece una secuencia nueva.\n\n" +
                        "Cada módulo agrega un paso más a la secuencia.";
 
             case HackableType.Escanear:
-                return "Una cuadrícula de glifos idénticos esconde UNO diferente." +
-                       "\n\nHaz clic en el glifo distinto para completar el módulo. " +
+                return "Una cuadrícula de glifos idénticos (◆) esconde UNO diferente (◈)." +
+                       "\n\nElige el glifo distinto para completar el módulo. " +
                        "Si te equivocas, la cuadrícula se reescanea.";
 
             case HackableType.Sincronizar:
-                return "El marcador se mueve por la pista y hay una ZONA VERDE." +
-                       "\n\nPresiona SINCRONIZAR (o la barra espaciadora) cuando el " +
+                return "El marcador blanco se mueve por la pista y hay una ZONA marcada (verde, con la palabra ZONA encima)." +
+                       "\n\nPresiona SINCRONIZAR (A en el mando, Espacio o Enter) cuando el " +
                        "marcador esté dentro de la zona. Las señales necesarias y la " +
                        "velocidad aumentan con la dificultad del nivel.";
 

@@ -3,49 +3,47 @@ using UnityEngine;
 /// <summary>
 /// HUD del juego SEEN con temática de redes sociales distópicas.
 /// Muestra en pantalla:
-///   • Vida del jugador (integridad del sistema, barra segmentada con reacción al daño)
-///   • Módulos de hackeo resueltos (Lista de Estructuras de Datos)
-///   • Notificaciones del sistema (Cola de Estructuras de Datos)
-///   • Nivel actual y dificultad (Diccionario de Estructuras de Datos)
-/// Se dibuja con OnGUI para mantener coherencia con el resto de la UI del proyecto.
+///   • Vida del jugador ("integridad de red"): panel neón con un bloque por vida,
+///     porcentaje grande, destello que recorre la barra, halo que late, sacudida y
+///     destello rojo al recibir daño, y bordes rojos en la pantalla cuando la vida es crítica.
+///   • (Opcional) Módulos de hackeo resueltos, notificaciones y nivel (Estructuras de Datos).
+/// Se dibuja con OnGUI, escalado a una pantalla de referencia de 1920 x 1080.
 /// </summary>
 public class HUDSistema : MonoBehaviour
 {
-    [Header("Posición y tamaño")]
-    [SerializeField] private float margen = 14f;
-    [SerializeField] private float anchoPanel = 340f;
-    [SerializeField] private float altoVida = 82f;
-    [SerializeField] private float altoModulos = 70f;
-    [SerializeField] private float altoNotificaciones = 120f;
+    private const float DuracionDano = 0.55f;
+
+    [Header("Posición y tamaño (pantalla de 1920 x 1080)")]
+    [SerializeField] private float margen = 24f;
+    [SerializeField] private float anchoPanel = 460f;
+    [SerializeField] private float altoVida = 128f;
     [SerializeField] private bool mostrarPanelesDatos = false;
 
     [Header("Colores temática SEEN")]
-    [SerializeField] private Color colorFondo = new Color(0.04f, 0.05f, 0.08f, 0.90f);
+    [SerializeField] private Color colorFondo = new Color(0.02f, 0.04f, 0.06f, 0.88f);
     [SerializeField] private Color colorVidaLlena = new Color(0.15f, 0.95f, 0.55f, 1f);
     [SerializeField] private Color colorVidaMedia = new Color(1f, 0.72f, 0.15f, 1f);
     [SerializeField] private Color colorVidaCritica = new Color(1f, 0.20f, 0.28f, 1f);
-    [SerializeField] private Color colorVidaVacia = new Color(0.18f, 0.10f, 0.14f, 0.85f);
+    [SerializeField] private Color colorVidaVacia = new Color(0.12f, 0.06f, 0.09f, 0.95f);
     [SerializeField] private Color colorTexto = new Color(0.88f, 0.95f, 1f);
     [SerializeField] private Color colorAcento = new Color(0.15f, 0.85f, 1f);
 
-    private GUIStyle estiloFondo;
-    private GUIStyle estiloTexto;
-    private GUIStyle estiloTitulo;
-    private GUIStyle estiloEstado;
-    private Texture2D texturaBlanca;
-
+    private PincelHUD pincel;
     private bool suscritoVida;
     private int ultimaVidaObservada = -1;
     private float vidaVisual = 1f;
-    private float efectoDañoTimer = 0f;
+    private float vidaFantasma = 1f;
+    private float esperaFantasma;
+    private float efectoDanoTimer;
+    private float efectoCuraTimer;
 
     private void Awake()
     {
-        texturaBlanca = Texture2D.whiteTexture;
         if (VidaJugador.Instancia != null)
         {
             ultimaVidaObservada = VidaJugador.Instancia.VidaActual;
             vidaVisual = VidaJugador.Instancia.VidaNormalizada;
+            vidaFantasma = vidaVisual;
         }
     }
 
@@ -56,6 +54,7 @@ public class HUDSistema : MonoBehaviour
         {
             ultimaVidaObservada = VidaJugador.Instancia.VidaActual;
             vidaVisual = VidaJugador.Instancia.VidaNormalizada;
+            vidaFantasma = vidaVisual;
         }
     }
 
@@ -72,6 +71,7 @@ public class HUDSistema : MonoBehaviour
     private void OnDestroy()
     {
         DesuscribirVida();
+        if (pincel != null) pincel.Liberar();
     }
 
     private void SuscribirVida()
@@ -91,269 +91,297 @@ public class HUDSistema : MonoBehaviour
     private void OnVidaCambiada(int vidaActual, int vidaMaxima)
     {
         if (ultimaVidaObservada >= 0 && vidaActual < ultimaVidaObservada)
-            efectoDañoTimer = 0.45f;
-
+        {
+            efectoDanoTimer = DuracionDano;
+            esperaFantasma = 0.35f;
+        }
+        else if (ultimaVidaObservada >= 0 && vidaActual > ultimaVidaObservada)
+        {
+            efectoCuraTimer = 0.6f;
+        }
         ultimaVidaObservada = vidaActual;
-        Debug.Log($"[HUD] Vida: {vidaActual}/{vidaMaxima}");
     }
 
     private void Update()
     {
         if (!suscritoVida) SuscribirVida();
 
-        if (efectoDañoTimer > 0f)
-            efectoDañoTimer -= Time.unscaledDeltaTime;
+        float dt = Time.unscaledDeltaTime;
+        if (efectoDanoTimer > 0f) efectoDanoTimer -= dt;
+        if (efectoCuraTimer > 0f) efectoCuraTimer -= dt;
 
-        float objetivo = VidaJugador.Instancia != null ? VidaJugador.Instancia.VidaNormalizada : 1f;
-        vidaVisual = Mathf.Lerp(vidaVisual, objetivo, Time.unscaledDeltaTime * 10f);
+        float objetivo = 1f;
+        if (VidaJugador.Instancia != null) objetivo = VidaJugador.Instancia.VidaNormalizada;
+        vidaVisual = Mathf.Lerp(vidaVisual, objetivo, dt * 12f);
+
+        // La parte perdida queda un momento en blanco/rojo y luego se va vaciando
+        if (esperaFantasma > 0f) esperaFantasma -= dt;
+        else vidaFantasma = Mathf.Lerp(vidaFantasma, objetivo, dt * 4f);
+        if (vidaFantasma < vidaVisual) vidaFantasma = vidaVisual;
     }
 
     private void OnGUI()
     {
         if (HackManager.Abierto || PauseMenu.Pausado || CipherWheel.Abierta ||
-            GameFeedback.NivelCompletadoVisible || GameFeedback.GameOverVisible)
+            GameFeedback.NivelCompletadoVisible || GameFeedback.GameOverVisible || PantallaControles.Visible)
             return;
 
-        if (estiloFondo == null)
+        if (pincel == null) pincel = new PincelHUD();
+        pincel.EmpezarEscala();
+
+        int vidaActual = 3;
+        int vidaMaxima = 3;
+        if (VidaJugador.Instancia != null)
         {
-            estiloFondo = new GUIStyle(GUI.skin.box);
-            estiloTexto = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = 14,
-                alignment = TextAnchor.MiddleLeft,
-                normal = { textColor = colorTexto },
-                wordWrap = true
-            };
-            estiloTitulo = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = 15,
-                fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleLeft,
-                normal = { textColor = colorAcento }
-            };
-            estiloEstado = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = 13,
-                fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleRight,
-                normal = { textColor = colorTexto }
-            };
+            vidaActual = VidaJugador.Instancia.VidaActual;
+            vidaMaxima = Mathf.Max(1, VidaJugador.Instancia.VidaMaxima);
+        }
+        float ratio = Mathf.Clamp01((float)vidaActual / vidaMaxima);
+
+        DibujarEfectosPantalla(ratio);
+        DibujarPanelVida(vidaActual, vidaMaxima, ratio);
+
+        if (mostrarPanelesDatos)
+        {
+            float y = margen + altoVida + 14f;
+            DibujarPanelModulos(ref y);
+            DibujarPanelNotificaciones(ref y);
+            DibujarPanelNivel(ref y);
         }
 
-        float y = margen;
-
-        // 1. VIDA DEL JUGADOR (Integridad de conexión)
-        DibujarPanelVida(ref y);
-        y += altoVida + 10f;
-
-        if (!mostrarPanelesDatos) return;
-
-        // 2. MÓDULOS DE HACKEO RESUELTOS (Lista de Estructuras de Datos)
-        DibujarPanelModulos(ref y);
-        y += altoModulos + 10f;
-
-        // 3. NOTIFICACIONES DEL SISTEMA (Cola de Estructuras de Datos)
-        DibujarPanelNotificaciones(ref y);
-        y += altoNotificaciones + 10f;
-
-        // 4. NIVEL Y DIFICULTAD (Diccionario de Estructuras de Datos)
-        DibujarPanelNivel(ref y);
+        pincel.TerminarEscala();
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════════
-    //  PANEL: VIDA DEL JUGADOR
+    //  VIDA
     // ═══════════════════════════════════════════════════════════════════════════════════
-    private void DibujarPanelVida(ref float y)
+
+    private void DibujarPanelVida(int vidaActual, int vidaMaxima, float ratio)
     {
-        float sacudidaX = 0f;
-        float sacudidaY = 0f;
-        if (efectoDañoTimer > 0f)
-        {
-            float intensidad = (efectoDañoTimer / 0.45f) * 6f;
-            sacudidaX = Mathf.Sin(Time.unscaledTime * 65f) * intensidad;
-            sacudidaY = Mathf.Cos(Time.unscaledTime * 55f) * (intensidad * 0.5f);
-        }
+        float ahora = Time.unscaledTime;
 
-        float x = margen + sacudidaX;
-        float posY = y + sacudidaY;
-
-        int vidaActual = VidaJugador.Instancia != null ? VidaJugador.Instancia.VidaActual : 3;
-        int vidaMaxima = VidaJugador.Instancia != null ? Mathf.Max(1, VidaJugador.Instancia.VidaMaxima) : 3;
-        float ratio = Mathf.Clamp01((float)vidaActual / vidaMaxima);
-
-        Color colorBarra = colorVidaLlena;
-        string etiquetaEstado = "CONEXIÓN SEGURA";
+        Color colorEstado = colorVidaLlena;
+        string textoEstado = "CONEXIÓN SEGURA";
+        float velocidadLatido = 2f;
         if (ratio <= 0.35f)
         {
-            colorBarra = colorVidaCritica;
-            etiquetaEstado = "SEÑAL CRÍTICA";
+            colorEstado = colorVidaCritica;
+            textoEstado = "SEÑAL CRÍTICA";
+            velocidadLatido = 7f;
         }
         else if (ratio <= 0.70f)
         {
-            colorBarra = colorVidaMedia;
-            etiquetaEstado = "ALERTA DE RED";
+            colorEstado = colorVidaMedia;
+            textoEstado = "ALERTA DE RED";
+            velocidadLatido = 4f;
         }
 
-        Color colorBorde = efectoDañoTimer > 0f
-            ? Color.Lerp(colorAcento, colorVidaCritica, efectoDañoTimer / 0.45f)
-            : colorAcento;
-
-        // Marco exterior neón y fondo oscuro
-        DibujarRect(new Rect(x, posY, anchoPanel, altoVida), colorFondo);
-        DibujarBorde(new Rect(x, posY, anchoPanel, altoVida), colorBorde, 2f);
-
-        // Encabezado estilo terminal SEEN
-        GUI.Label(new Rect(x + 12f, posY + 6f, anchoPanel - 24f, 22f), "SEEN // INTEGRIDAD DE RED", estiloTitulo);
-
-        if (efectoDañoTimer > 0f)
+        // Sacudida al recibir daño
+        float sacudidaX = 0f;
+        float sacudidaY = 0f;
+        float fuerzaDano = 0f;
+        if (efectoDanoTimer > 0f)
         {
-            Color prev = estiloEstado.normal.textColor;
-            estiloEstado.normal.textColor = colorVidaCritica;
-            GUI.Label(new Rect(x + 12f, posY + 6f, anchoPanel - 24f, 22f), "¡IMPACTO DE AMENAZA!", estiloEstado);
-            estiloEstado.normal.textColor = prev;
+            fuerzaDano = efectoDanoTimer / DuracionDano;
+            sacudidaX = Mathf.Sin(ahora * 70f) * fuerzaDano * 9f;
+            sacudidaY = Mathf.Cos(ahora * 57f) * fuerzaDano * 4f;
         }
 
-        // Barra continua suavizada + división en segmentos por cada vida
-        float barraX = x + 12f;
-        float barraY = posY + 34f;
-        float barraAncho = anchoPanel - 24f;
-        float barraAlto = 18f;
+        Rect panel = new Rect(margen + sacudidaX, margen + sacudidaY, anchoPanel, altoVida);
+        float latido = 0.5f + 0.5f * Mathf.Sin(ahora * velocidadLatido);
 
-        DibujarRect(new Rect(barraX, barraY, barraAncho, barraAlto), colorVidaVacia);
+        Color colorBorde = Color.Lerp(colorAcento, colorEstado, 0.5f);
+        if (fuerzaDano > 0f) colorBorde = Color.Lerp(colorBorde, colorVidaCritica, fuerzaDano);
+        if (efectoCuraTimer > 0f) colorBorde = Color.Lerp(colorBorde, colorVidaLlena, efectoCuraTimer / 0.6f);
 
-        if (vidaVisual > 0.001f)
-            DibujarRect(new Rect(barraX, barraY, barraAncho * Mathf.Clamp01(vidaVisual), barraAlto), colorBarra);
+        Color colorHalo = colorBorde;
+        colorHalo.a = 0.25f + 0.35f * latido + fuerzaDano * 0.4f;
+        pincel.Halo(panel, colorHalo, 4);
+        pincel.Caja(panel, colorFondo);
+        pincel.Borde(panel, colorBorde);
 
-        // Separadores de segmentos sobre la barra
-        float anchoSegmento = barraAncho / vidaMaxima;
-        for (int i = 1; i < vidaMaxima; i++)
+        // Acento rosado en la esquina, estilo terminal
+        pincel.Rectangulo(new Rect(panel.x + 18f, panel.y, 70f, 3f), ConstructorMenuJuego.ColorMagenta);
+
+        // Encabezado
+        pincel.Texto(new Rect(panel.x + 18f, panel.y + 12f, 300f, 22f), "SEEN // INTEGRIDAD DE RED", 16,
+                     colorAcento, TextAnchor.MiddleLeft, true);
+
+        int porcentaje = Mathf.RoundToInt(vidaVisual * 100f);
+        Color colorPorcentaje = colorEstado;
+        if (fuerzaDano > 0f && Mathf.Repeat(ahora, 0.12f) < 0.06f) colorPorcentaje = Color.white;
+        pincel.Texto(new Rect(panel.x + panel.width - 150f, panel.y + 4f, 132f, 40f), porcentaje + "%", 34,
+                     colorPorcentaje, TextAnchor.MiddleRight, true);
+
+        // Bloques de vida
+        float barraX = panel.x + 18f;
+        float barraY = panel.y + 48f;
+        float barraAncho = panel.width - 36f;
+        float barraAlto = 38f;
+        float separacion = 8f;
+        float anchoBloque = (barraAncho - separacion * (vidaMaxima - 1)) / vidaMaxima;
+
+        for (int i = 0; i < vidaMaxima; i++)
         {
-            float sepX = barraX + anchoSegmento * i - 1.5f;
-            DibujarRect(new Rect(sepX, barraY, 3f, barraAlto), colorFondo);
-        }
+            Rect bloque = new Rect(barraX + i * (anchoBloque + separacion), barraY, anchoBloque, barraAlto);
+            float llenoVisual = Mathf.Clamp01(vidaVisual * vidaMaxima - i);
+            float llenoFantasma = Mathf.Clamp01(vidaFantasma * vidaMaxima - i);
 
-        // Texto inferior de estado
-        GUI.Label(new Rect(barraX, barraY + barraAlto + 4f, barraAncho * 0.5f, 20f),
-            $"VIDA: {vidaActual} / {vidaMaxima}", estiloTexto);
+            pincel.Caja(bloque, colorVidaVacia);
 
-        Color colorPrev = estiloEstado.normal.textColor;
-        estiloEstado.normal.textColor = colorBarra;
-        GUI.Label(new Rect(barraX + barraAncho * 0.45f, barraY + barraAlto + 4f, barraAncho * 0.55f, 20f),
-            etiquetaEstado, estiloEstado);
-        estiloEstado.normal.textColor = colorPrev;
-    }
-
-    private void DibujarRect(Rect r, Color c)
-    {
-        Color previo = GUI.color;
-        GUI.color = c;
-        GUI.DrawTexture(r, texturaBlanca);
-        GUI.color = previo;
-    }
-
-    private void DibujarBorde(Rect r, Color c, float grosor)
-    {
-        DibujarRect(new Rect(r.x, r.y, r.width, grosor), c);
-        DibujarRect(new Rect(r.x, r.yMax - grosor, r.width, grosor), c);
-        DibujarRect(new Rect(r.x, r.y, grosor, r.height), c);
-        DibujarRect(new Rect(r.xMax - grosor, r.y, grosor, r.height), c);
-    }
-
-    // ═══════════════════════════════════════════════════════════════════════════════════
-    //  PANEL: MÓDULOS DE HACKEO RESUELTOS (Lista de ED)
-    // ═══════════════════════════════════════════════════════════════════════════════════
-    private void DibujarPanelModulos(ref float y)
-    {
-        float x = margen;
-
-        GUI.color = colorFondo;
-        GUI.Box(new Rect(x, y, anchoPanel, altoModulos), GUIContent.none, estiloFondo);
-        GUI.color = Color.white;
-
-        GUI.Label(new Rect(x + 10f, y + 6f, anchoPanel - 20f, 24f), "MÓDULOS DE HACKEO RESUELTOS", estiloTitulo);
-
-        int total = EstructurasDatosJuego.Instancia != null
-            ? EstructurasDatosJuego.Instancia.TotalModulosResueltos
-            : 0;
-
-        GUI.Label(new Rect(x + 10f, y + 34f, anchoPanel - 20f, 24f),
-            $"Accesos vulnerados: {total}", estiloTexto);
-
-        // Lista de módulos resueltos (máximo 4 visibles)
-        if (EstructurasDatosJuego.Instancia != null)
-        {
-            float yy = y + 58f;
-            for (int i = 0; i < Mathf.Min(4, total); i++)
+            // Lo que se acaba de perder: parpadea blanco y se vuelve rojo mientras se vacía
+            if (llenoFantasma > llenoVisual)
             {
-                string modulo = EstructurasDatosJuego.Instancia.ObtenerModuloEnPosicion(i);
-                if (!string.IsNullOrEmpty(modulo))
+                Color colorFantasma = Color.Lerp(colorVidaCritica, Color.white, Mathf.Clamp01(esperaFantasma / 0.35f));
+                pincel.Caja(new Rect(bloque.x, bloque.y, bloque.width * llenoFantasma, bloque.height), colorFantasma);
+            }
+
+            if (llenoVisual > 0.02f)
+            {
+                Rect relleno = new Rect(bloque.x, bloque.y, bloque.width * llenoVisual, bloque.height);
+                pincel.Caja(relleno, colorEstado);
+                // Reflejo superior para que se vea "de vidrio"
+                Color reflejo = new Color(1f, 1f, 1f, 0.22f);
+                pincel.Caja(new Rect(relleno.x + 4f, relleno.y + 4f, Mathf.Max(0f, relleno.width - 8f), relleno.height * 0.32f), reflejo);
+                // Rayas diagonales sutiles (marcas de datos)
+                for (float rx = relleno.x + 10f; rx < relleno.xMax - 6f; rx += 14f)
                 {
-                    GUI.Label(new Rect(x + 16f, yy, anchoPanel - 32f, 18f),
-                        $"✓ {modulo}", estiloTexto);
-                    yy += 18f;
+                    pincel.Rectangulo(new Rect(rx, relleno.y + relleno.height * 0.55f, 6f, 2f), new Color(0f, 0f, 0f, 0.25f));
                 }
+            }
+            else
+            {
+                // Bloque vacío: contorno rojo y una X para que no dependa solo del color
+                pincel.Borde(bloque, new Color(colorVidaCritica.r, colorVidaCritica.g, colorVidaCritica.b, 0.45f));
+                pincel.Texto(bloque, "X", 20, new Color(colorVidaCritica.r, colorVidaCritica.g, colorVidaCritica.b, 0.7f),
+                             TextAnchor.MiddleCenter, true);
+            }
+        }
+
+        // Destello que recorre la barra cada pocos segundos
+        float ciclo = Mathf.Repeat(ahora / 2.6f, 1f);
+        if (ciclo < 0.45f)
+        {
+            float avance = ciclo / 0.45f;
+            float anchoLlenado = barraAncho * vidaVisual;
+            float xBrillo = barraX - 60f + (anchoLlenado + 60f) * avance;
+            if (xBrillo < barraX + anchoLlenado)
+                pincel.Brillo(new Rect(xBrillo, barraY, 60f, barraAlto), new Color(1f, 1f, 1f, 0.35f));
+        }
+
+        // Línea de estado
+        float yEstado = barraY + barraAlto + 10f;
+        Color colorPunto = colorEstado;
+        colorPunto.a = 0.35f + 0.65f * latido;
+        pincel.Texto(new Rect(barraX, yEstado, 20f, 22f), "●", 16, colorPunto, TextAnchor.MiddleLeft, false);
+
+        string estadoMostrado = textoEstado;
+        if (fuerzaDano > 0f) estadoMostrado = "¡IMPACTO DE AMENAZA!";
+        else if (efectoCuraTimer > 0f) estadoMostrado = "SEÑAL RESTAURADA";
+        pincel.Texto(new Rect(barraX + 20f, yEstado, 260f, 22f), estadoMostrado, 15, colorEstado, TextAnchor.MiddleLeft, true);
+
+        pincel.Texto(new Rect(barraX + barraAncho - 160f, yEstado, 160f, 22f), "VIDA  " + vidaActual + " / " + vidaMaxima, 15,
+                     colorTexto, TextAnchor.MiddleRight, true);
+    }
+
+    /// <summary>Destello rojo al recibir daño y bordes rojos que laten con vida crítica.</summary>
+    private void DibujarEfectosPantalla(float ratio)
+    {
+        float ancho = PincelHUD.AnchoReferencia;
+        float alto = 1080f;
+
+        if (efectoDanoTimer > 0f)
+        {
+            float fuerza = efectoDanoTimer / DuracionDano;
+            pincel.Rectangulo(new Rect(0f, 0f, ancho, alto), new Color(colorVidaCritica.r, 0f, 0f, 0.22f * fuerza));
+        }
+
+        if (ratio <= 0.35f && ratio > 0f)
+        {
+            float latido = 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 6f);
+            for (int capa = 0; capa < 4; capa++)
+            {
+                float grosor = 18f + capa * 22f;
+                float alfa = (0.16f - capa * 0.035f) * (0.5f + 0.5f * latido);
+                Color c = new Color(colorVidaCritica.r, 0f, 0.05f, alfa);
+                pincel.Rectangulo(new Rect(0f, 0f, ancho, grosor), c);
+                pincel.Rectangulo(new Rect(0f, alto - grosor, ancho, grosor), c);
+                pincel.Rectangulo(new Rect(0f, 0f, grosor, alto), c);
+                pincel.Rectangulo(new Rect(ancho - grosor, 0f, grosor, alto), c);
             }
         }
     }
 
     // ═══════════════════════════════════════════════════════════════════════════════════
-    //  PANEL: NOTIFICACIONES DEL SISTEMA (Cola de ED)
+    //  PANELES DE ESTRUCTURAS DE DATOS (opcionales)
     // ═══════════════════════════════════════════════════════════════════════════════════
-    private void DibujarPanelNotificaciones(ref float y)
+
+    private void DibujarPanelModulos(ref float y)
     {
-        float x = margen;
+        Rect panel = new Rect(margen, y, anchoPanel, 90f);
+        pincel.Caja(panel, colorFondo);
+        pincel.Borde(panel, new Color(colorAcento.r, colorAcento.g, colorAcento.b, 0.5f));
+        pincel.Texto(new Rect(panel.x + 16f, panel.y + 8f, panel.width - 32f, 22f), "MÓDULOS DE HACKEO RESUELTOS", 15,
+                     colorAcento, TextAnchor.MiddleLeft, true);
 
-        GUI.color = colorFondo;
-        GUI.Box(new Rect(x, y, anchoPanel, altoNotificaciones), GUIContent.none, estiloFondo);
-        GUI.color = Color.white;
+        int total = 0;
+        if (EstructurasDatosJuego.Instancia != null) total = EstructurasDatosJuego.Instancia.TotalModulosResueltos;
+        pincel.Texto(new Rect(panel.x + 16f, panel.y + 34f, panel.width - 32f, 20f), "Accesos vulnerados: " + total, 14,
+                     colorTexto, TextAnchor.MiddleLeft, false);
 
-        GUI.Label(new Rect(x + 10f, y + 6f, anchoPanel - 20f, 24f), "NOTIFICACIONES DEL SISTEMA", estiloTitulo);
-
-        int pendientes = EstructurasDatosJuego.Instancia != null
-            ? EstructurasDatosJuego.Instancia.NotificacionesPendientes
-            : 0;
-
-        GUI.Label(new Rect(x + 10f, y + 34f, anchoPanel - 20f, 24f),
-            $"Pendientes: {pendientes}", estiloTexto);
-
-        string proxima = EstructurasDatosJuego.Instancia != null
-            ? EstructurasDatosJuego.Instancia.VerProximaNotificacion()
-            : null;
-
-        if (!string.IsNullOrEmpty(proxima))
+        if (EstructurasDatosJuego.Instancia != null && total > 0)
         {
-            GUI.Label(new Rect(x + 10f, y + 58f, anchoPanel - 20f, 56f),
-                proxima, estiloTexto);
+            string modulo = EstructurasDatosJuego.Instancia.ObtenerModuloEnPosicion(total - 1);
+            if (!string.IsNullOrEmpty(modulo))
+            {
+                pincel.Texto(new Rect(panel.x + 16f, panel.y + 58f, panel.width - 32f, 20f), "✓ " + modulo, 14,
+                             colorVidaLlena, TextAnchor.MiddleLeft, false);
+            }
         }
-        else
-        {
-            GUI.Label(new Rect(x + 10f, y + 58f, anchoPanel - 20f, 56f),
-                "Sistema estable. Sin alertas activas.", estiloTexto);
-        }
+        y += panel.height + 10f;
     }
 
-    // ═══════════════════════════════════════════════════════════════════════════════════
-    //  PANEL: NIVEL Y DIFICULTAD (Diccionario de ED)
-    // ═══════════════════════════════════════════════════════════════════════════════════
+    private void DibujarPanelNotificaciones(ref float y)
+    {
+        Rect panel = new Rect(margen, y, anchoPanel, 90f);
+        pincel.Caja(panel, colorFondo);
+        pincel.Borde(panel, new Color(colorAcento.r, colorAcento.g, colorAcento.b, 0.5f));
+        pincel.Texto(new Rect(panel.x + 16f, panel.y + 8f, panel.width - 32f, 22f), "NOTIFICACIONES DEL SISTEMA", 15,
+                     colorAcento, TextAnchor.MiddleLeft, true);
+
+        int pendientes = 0;
+        string proxima = null;
+        if (EstructurasDatosJuego.Instancia != null)
+        {
+            pendientes = EstructurasDatosJuego.Instancia.NotificacionesPendientes;
+            proxima = EstructurasDatosJuego.Instancia.VerProximaNotificacion();
+        }
+        if (string.IsNullOrEmpty(proxima)) proxima = "Sistema estable. Sin alertas activas.";
+
+        pincel.Texto(new Rect(panel.x + 16f, panel.y + 34f, panel.width - 32f, 20f), "Pendientes: " + pendientes, 14,
+                     colorTexto, TextAnchor.MiddleLeft, false);
+        pincel.Texto(new Rect(panel.x + 16f, panel.y + 58f, panel.width - 32f, 20f), proxima, 14,
+                     colorTexto, TextAnchor.MiddleLeft, false);
+        y += panel.height + 10f;
+    }
+
     private void DibujarPanelNivel(ref float y)
     {
-        float x = margen;
-
-        GUI.color = colorFondo;
-        GUI.Box(new Rect(x, y, anchoPanel, 44f), GUIContent.none, estiloFondo);
-        GUI.color = Color.white;
+        Rect panel = new Rect(margen, y, anchoPanel, 60f);
+        pincel.Caja(panel, colorFondo);
+        pincel.Borde(panel, new Color(colorAcento.r, colorAcento.g, colorAcento.b, 0.5f));
 
         string nombreNivel = GameFeedback.NombreNivelActual;
-        int dificultad = EstructurasDatosJuego.Instancia != null
-            ? EstructurasDatosJuego.Instancia.ObtenerDificultadNivel(nombreNivel)
-            : 0;
+        int dificultad = 0;
+        if (EstructurasDatosJuego.Instancia != null)
+            dificultad = EstructurasDatosJuego.Instancia.ObtenerDificultadNivel(nombreNivel);
 
-        string tipoAmenaza = ObtenerTipoAmenaza(dificultad);
-
-        GUI.Label(new Rect(x + 10f, y + 6f, anchoPanel - 20f, 20f),
-            $"NIVEL: {nombreNivel}", estiloTitulo);
-        GUI.Label(new Rect(x + 10f, y + 26f, anchoPanel - 20f, 16f),
-            $"AMENAZA: {tipoAmenaza} (Dificultad {dificultad})", estiloTexto);
+        pincel.Texto(new Rect(panel.x + 16f, panel.y + 6f, panel.width - 32f, 22f), "NIVEL: " + nombreNivel, 15,
+                     colorAcento, TextAnchor.MiddleLeft, true);
+        pincel.Texto(new Rect(panel.x + 16f, panel.y + 32f, panel.width - 32f, 20f),
+                     "AMENAZA: " + ObtenerTipoAmenaza(dificultad) + " (Dificultad " + dificultad + ")", 13,
+                     colorTexto, TextAnchor.MiddleLeft, false);
+        y += panel.height + 10f;
     }
 
     private string ObtenerTipoAmenaza(int dificultad)

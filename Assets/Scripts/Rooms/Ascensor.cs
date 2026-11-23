@@ -135,7 +135,7 @@ public class Ascensor : MonoBehaviour
     private void OnGUI()
     {
         if (estado != Estado.EsperandoAbajo || !jugadorDentro) return;
-        if (HackManager.Abierto || PauseMenu.Pausado) return;
+        if (HackManager.Abierto || EstadoMenus.HayMenuAbierto) return;
 
         var estilo = new GUIStyle(GUI.skin.box)
         {
