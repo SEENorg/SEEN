@@ -103,18 +103,46 @@ private EventSystem eventSystem;
     public void CargarNivel3() { IrANivel(3); }
 
     public void MostrarAjustes()
-    {
-        if (panelMenu != null) panelMenu.SetActive(false);
-        if (panelAjustes != null) panelAjustes.SetActive(true);
-        if (panelNiveles != null) panelNiveles.SetActive(false);
-    }
+{
+    if (panelMenu != null) panelMenu.SetActive(false);
+    if (panelAjustes != null) panelAjustes.SetActive(true);
+    if (panelNiveles != null) panelNiveles.SetActive(false);
 
-    public void MostrarMenuPrincipal()
+    if (eventSystem != null && panelAjustes != null)
     {
-        if (panelMenu != null) panelMenu.SetActive(true);
-        if (panelAjustes != null) panelAjustes.SetActive(false);
-        if (panelNiveles != null) panelNiveles.SetActive(false);
+        eventSystem.SetSelectedGameObject(null);
+
+        Selectable primerElemento =
+            panelAjustes.GetComponentInChildren<Selectable>();
+
+        if (primerElemento != null)
+        {
+            eventSystem.SetSelectedGameObject(primerElemento.gameObject);
+        }
     }
+}
+
+   public void MostrarMenuPrincipal()
+{
+    if (panelMenu != null) panelMenu.SetActive(true);
+    if (panelAjustes != null) panelAjustes.SetActive(false);
+    if (panelNiveles != null) panelNiveles.SetActive(false);
+
+    if (eventSystem != null)
+    {
+        eventSystem.SetSelectedGameObject(null);
+
+        if (panelMenu != null)
+        {
+            Button primerBoton = panelMenu.GetComponentInChildren<Button>();
+
+            if (primerBoton != null)
+            {
+                eventSystem.SetSelectedGameObject(primerBoton.gameObject);
+            }
+        }
+    }
+}
 
     public void SalirDelJuego()
     {

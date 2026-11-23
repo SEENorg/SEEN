@@ -24,7 +24,7 @@ public class Pistola : MonoBehaviour, IInteractuable
     private Collider[] collidersPropios;
     private Vector3 posicionEnCamara = new Vector3(0.32f, -0.25f, 0.55f);
     private float retrocesoActual;
-    private InputAction attackAction;
+    private IPlayerInput entrada;
 
     public string TextoPrompt
     {
@@ -38,15 +38,15 @@ public class Pistola : MonoBehaviour, IInteractuable
 
     private void Start()
     {
-        PlayerInput playerInput = Object.FindFirstObjectByType<PlayerInput>();
+       PlayerController jugador = Object.FindFirstObjectByType<PlayerController>();
 
-if (playerInput != null)
+if (jugador != null)
 {
-    attackAction = playerInput.actions["Attack"];
+    entrada = jugador.Entrada;
 }
 else
 {
-    Debug.LogError("No se encontró PlayerInput para la acción Attack.");
+    Debug.LogError("No se encontró PlayerController para obtener la entrada.");
 }
         collidersPropios = GetComponentsInChildren<Collider>(true);
         ConstruirModelo();
@@ -228,9 +228,9 @@ else
             || c.GetComponentInParent<Pistola>() != null;
     }
 
-    private bool LeerDisparoPresionado()
+   private bool LeerDisparoPresionado()
 {
-    return attackAction != null && attackAction.WasPressedThisFrame();
+    return entrada != null && entrada.AtaquePresionado();
 }
 }
 

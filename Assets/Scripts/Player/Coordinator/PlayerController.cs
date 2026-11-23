@@ -29,6 +29,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private PlayerDash dash = new PlayerDash();
 
 private IPlayerInput entrada;
+public IPlayerInput Entrada => entrada;
     private Rigidbody rb;
     private CapsuleCollider capsule;
     private static PhysicsMaterial _playerPhysMat;

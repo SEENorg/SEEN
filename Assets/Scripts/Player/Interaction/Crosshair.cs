@@ -1,7 +1,4 @@
 using UnityEngine;
-#if ENABLE_INPUT_SYSTEM
-using UnityEngine.InputSystem;
-#endif
 
 /// <summary>
 /// Mirilla (crosshair) en primera persona:
@@ -31,22 +28,22 @@ public class Crosshair : MonoBehaviour
     private IInteractuable objetivo;
     private float radioActual;
     private Texture2D texturaCirculo;
-    private InputAction interactAction;
+    private IPlayerInput entrada;
 
     private void Awake()
 {
     texturaCirculo = CrearTexturaAnillo(128, 10);
     radioActual = radioNormal;
 
-    PlayerInput playerInput = Object.FindFirstObjectByType<PlayerInput>();
+    PlayerController jugador = Object.FindFirstObjectByType<PlayerController>();
 
-    if (playerInput != null)
+    if (jugador != null)
     {
-        interactAction = playerInput.actions["Interact"];
+        entrada = jugador.Entrada;
     }
     else
     {
-        Debug.LogError("No se encontró PlayerInput para la acción Interact.");
+        Debug.LogError("No se encontró PlayerController para obtener la entrada.");
     }
 }
 
@@ -67,9 +64,11 @@ public class Crosshair : MonoBehaviour
             if (objetivo != null)
             {
                 HackManager.MostrarPrompt(objetivo.TextoPrompt);
-                if (interactAction != null && interactAction.WasPressedThisFrame())
+                    if (entrada != null && entrada.InteraccionPresionada())
+{
     objetivo.Interactuar();
-            }
+}
+                }
         }
 
         // Animación de tamaño
