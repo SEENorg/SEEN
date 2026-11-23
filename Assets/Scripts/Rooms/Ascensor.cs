@@ -5,7 +5,8 @@ using UnityEngine.InputSystem;
 
 /// <summary>
 /// Ascensor: cuando el jugador entra a la cabina aparece "Presione F para subir".
-/// Al presionar F, toda la estructura sube hasta yFinal y se queda quieta ahí.
+/// Al presionar F (teclado) o Y (mando), toda la estructura sube hasta yFinal y se queda quieta ahí.
+/// Con un mando conectado el aviso dice "Presione F o Y para subir".
 ///
 /// Se pone en el objeto RAÍZ del ascensor (el padre de piso, paredes, etc.).
 /// Necesita un Collider con "Is Trigger" marcado que cubra el interior de la cabina.
@@ -45,7 +46,7 @@ public class Ascensor : MonoBehaviour
 
     private void Update()
     {
-        if (estado == Estado.EsperandoAbajo && jugadorDentro && TeclaFPresionada())
+        if (estado == Estado.EsperandoAbajo && jugadorDentro && SubidaPresionada())
             pedirSubida = true;
     }
 
@@ -106,14 +107,27 @@ public class Ascensor : MonoBehaviour
 
     // ── Entrada y mensaje ───────────────────────────────────────
 
-    private bool TeclaFPresionada()
+    /// <summary>F en el teclado o Y en el mando.</summary>
+    private bool SubidaPresionada()
     {
 #if ENABLE_INPUT_SYSTEM
         Keyboard kb = Keyboard.current;
-        return kb != null && kb.fKey.wasPressedThisFrame;
+        if (kb != null && kb.fKey.wasPressedThisFrame) return true;
+        Gamepad mando = Gamepad.current;
+        if (mando != null && mando.buttonNorth.wasPressedThisFrame) return true;
+        return false;
 #else
         return Input.GetKeyDown(KeyCode.F);
 #endif
+    }
+
+    /// <summary>Si hay un mando conectado, el aviso también nombra el botón Y.</summary>
+    private string TextoAviso()
+    {
+#if ENABLE_INPUT_SYSTEM
+        if (Gamepad.current != null) return textoPrompt.Replace("Presione F", "Presione F o Y");
+#endif
+        return textoPrompt;
     }
 
     // Mismo estilo que el aviso "Presione E para hackear".
@@ -133,7 +147,7 @@ public class Ascensor : MonoBehaviour
 
         float w = 420f, h = 46f;
         GUI.Box(new Rect((Screen.width - w) / 2f, Screen.height - h - 40f, w, h),
-                textoPrompt, estilo);
+                TextoAviso(), estilo);
     }
 
     // Para probar sin caminar hasta la cabina: clic derecho en el componente → "Subir ahora"

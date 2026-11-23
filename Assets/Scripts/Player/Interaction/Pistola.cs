@@ -25,6 +25,10 @@ public class Pistola : MonoBehaviour, IInteractuable
     private Vector3 posicionEnCamara = new Vector3(0.32f, -0.25f, 0.55f);
     private float retrocesoActual;
     private IPlayerInput entrada;
+    [Header("Munición")]
+[SerializeField] private int capacidadCargador = 10;
+
+private int municionActual;
 
     public string TextoPrompt
     {
@@ -126,6 +130,7 @@ else
         if (cam == null) return;
 
         equipada = true;
+        municionActual = capacidadCargador;
         tiempoProximoDisparo = Time.unscaledTime + 0.25f;
 
         if (etiqueta != null)
@@ -171,17 +176,30 @@ else
             CipherWheel.Abierta || GameFeedback.NivelCompletadoVisible || GameFeedback.GameOverVisible)
             return;
 
-        if (LeerDisparoPresionado() && Time.unscaledTime >= tiempoProximoDisparo)
-        {
-            tiempoProximoDisparo = Time.unscaledTime + cooldownDisparo;
-            Disparar();
-        }
+        // Recargar con R1 o R
+if (entrada != null && entrada.RecargaPresionada())
+{
+    Recargar();
+}
+
+// Disparar únicamente si quedan balas
+if (LeerDisparoPresionado() &&
+    municionActual > 0 &&
+    Time.unscaledTime >= tiempoProximoDisparo)
+{
+    tiempoProximoDisparo = Time.unscaledTime + cooldownDisparo;
+    Disparar();
+}
     }
 
     private void Disparar()
     {
         Camera cam = Camera.main;
         if (cam == null) return;
+        if (municionActual <= 0)
+    return;
+
+municionActual--;
 
         retrocesoActual = 0.08f;
 
@@ -231,6 +249,41 @@ else
    private bool LeerDisparoPresionado()
 {
     return entrada != null && entrada.AtaquePresionado();
+}
+private void Recargar()
+{
+    if (municionActual >= capacidadCargador)
+        return;
+
+    municionActual = capacidadCargador;
+
+    Debug.Log("Cargador recargado: " +
+              municionActual + "/" + capacidadCargador);
+}
+private void OnGUI()
+{
+    if (!equipada)
+        return;
+
+    GUIStyle estilo = new GUIStyle(GUI.skin.label);
+
+    estilo.fontSize = 25;
+    estilo.fontStyle = FontStyle.Bold;
+    estilo.alignment = TextAnchor.MiddleCenter;
+    estilo.normal.textColor = new Color(0.2f, 0.9f, 1f);
+
+    string texto = municionActual + "/" + capacidadCargador;
+
+    GUI.Label(
+        new Rect(
+    Screen.width - 180f,
+    Screen.height - 85f,
+    150f,
+    45f
+),
+        texto,
+        estilo
+    );
 }
 }
 
@@ -305,4 +358,7 @@ public class ProyectilPistola : MonoBehaviour
         if (distanciaRecorrida >= distanciaMaxima)
             Destroy(gameObject);
     }
+
+    
+    
 }

@@ -12,6 +12,7 @@ public class PlayerInputReader : IPlayerInput
     private InputAction sprintAction;
 private InputAction attackAction;
 private InputAction interactAction;
+private InputAction reloadAction;
 
     public PlayerInputReader(PlayerInput input)
     {
@@ -23,6 +24,7 @@ private InputAction interactAction;
         sprintAction = playerInput.actions["Sprint"];
         attackAction = playerInput.actions["Attack"];
         interactAction = playerInput.actions["Interact"];
+        reloadAction = playerInput.actions["Reload"];
     }
 
     public Vector2 LeerMovimiento()
@@ -67,5 +69,9 @@ private InputAction interactAction;
 public bool InteraccionPresionada()
 {
     return interactAction.WasPressedThisFrame();
+}
+public bool RecargaPresionada()
+{
+    return reloadAction.WasPressedThisFrame();
 }
 }

@@ -1,4 +1,7 @@
 using UnityEngine;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 /// <summary>
 /// Mirilla (crosshair) en primera persona:
@@ -63,11 +66,11 @@ public class Crosshair : MonoBehaviour
 
             if (objetivo != null)
             {
-                HackManager.MostrarPrompt(objetivo.TextoPrompt);
-                    if (entrada != null && entrada.InteraccionPresionada())
-{
-    objetivo.Interactuar();
-}
+                HackManager.MostrarPrompt(TextoConMando(objetivo.TextoPrompt));
+                if (InteraccionPresionada())
+                {
+                    objetivo.Interactuar();
+                }
                 }
         }
 
@@ -75,6 +78,30 @@ public class Crosshair : MonoBehaviour
         float objetivoRadio = radioNormal;
         if (objetivo != null) objetivoRadio = radioActivo;
         radioActual = Mathf.Lerp(radioActual, objetivoRadio, Time.deltaTime * suavizado);
+    }
+
+    /// <summary>
+    /// E en el teclado o Y en el mando. Y también se lee directo del mando por si la
+    /// acción "Interact" del PlayerInput no tiene el mando activo en ese momento.
+    /// </summary>
+    private bool InteraccionPresionada()
+    {
+        if (entrada != null && entrada.InteraccionPresionada()) return true;
+#if ENABLE_INPUT_SYSTEM
+        Gamepad mando = Gamepad.current;
+        if (mando != null && mando.buttonNorth.wasPressedThisFrame) return true;
+#endif
+        return false;
+    }
+
+    /// <summary>Si hay un mando conectado, el aviso dice "Presione E o Y ..." en vez de solo "Presione E ...".</summary>
+    private string TextoConMando(string texto)
+    {
+        if (string.IsNullOrEmpty(texto)) return texto;
+#if ENABLE_INPUT_SYSTEM
+        if (Gamepad.current != null) return texto.Replace("Presione E", "Presione E o Y");
+#endif
+        return texto;
     }
 
     private void OnGUI()
