@@ -35593,6 +35593,7 @@ GameObject:
   - component: {fileID: 1947066185}
   - component: {fileID: 1947066184}
   - component: {fileID: 1947066188}
+  - component: {fileID: 1947066189}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -35615,6 +35616,7 @@ MonoBehaviour:
   mirada:
     playerCamera: {fileID: 0}
     mouseSensitivity: 0.15
+    controllerSensitivity: 120
     minPitch: -80
     maxPitch: 80
     cameraHeight: 0.65
@@ -35908,6 +35910,36 @@ MonoBehaviour:
   margen: 34
   diametro: 62
   separacion: 18
+--- !u!114 &1947066189
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1947066174}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62899f850307741f2a39c98a8b639597, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.PlayerInput
+  m_Actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  m_NotificationBehavior: 0
+  m_UIInputModule: {fileID: 0}
+  m_DeviceLostEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  m_DeviceRegainedEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  m_ControlsChangedEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  m_ActionEvents: []
+  m_NeverAutoSwitchControlSchemes: 0
+  m_DefaultControlScheme: 
+  m_DefaultActionMap: Player
+  m_SplitScreenIndex: -1
+  m_Camera: {fileID: 0}
 --- !u!1 &1957169912 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 111326, guid: e2bb8688208ec4855995dc3671b6c8a8, type: 3}

@@ -1,5 +1,5 @@
 using UnityEngine;
-
+using UnityEngine.InputSystem;
 /// <summary>
 /// Jugador de SEEN en PRIMERA PERSONA. Esta clase es el COORDINADORA: configura la física,
 /// llama a cada componente en el orden correcto y expone el estado público que usan los
@@ -28,8 +28,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private PlayerJump salto = new PlayerJump();
     [SerializeField] private PlayerDash dash = new PlayerDash();
 
-    private PlayerInputReader entrada = new PlayerInputReader();
-
+private IPlayerInput entrada;
     private Rigidbody rb;
     private CapsuleCollider capsule;
     private static PhysicsMaterial _playerPhysMat;
@@ -45,9 +44,20 @@ public class PlayerController : MonoBehaviour
     // ───────────────────────────────────────────────────────────── Setup
 
     private void Awake()
+{
+    rb = GetComponent<Rigidbody>();
+    capsule = GetComponent<CapsuleCollider>();
+
+    PlayerInput playerInput = GetComponent<PlayerInput>();
+
+    if (playerInput == null)
     {
-        rb = GetComponent<Rigidbody>();
-        capsule = GetComponent<CapsuleCollider>();
+        Debug.LogError("Player Input component not found on Player.");
+        enabled = false;
+        return;
+    }
+
+    entrada = new PlayerInputReader(playerInput);
 
         ConfigurarFisica();
 
@@ -113,7 +123,8 @@ public class PlayerController : MonoBehaviour
     {
         moveInput = entrada.LeerMovimiento();
 
-        mirada.Mirar(entrada.LeerMirada());
+        Vector2 lookInput = entrada.LeerMirada(out bool esMando);
+mirada.Mirar(lookInput, esMando);
         mirada.ManejarCursor(entrada.LiberarCursorPresionado(), entrada.CapturarCursorPresionado());
 
         dash.ActualizarCooldown();

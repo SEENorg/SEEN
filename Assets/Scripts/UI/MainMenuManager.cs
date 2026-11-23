@@ -1,6 +1,8 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using UnityEngine.InputSystem.UI;
+using UnityEngine.EventSystems;
 
 /// <summary>
 /// Menú principal de SEEN. Conecta con el Canvas construido por UIMenuBuilder
@@ -28,7 +30,41 @@ public class MainMenuManager : MonoBehaviour
         // En el menú el ratón debe estar libre y visible
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
+        eventSystem = EventSystem.current;
+        
     }
+    private void OnEnable()
+{
+    var uiModule = FindFirstObjectByType<InputSystemUIInputModule>();
+
+    if (uiModule != null && uiModule.cancel.action != null)
+    {
+        uiModule.cancel.action.performed += AlCancelar;
+    }
+}
+
+private void OnDisable()
+{
+    var uiModule = FindFirstObjectByType<InputSystemUIInputModule>();
+
+    if (uiModule != null && uiModule.cancel.action != null)
+    {
+        uiModule.cancel.action.performed -= AlCancelar;
+    }
+}
+
+private void AlCancelar(UnityEngine.InputSystem.InputAction.CallbackContext context)
+{
+    if (panelAjustes != null && panelAjustes.activeSelf)
+    {
+        MostrarMenuPrincipal();
+    }
+    else if (panelNiveles != null && panelNiveles.activeSelf)
+    {
+        MostrarMenuPrincipal();
+    }
+}
+private EventSystem eventSystem;
 
     /// <summary>Botón JUGAR: muestra el selector de niveles.</summary>
     public void Jugar()
@@ -37,6 +73,10 @@ public class MainMenuManager : MonoBehaviour
         if (panelMenu != null) panelMenu.SetActive(false);
         if (panelAjustes != null) panelAjustes.SetActive(false);
         if (panelNiveles != null) panelNiveles.SetActive(true);
+        if (botonNivel1 != null)
+{
+    EventSystem.current.SetSelectedGameObject(botonNivel1.gameObject);
+}
     }
 
     /// <summary>Carga un nivel por su número (1-3).</summary>

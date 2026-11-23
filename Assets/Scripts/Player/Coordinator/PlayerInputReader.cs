@@ -1,89 +1,71 @@
-using UnityEngine;
-#if ENABLE_INPUT_SYSTEM
-using UnityEngine.InputSystem;
-#endif
 
-/// <summary>
-/// Lee el teclado y el ratón del jugador. No guarda estado: cada método consulta el
-/// dispositivo en el momento, así que el resultado es correcto sin importar en qué
-/// orden se llamen los demás componentes del jugador.
-/// </summary>
-public class PlayerInputReader
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+public class PlayerInputReader : IPlayerInput
 {
-    /// <summary>Dirección de movimiento: WASD o flechas (x = lateral, y = adelante/atrás).</summary>
+    private readonly PlayerInput playerInput;
+
+    private InputAction moveAction;
+    private InputAction lookAction;
+    private InputAction jumpAction;
+    private InputAction sprintAction;
+private InputAction attackAction;
+private InputAction interactAction;
+
+    public PlayerInputReader(PlayerInput input)
+    {
+        playerInput = input;
+
+        moveAction = playerInput.actions["Move"];
+        lookAction = playerInput.actions["Look"];
+        jumpAction = playerInput.actions["Jump"];
+        sprintAction = playerInput.actions["Sprint"];
+        attackAction = playerInput.actions["Attack"];
+        interactAction = playerInput.actions["Interact"];
+    }
+
     public Vector2 LeerMovimiento()
     {
-#if ENABLE_INPUT_SYSTEM
-        Vector2 move = Vector2.zero;
-        Keyboard kb = Keyboard.current;
-        if (kb != null)
-        {
-            if (kb.aKey.isPressed || kb.leftArrowKey.isPressed) move.x -= 1f;
-            if (kb.dKey.isPressed || kb.rightArrowKey.isPressed) move.x += 1f;
-            if (kb.sKey.isPressed || kb.downArrowKey.isPressed) move.y -= 1f;
-            if (kb.wKey.isPressed || kb.upArrowKey.isPressed) move.y += 1f;
-        }
-        return Vector2.ClampMagnitude(move, 1f);
-#else
-        return new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
-#endif
+        return moveAction.ReadValue<Vector2>();
     }
 
-    /// <summary>Movimiento del ratón en este frame.</summary>
-    public Vector2 LeerMirada()
-    {
-#if ENABLE_INPUT_SYSTEM
-        if (Mouse.current != null)
-            return Mouse.current.delta.ReadValue();
-        return Vector2.zero;
-#else
-        return new Vector2(Input.GetAxis("Mouse X"), Input.GetAxis("Mouse Y"));
-#endif
-    }
+   public Vector2 LeerMirada(out bool esMando)
+{
+    esMando = lookAction.activeControl != null &&
+              lookAction.activeControl.device is Gamepad;
 
-    /// <summary>Espacio: salto.</summary>
+    return lookAction.ReadValue<Vector2>();
+}
+
     public bool SaltoPresionado()
     {
-#if ENABLE_INPUT_SYSTEM
-        Keyboard kb = Keyboard.current;
-        return kb != null && kb.spaceKey.wasPressedThisFrame;
-#else
-        return Input.GetButtonDown("Jump");
-#endif
+        return jumpAction.WasPressedThisFrame();
     }
 
-    /// <summary>Shift o clic derecho: dash.</summary>
     public bool DashPresionado()
     {
-#if ENABLE_INPUT_SYSTEM
-        Keyboard kb = Keyboard.current;
-        Mouse mouse = Mouse.current;
-        bool shift = kb != null && (kb.leftShiftKey.wasPressedThisFrame || kb.rightShiftKey.wasPressedThisFrame);
-        bool rmb = mouse != null && mouse.rightButton.wasPressedThisFrame;
-        return shift || rmb;
-#else
-        return Input.GetKeyDown(KeyCode.LeftShift) || Input.GetMouseButtonDown(1);
-#endif
-    }
-    /// <summary>Escape: liberar el cursor.</summary>
-    public bool LiberarCursorPresionado()
-    {
-#if ENABLE_INPUT_SYSTEM
-        Keyboard kb = Keyboard.current;
-        return kb != null && kb.escapeKey.wasPressedThisFrame;
-#else
-        return Input.GetKeyDown(KeyCode.Escape);
-#endif
+        return sprintAction.WasPressedThisFrame();
     }
 
-    /// <summary>Clic izquierdo: volver a capturar el cursor.</summary>
+    public bool LiberarCursorPresionado()
+    {
+        return Keyboard.current != null &&
+               Keyboard.current.escapeKey.wasPressedThisFrame;
+    }
+
     public bool CapturarCursorPresionado()
     {
-#if ENABLE_INPUT_SYSTEM
-        Mouse mouse = Mouse.current;
-        return mouse != null && mouse.leftButton.wasPressedThisFrame;
-#else
-        return Input.GetMouseButtonDown(0);
-#endif
+        return Mouse.current != null &&
+               Mouse.current.leftButton.wasPressedThisFrame;
     }
+    public bool AtaquePresionado()
+{
+    return attackAction.WasPressedThisFrame();
+}
+
+public bool InteraccionPresionada()
+{
+    return interactAction.WasPressedThisFrame();
+}
 }

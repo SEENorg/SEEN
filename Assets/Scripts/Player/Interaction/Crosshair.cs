@@ -31,12 +31,24 @@ public class Crosshair : MonoBehaviour
     private IInteractuable objetivo;
     private float radioActual;
     private Texture2D texturaCirculo;
+    private InputAction interactAction;
 
     private void Awake()
+{
+    texturaCirculo = CrearTexturaAnillo(128, 10);
+    radioActual = radioNormal;
+
+    PlayerInput playerInput = Object.FindFirstObjectByType<PlayerInput>();
+
+    if (playerInput != null)
     {
-        texturaCirculo = CrearTexturaAnillo(128, 10);
-        radioActual = radioNormal;
+        interactAction = playerInput.actions["Interact"];
     }
+    else
+    {
+        Debug.LogError("No se encontró PlayerInput para la acción Interact.");
+    }
+}
 
     private void Update()
     {
@@ -55,8 +67,8 @@ public class Crosshair : MonoBehaviour
             if (objetivo != null)
             {
                 HackManager.MostrarPrompt(objetivo.TextoPrompt);
-                if (LeerTeclaE())
-                    objetivo.Interactuar();
+                if (interactAction != null && interactAction.WasPressedThisFrame())
+    objetivo.Interactuar();
             }
         }
 
@@ -82,16 +94,6 @@ public class Crosshair : MonoBehaviour
         GUI.DrawTexture(r, texturaCirculo);
 
         GUI.color = previa;
-    }
-
-    private bool LeerTeclaE()
-    {
-#if ENABLE_INPUT_SYSTEM
-        var kb = Keyboard.current;
-        return kb != null && kb.eKey.wasPressedThisFrame;
-#else
-        return Input.GetKeyDown(KeyCode.E);
-#endif
     }
 
     /// <summary>Genera una textura de anillo (círculo hueco) para la mirilla.</summary>
