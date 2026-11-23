@@ -28,6 +28,8 @@ public class HackManager : MonoBehaviour, IContextoHack
     // Estado del puzzle actual
     private Canvas canvas;
     private GameObject panel;
+    private Image fondoPanel;   // fondo del panel (se oculta si el puzzle dibuja su propio marco)
+    private GameObject marco;   // contenedor del borde azul del panel
     private Text tituloTexto;
     private Text moduloTexto;
     private Text feedbackTexto;
@@ -37,6 +39,19 @@ public class HackManager : MonoBehaviour, IContextoHack
     private GameObject panelInstrucciones;
     private Text textoInstrucciones;
     private Text textoTipoModulo;
+    private Text textoModuloInstrucciones;
+    private Text textoControles;
+    private Button botonEmpezar;
+    private CajasRedondeadasUI cajasInstrucciones;   // esquinas redondeadas de la tarjeta de instrucciones
+
+    // Colores de la tarjeta de instrucciones (los mismos de los puzzles con tarjeta)
+    private readonly Color colTarjeta = new Color(0.035f, 0.055f, 0.075f, 0.98f);
+    private readonly Color colBordeTarjeta = new Color(0.16f, 0.22f, 0.27f);
+    private readonly Color colCaja = new Color(0.06f, 0.13f, 0.18f);
+    private readonly Color colTextoSuave = new Color(0.55f, 0.65f, 0.72f);
+    private readonly Color colBotonEmpezar = new Color(0.05f, 0.36f, 0.26f);
+    private readonly Color colBotonEmpezarSeleccion = new Color(0.07f, 0.47f, 0.34f);
+    private readonly Color colBordeBotonEmpezar = new Color(0.18f, 0.72f, 0.50f);
 
     private HackableType[] modulos;
     private System.Action onCompletado;
@@ -44,6 +59,8 @@ public class HackManager : MonoBehaviour, IContextoHack
     private bool activo;
     private bool esTutorial;
     private bool finalizando;
+    private int frameApertura = -1;    // el mismo botón Y que abrió no debe cerrar en ese frame
+    private int frameCierre = -10;     // ni reabrir justo después de cerrar
     private float bloqueoInput;            // ignora clics un instante tras abrir un módulo
     private float tiempoTransicion;   // para avance entre módulos (tiempo real)
     private IPuzzle puzzleActual;
@@ -92,8 +109,10 @@ public class HackManager : MonoBehaviour, IContextoHack
         // Si la tabla César está abierta, no procesamos Esc (lo usa la tabla)
         if (CipherWheel.Abierta) return;
 
-        // Cerrar con Escape
-        if (LeerEscape()) { Cerrar(); return; }
+        // Cerrar con Escape (teclado) o Y (mando, el mismo botón que abre el hackeo)
+        if (LeerEscape() || LeerBotonSalirMando()) { Cerrar(); return; }
+
+        if (panelInstrucciones != null && panelInstrucciones.activeSelf) MantenerSeleccionInstrucciones();
 
         if (puzzleActual != null) puzzleActual.Actualizar();
 
@@ -148,6 +167,7 @@ public class HackManager : MonoBehaviour, IContextoHack
     private void OnDestroy()
     {
         if (Instancia == this) Instancia = null;
+        if (cajasInstrucciones != null) cajasInstrucciones.Liberar();
         // Restaurar el juego por si se destruye estando abierto
         Time.timeScale = 1f;
         var pc = FindFirstObjectByType<PlayerController>();
@@ -169,6 +189,9 @@ public class HackManager : MonoBehaviour, IContextoHack
     private void Iniciar(HackableType[] mods, string nombreAcceso, Action onResuelto, bool tutorial = false)
     {
         if (activo) return;
+        // Si se acaba de cerrar con Y, ese mismo botón no lo vuelve a abrir
+        if (Time.frameCount <= frameCierre + 1) return;
+        frameApertura = Time.frameCount;
 
         int cantidad = (mods != null && mods.Length > 0) ? mods.Length : 1;
         if (tutorial || ContieneCodigoSecreto(mods))
@@ -209,6 +232,7 @@ public class HackManager : MonoBehaviour, IContextoHack
 
     private void Cerrar()
     {
+        frameCierre = Time.frameCount;
         if (puzzleActual != null) puzzleActual.Detener();
         puzzleActual = null;
         activo = false;
@@ -250,6 +274,39 @@ public class HackManager : MonoBehaviour, IContextoHack
     void IContextoHack.Regenerar() { RegenerarActual(); }
     Coroutine IContextoHack.IniciarCorrutina(IEnumerator rutina) => StartCoroutine(rutina);
 
+    string IContextoHack.TextoAcceso
+    {
+        get
+        {
+            if (tituloTexto == null) return "";
+            return tituloTexto.text;
+        }
+    }
+
+    string IContextoHack.TextoModulo
+    {
+        get
+        {
+            if (moduloTexto == null) return "";
+            return moduloTexto.text;
+        }
+    }
+
+    void IContextoHack.MostrarMarco(bool visible)
+    {
+        MostrarMarcoInterno(visible);
+    }
+
+    /// <summary>Muestra u oculta el fondo del panel, el borde azul, el título, el contador de módulos y el mensaje de abajo.</summary>
+    private void MostrarMarcoInterno(bool visible)
+    {
+        if (fondoPanel != null) fondoPanel.enabled = visible;
+        if (marco != null) marco.SetActive(visible);
+        if (tituloTexto != null) tituloTexto.enabled = visible;
+        if (moduloTexto != null) moduloTexto.enabled = visible;
+        if (feedbackTexto != null) feedbackTexto.enabled = visible;
+    }
+
     private void RegenerarActual()
     {
         foreach (Transform t in contenido) Destroy(t.gameObject);
@@ -283,8 +340,11 @@ public class HackManager : MonoBehaviour, IContextoHack
             panel = NuevoUI(canvasGO.transform, "Panel", Vector2.zero, new Vector2(920f, 640f));
             var pImg = panel.AddComponent<Image>();
             pImg.color = colPanel;
+            fondoPanel = pImg;
 
-            Contorno(panel.transform, colAcento);
+            // El borde va dentro de "Marco" para poder ocultarlo de una vez (MostrarMarco)
+            marco = NuevoUI(panel.transform, "Marco", Vector2.zero, new Vector2(920f, 640f));
+            Contorno(marco.transform, colAcento);
 
             // Título arriba a la IZQUIERDA (para que no se pise con nada)
             tituloTexto = CrearTexto(panel.transform, "Titulo", "HACKEO", 34, TextAnchor.UpperLeft,
@@ -307,6 +367,7 @@ public class HackManager : MonoBehaviour, IContextoHack
         }
 
         canvas.gameObject.SetActive(true);
+        MostrarMarcoInterno(true);
         tituloTexto.text = $"ACCESO: {nombreAcceso}";
         moduloTexto.text = "";
         feedbackTexto.text = "";
@@ -316,6 +377,8 @@ public class HackManager : MonoBehaviour, IContextoHack
     {
         // Limpiar contenido anterior
         foreach (Transform t in contenido) Destroy(t.gameObject);
+        // Cada módulo empieza con el marco visible (las instrucciones del tutorial lo usan)
+        MostrarMarcoInterno(true);
 
         moduloTexto.text = $"MÓDULO {indiceModulo + 1}/{modulos.Length}";
         feedbackTexto.text = "";
@@ -349,44 +412,106 @@ public class HackManager : MonoBehaviour, IContextoHack
 
     // ═══════════════════ INSTRUCCIONES (tutorial) ═══════════════════
 
+    /// <summary>
+    /// Tarjeta "CÓMO HACKEAR" del tutorial, con el mismo estilo que los puzzles:
+    /// encabezado con el tipo de módulo, caja con las instrucciones, caja con los
+    /// controles y botón EMPEZAR HACKEO (se ilumina y funciona con el mando: botón A).
+    /// </summary>
     private void ConstruirPanelInstrucciones()
     {
+        cajasInstrucciones = new CajasRedondeadasUI();
+
         panelInstrucciones = NuevoUI(panel.transform, "Instrucciones", Vector2.zero, new Vector2(920f, 640f));
-        var img = panelInstrucciones.AddComponent<Image>();
-        img.color = colPanel;
 
-        var tituloInst = CrearTexto(panelInstrucciones.transform, "TituloInst", "CÓMO HACKEAR", 34,
-                                    TextAnchor.UpperLeft, new Vector2(-180f, -285f),
-                                    new Vector2(560f, 50f), colVerde);
-        tituloInst.fontStyle = FontStyle.Bold;
+        Image bordeTarjeta = cajasInstrucciones.CrearCaja(panelInstrucciones.transform, "TarjetaInstrucciones",
+                                                          Vector2.zero, new Vector2(760f, 560f),
+                                                          colTarjeta, colBordeTarjeta, 1f);
+        Transform tarjeta = bordeTarjeta.transform.parent;
 
-        textoTipoModulo = CrearTexto(panelInstrucciones.transform, "TipoModulo", "", 24,
-                                     TextAnchor.UpperRight, new Vector2(360f, -285f),
-                                     new Vector2(200f, 40f), colAcento);
+        // Encabezado
+        CrearTexto(tarjeta, "Guia", "SEEN // CÓMO HACKEAR", 15, TextAnchor.MiddleCenter,
+                   new Vector2(0f, 245f), new Vector2(700f, 22f), colVerde);
 
-        textoInstrucciones = CrearTexto(panelInstrucciones.transform, "TextoInstrucciones", "", 26,
-                                        TextAnchor.MiddleCenter, new Vector2(0f, 15f),
-                                        new Vector2(800f, 380f), new Color(0.85f, 0.9f, 0.95f));
+        textoTipoModulo = CrearTexto(tarjeta, "TipoModulo", "", 32, TextAnchor.MiddleCenter,
+                                     new Vector2(0f, 212f), new Vector2(700f, 40f), colAcento);
+        textoTipoModulo.fontStyle = FontStyle.Bold;
+
+        textoModuloInstrucciones = CrearTexto(tarjeta, "ModuloInst", "", 15, TextAnchor.MiddleCenter,
+                                              new Vector2(0f, 180f), new Vector2(700f, 22f), colTextoSuave);
+
+        // Caja de instrucciones
+        Image bordeTexto = cajasInstrucciones.CrearCaja(tarjeta, "CajaInstrucciones", new Vector2(0f, 30f),
+                                                        new Vector2(700f, 270f), colCaja,
+                                                        new Color(colAcento.r, colAcento.g, colAcento.b, 0.6f), 1.2f);
+        textoInstrucciones = CrearTexto(bordeTexto.transform.parent, "TextoInstrucciones", "", 21,
+                                        TextAnchor.MiddleLeft, Vector2.zero, new Vector2(650f, 240f),
+                                        new Color(0.85f, 0.9f, 0.95f));
         textoInstrucciones.horizontalOverflow = HorizontalWrapMode.Wrap;
-        textoInstrucciones.verticalOverflow = VerticalWrapMode.Overflow;
-        textoInstrucciones.lineSpacing = 1.5f;
+        textoInstrucciones.verticalOverflow = VerticalWrapMode.Truncate;
+        textoInstrucciones.lineSpacing = 1.2f;
+        // Si un texto es largo, la letra se achica sola para que quepa en la caja
+        textoInstrucciones.resizeTextForBestFit = true;
+        textoInstrucciones.resizeTextMinSize = 14;
+        textoInstrucciones.resizeTextMaxSize = 21;
 
-        var btn = CrearBoton(panelInstrucciones.transform, "BotonContinuar", "EMPEZAR HACKEO",
-                             new Vector2(0f, -265f), new Vector2(320f, 62f));
-        btn.onClick.AddListener(() =>
-        {
-            panelInstrucciones.SetActive(false);
-            contenido.gameObject.SetActive(true);
-            ConstruirModuloActual(true);   // directo al puzzle, sin volver a las instrucciones
-        });
+        // Caja de controles
+        Image bordeControles = cajasInstrucciones.CrearCaja(tarjeta, "CajaControles", new Vector2(0f, -140f),
+                                                            new Vector2(700f, 58f), colCaja, colBordeTarjeta, 1.2f);
+        textoControles = CrearTexto(bordeControles.transform.parent, "TextoControles", "", 15,
+                                    TextAnchor.MiddleCenter, Vector2.zero, new Vector2(680f, 54f), colTextoSuave);
+        textoControles.supportRichText = true;
+
+        // Botón EMPEZAR HACKEO
+        Image bordeBoton = cajasInstrucciones.CrearCaja(tarjeta, "BotonContinuar", new Vector2(0f, -218f),
+                                                        new Vector2(320f, 58f), Color.white, colBordeBotonEmpezar, 1.3f);
+        GameObject goBoton = bordeBoton.transform.parent.gameObject;
+        Image fondoBoton = goBoton.GetComponent<Image>();
+
+        botonEmpezar = goBoton.AddComponent<Button>();
+        botonEmpezar.targetGraphic = fondoBoton;
+        botonEmpezar.transition = Selectable.Transition.ColorTint;
+        ColorBlock colores = botonEmpezar.colors;
+        colores.normalColor = colBotonEmpezar;
+        colores.highlightedColor = colBotonEmpezarSeleccion;
+        colores.selectedColor = colBotonEmpezarSeleccion;
+        colores.pressedColor = Color.Lerp(colBotonEmpezarSeleccion, Color.white, 0.25f);
+        colores.colorMultiplier = 1f;
+        colores.fadeDuration = 0.06f;
+        botonEmpezar.colors = colores;
+
+        Text textoBoton = CrearTexto(goBoton.transform, "Texto", "EMPEZAR HACKEO", 21, TextAnchor.MiddleCenter,
+                                     Vector2.zero, new Vector2(320f, 58f), Color.white);
+        textoBoton.fontStyle = FontStyle.Bold;
+
+        TeclaCodigoUI iluminacion = goBoton.AddComponent<TeclaCodigoUI>();
+        iluminacion.Configurar("EMPEZAR", bordeBoton, colBordeBotonEmpezar, colAcento, AlEmpezarHackeo);
+        botonEmpezar.onClick.AddListener(iluminacion.Presionar);
 
         panelInstrucciones.SetActive(false);
+    }
+
+    /// <summary>Botón EMPEZAR HACKEO: cierra las instrucciones y arma el puzzle.</summary>
+    private void AlEmpezarHackeo(string valor)
+    {
+        panelInstrucciones.SetActive(false);
+        contenido.gameObject.SetActive(true);
+        ConstruirModuloActual(true);   // directo al puzzle, sin volver a las instrucciones
+    }
+
+    /// <summary>Mientras se ven las instrucciones, el botón siempre queda seleccionado (para el mando).</summary>
+    private void MantenerSeleccionInstrucciones()
+    {
+        if (botonEmpezar == null || EventSystem.current == null) return;
+        if (EventSystem.current.currentSelectedGameObject == null)
+            EventSystem.current.SetSelectedGameObject(botonEmpezar.gameObject);
     }
 
     private void MostrarInstrucciones(HackableType tipo)
     {
         contenido.gameObject.SetActive(false);
         panelInstrucciones.SetActive(true);
+        // La tarjeta de instrucciones tiene su propio marco: se oculta el del panel
+        MostrarMarcoInterno(false);
 
         string nombreTipo;
         switch (tipo)
@@ -400,8 +525,37 @@ public class HackManager : MonoBehaviour, IContextoHack
             default: nombreTipo = "HACKEO"; break;
         }
 
-        textoTipoModulo.text = $"MÓDULO {indiceModulo + 1}/{modulos.Length} · {nombreTipo}";
+        textoTipoModulo.text = nombreTipo;
+        textoModuloInstrucciones.text = "MÓDULO " + (indiceModulo + 1) + "/" + modulos.Length;
         textoInstrucciones.text = TextoInstrucciones(tipo);
+        textoControles.text = TextoControles(tipo);
+
+        if (EventSystem.current != null) EventSystem.current.SetSelectedGameObject(botonEmpezar.gameObject);
+    }
+
+    /// <summary>
+    /// Línea de controles debajo de las instrucciones. Solo nombra los controles que
+    /// ese módulo de verdad acepta (los que no tienen soporte de mando dicen solo ratón).
+    /// </summary>
+    private string TextoControles(HackableType tipo)
+    {
+        string raton = "<color=#26D9FF>RATÓN</color>  clic";
+        string salir = "\n<color=#26D9FF>Y</color> (mando) o <color=#26D9FF>ESC</color> (teclado): salir del hackeo";
+        switch (tipo)
+        {
+            case HackableType.UnirCables:
+                return raton + "      <color=#26D9FF>MANDO</color>  cruceta + A · B cancela"
+                     + "      <color=#26D9FF>TECLADO</color>  flechas + Enter" + salir;
+            case HackableType.Patron:
+            case HackableType.Secuencia:
+                return raton + "      <color=#26D9FF>MANDO</color>  cruceta + A"
+                     + "      <color=#26D9FF>TECLADO</color>  flechas + Enter" + salir;
+            case HackableType.DescifrarCodigo:
+                return raton + "      <color=#26D9FF>TECLADO</color>  escribe la palabra"
+                     + "      <color=#26D9FF>TAB</color>  tabla César" + salir;
+            default:
+                return raton + " en los botones del módulo" + salir;
+        }
     }
 
     private static string TextoInstrucciones(HackableType tipo)
@@ -417,10 +571,11 @@ public class HackManager : MonoBehaviour, IContextoHack
                        "Escribe la palabra original en el campo de texto y presiona VERIFICAR.";
 
             case HackableType.UnirCables:
-                return "Cada cable de la columna izquierda tiene un par del mismo color en la derecha.\n\n" +
-                       "1. Haz clic en un cable de la IZQUIERDA.\n" +
-                       "2. Haz clic en el cable del MISMO COLOR de la derecha.\n" +
-                       "3. Si aciertas, el cable queda conectado. Si te equivocas, la selección se descarta.\n\n" +
+                return "Cada cable de ORIGEN (izquierda) tiene su pareja en DESTINO (derecha): " +
+                       "tienen el mismo NOMBRE y el mismo color.\n\n" +
+                       "1. Elige un cable de ORIGEN.\n" +
+                       "2. Elige el cable de DESTINO con el mismo nombre.\n" +
+                       "3. Si aciertas, queda enlazado. Si te equivocas, el puzzle se reinicia con otro orden.\n\n" +
                        "Conecta todos los cables para completar el módulo.";
 
             case HackableType.Patron:
@@ -459,6 +614,19 @@ public class HackManager : MonoBehaviour, IContextoHack
         feedbackTexto.text = texto;
         if (exito) feedbackTexto.color = colVerde;
         else feedbackTexto.color = colRojo;
+    }
+
+    /// <summary>Botón Y del mando (Interact): vuelve a pulsarlo para salir de cualquier puzzle.</summary>
+    private bool LeerBotonSalirMando()
+    {
+        if (Time.frameCount == frameApertura) return false;
+#if ENABLE_INPUT_SYSTEM
+        Gamepad mando = Gamepad.current;
+        if (mando == null) return false;
+        return mando.buttonNorth.wasPressedThisFrame;
+#else
+        return false;
+#endif
     }
 
     private bool LeerEscape()
