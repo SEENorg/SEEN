@@ -88,8 +88,12 @@ public class Crosshair : MonoBehaviour
     {
         if (entrada != null && entrada.InteraccionPresionada()) return true;
 #if ENABLE_INPUT_SYSTEM
+        Keyboard kb = Keyboard.current;
+        if (kb != null && kb.eKey.wasPressedThisFrame) return true;
         Gamepad mando = Gamepad.current;
         if (mando != null && mando.buttonNorth.wasPressedThisFrame) return true;
+#else
+        if (Input.GetKeyDown(KeyCode.E)) return true;
 #endif
         return false;
     }
