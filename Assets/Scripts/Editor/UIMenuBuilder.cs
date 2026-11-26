@@ -134,27 +134,34 @@ public static class UIMenuBuilder
         var ddResolucion = CrearDropdown(panelAjustes.transform, "DropdownResolucion",
                                          new Vector2(170f, 115f), new Vector2(340f, 54f));
 
+        // Pantalla completa
+        CrearTexto(panelAjustes.transform, "LblPantalla", "PANTALLA COMPLETA", 24, TextAnchor.MiddleLeft,
+                   new Vector2(-210f, 45f), new Vector2(330f, 40f), colTexto);
+        var tgPantalla = CrearToggle(panelAjustes.transform, "TogglePantallaCompleta",
+                                     new Vector2(280f, 45f), new Vector2(48f, 48f));
+
         // Volumen
         CrearTexto(panelAjustes.transform, "LblVolumen", "VOLUMEN MAESTRO", 24, TextAnchor.MiddleLeft,
-                   new Vector2(-210f, 45f), new Vector2(330f, 40f), colTexto);
+                   new Vector2(-210f, -25f), new Vector2(330f, 40f), colTexto);
         var slVolumen = CrearSlider(panelAjustes.transform, "SliderVolumen",
-                                    new Vector2(170f, 45f), new Vector2(340f, 40f), 0f, 1f, 1f);
+                                    new Vector2(170f, -25f), new Vector2(340f, 40f), 0f, 1f, 1f);
 
         // Sensibilidad
         CrearTexto(panelAjustes.transform, "LblSensibilidad", "SENSIBILIDAD RATÓN", 24, TextAnchor.MiddleLeft,
-                   new Vector2(-210f, -25f), new Vector2(330f, 40f), colTexto);
+                   new Vector2(-210f, -95f), new Vector2(330f, 40f), colTexto);
         var slSens = CrearSlider(panelAjustes.transform, "SliderSensibilidad",
-                                 new Vector2(170f, -25f), new Vector2(340f, 40f), 0.02f, 0.5f, 0.15f);
+                                 new Vector2(170f, -95f), new Vector2(340f, 40f), 0.02f, 0.5f, 0.15f);
 
         var btnVolver = CrearBoton(panelAjustes.transform, "BotonVolver", "VOLVER",
-                                   new Vector2(0f, -160f), new Vector2(280f, 62f), colAcento);
+                                   new Vector2(0f, -230f), new Vector2(280f, 62f), colAcento);
         UnityEditor.Events.UnityEventTools.AddPersistentListener(btnVolver.onClick, menu.MostrarMenuPrincipal);
 
         CrearTexto(panelAjustes.transform, "NotaAjustes", "Los cambios se guardan automáticamente", 18,
-                   TextAnchor.MiddleCenter, new Vector2(0f, -220f), new Vector2(600f, 30f), colTextoSec);
+                   TextAnchor.MiddleCenter, new Vector2(0f, -290f), new Vector2(600f, 30f), colTextoSec);
 
         ajustes.calidadDropdown = ddCalidad;
         ajustes.resolucionDropdown = ddResolucion;
+        ajustes.pantallaCompletaToggle = tgPantalla;
         ajustes.volumenSlider = slVolumen;
         ajustes.sensibilidadSlider = slSens;
 

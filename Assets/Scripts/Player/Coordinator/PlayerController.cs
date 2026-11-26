@@ -129,15 +129,7 @@ mirada.Mirar(lookInput, esMando);
         mirada.ManejarCursor(entrada.LiberarCursorPresionado(), entrada.CapturarCursorPresionado());
 
         dash.ActualizarCooldown();
-
-        bool saltoPresionado = entrada.SaltoPresionado();
-        salto.RegistrarEntrada(saltoPresionado);
-        if (saltoPresionado)
-        {
-            // ── Integración: Registrar salto en Pila (solo cuando realmente se presiona saltar) ──
-            var edJump = EstructurasDatosJuego.Instancia;
-            if (edJump != null) edJump.RegistrarAccionJugador("Salto ejecutado (evasión de amenaza)");
-        }
+        salto.RegistrarEntrada(!EstaColumpiando && entrada.SaltoPresionado());
 
         if (entrada.DashPresionado() && dash.PuedeIniciar())
         {
@@ -153,12 +145,16 @@ mirada.Mirar(lookInput, esMando);
         suelo.Detectar(transform);
         salto.ActualizarSaltosRestantes(suelo.EstaEnSuelo, suelo.EstabaEnSuelo);
 
-        // Durante el dash no se camina ni se salta
-        if (!dash.IsDashing)
+        // Durante el dash o el columpio con gancho no se camina ni se salta normalmente
+        if (!dash.IsDashing && !EstaColumpiando)
         {
             movimiento.Mover(rb, moveInput, mirada.Yaw, suelo.EstaEnSuelo);
             suelo.TransportarConPlataforma(rb);
             salto.IntentarSaltar(rb, transform.position);
+
+            // ── Integración: Registrar salto en Pila ──
+            var edJump = EstructurasDatosJuego.Instancia;
+            if (edJump != null) edJump.RegistrarAccionJugador("Salto ejecutado (evasión de amenaza)");
         }
 
         dash.ActualizarFisica();
@@ -206,17 +202,30 @@ mirada.Mirar(lookInput, esMando);
 
     // ─────────────────────────────────────────────────── Reaparición y Muerte
 
-    /// <summary>Cambia la sensibilidad del mouse al instante (la usa el menú de pausa).</summary>
-    public void AplicarSensibilidad(float valor)
-    {
-        mirada.MouseSensitivity = valor;
-    }
-
     public void ResetEstado()
     {
+        EstaColumpiando = false;
         salto.Reiniciar();
         dash.Reiniciar();
         moveInput = Vector2.zero;
+
+        Gancho g = GetComponentInChildren<Gancho>(true);
+        if (g == null) g = Object.FindFirstObjectByType<Gancho>(FindObjectsInactive.Exclude);
+        if (g != null) g.CancelarColumpio();
+    }
+
+    public bool EstaColumpiando { get; set; }
+
+    public void RestaurarSaltoAereo()
+    {
+        salto.RestaurarSaltoAereo();
+    }
+
+    public void FijarOrientacion(Vector3 posicion, float yaw)
+    {
+        transform.position = posicion;
+        transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+        mirada.FijarYaw(yaw);
     }
 
     private void ReaccionarMuerte()

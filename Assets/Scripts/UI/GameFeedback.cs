@@ -256,8 +256,11 @@ public class GameFeedback : MonoBehaviour
                                                out tituloFinal, out subtitulo, out borde);
         borde.color = new Color(0.2f, 1f, 0.5f, 0.55f);
 
-        // Estadística: solo el tiempo (el contador de módulos hackeados se quitó)
-        CrearDato(t, "DatoTiempo", "TIEMPO", FormatearTiempo(tiempoNivel), new Vector2(0f, 80f));
+        // Estadísticas
+        int modulos = 0;
+        if (EstructurasDatosJuego.Instancia != null) modulos = EstructurasDatosJuego.Instancia.TotalModulosResueltos;
+        CrearDato(t, "DatoTiempo", "TIEMPO", FormatearTiempo(tiempoNivel), new Vector2(-130f, 80f));
+        CrearDato(t, "DatoModulos", "MÓDULOS HACKEADOS", modulos.ToString(), new Vector2(130f, 80f));
 
         // Botones
         string siguiente = ObtenerSiguienteNivel();

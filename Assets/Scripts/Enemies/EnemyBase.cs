@@ -27,48 +27,16 @@ public abstract class EnemyBase : MonoBehaviour
     [SerializeField] protected Color colorLuzBuffeado = new Color(1f, 0.4f, 0f); // Naranja
 
     [Header("Contacto con el jugador")]
-    [Tooltip("Distancia (en metros) a la que el enemigo mata al jugador")]
-    [SerializeField] protected float radioContacto = 1.0f;
+    [Tooltip("Distancia extra alrededor del enemigo que cuenta como tocar al jugador")]
+    [SerializeField] protected float margenContacto = 0.3f;
     [Tooltip("Segundos mínimos entre dos muertes causadas por este enemigo")]
     [SerializeField] protected float cooldownContacto = 1f;
 
     [Header("Colisión con el entorno")]
     [Tooltip("Capas que el enemigo no puede atravesar (paredes, suelo, plataformas)")]
     [SerializeField] protected LayerMask capasObstaculo = ~0;
-    [Tooltip("Si está activo, el radio y el centro del choque se toman del collider del enemigo (recomendado)")]
-    [SerializeField] protected bool usarMedidasDelCollider = true;
-    [Tooltip("Solo se usa si 'Usar Medidas Del Collider' está desactivado, o si el enemigo no tiene collider")]
+    [Tooltip("Radio con el que se comprueba el choque contra el entorno")]
     [SerializeField] protected float radioColision = 0.6f;
-
-    private float radioEfectivo;        // radio real usado en los choques
-    private Vector3 centroCuerpoLocal;  // centro del collider, relativo al enemigo
-    private bool tieneCentroCuerpo;
-
-    /// <summary>Centro real del cuerpo (el del collider, aunque esté corrido del pivote).</summary>
-    protected Vector3 CentroCuerpo
-    {
-        get { return tieneCentroCuerpo ? transform.TransformPoint(centroCuerpoLocal) : transform.position; }
-    }
-
-    /// <summary>Mide el collider propio: de ahí salen el radio y el centro de los choques.</summary>
-    private void CalcularMedidasCuerpo()
-    {
-        radioEfectivo = radioColision;
-        tieneCentroCuerpo = false;
-        if (!usarMedidasDelCollider) return;
-
-        for (int i = 0; i < collidersPropios.Length; i++)
-        {
-            Collider c = collidersPropios[i];
-            if (c == null || c.isTrigger || !c.enabled) continue;
-
-            Bounds b = c.bounds;
-            radioEfectivo = Mathf.Max(0.3f, Mathf.Max(b.extents.x, b.extents.z));
-            centroCuerpoLocal = transform.InverseTransformPoint(b.center);
-            tieneCentroCuerpo = true;
-            return;
-        }
-    }
 
     [Header("Activación por puerta")]
     [Tooltip("Si se asigna una puerta, el enemigo no se mueve hasta que esa puerta se abra")]
@@ -78,13 +46,17 @@ public abstract class EnemyBase : MonoBehaviour
     protected bool muerto;
     protected bool buffeado;
     protected Vector3 posicionOrigen;
+    protected string estadoMecanico = "";
 
     private Material materialInstancia; // Para no afectar a otros enemigos
     private Collider jugadorCollider;
     private float tiempoUltimoContacto = -10f;
     private float tiempoUltimoDañoRecibido = -10f;
+    private float tiempoAturdido;
+    private float tiempoEscudoBloqueo = -10f;
     private Renderer[] renderersVisuales;
     private Collider[] collidersPropios;
+    private Light[] lucesPropias;
 
     private static GUIStyle estiloNombreBarra;
 
@@ -93,7 +65,8 @@ public abstract class EnemyBase : MonoBehaviour
     public int VidaMaxima { get { return vidaMaxima; } }
     public bool Muerto { get { return muerto; } }
     public bool Buffeado { get { return buffeado; } }
-    public bool PuedeMoverse { get { return puertaActivadora == null || puertaActivadora.Abierta; } }
+    public bool EstaAturdido { get { return tiempoAturdido > 0f; } }
+    public bool PuedeMoverse { get { return (puertaActivadora == null || puertaActivadora.Abierta) && tiempoAturdido <= 0f; } }
 
     protected virtual void Start()
     {
@@ -109,8 +82,9 @@ public abstract class EnemyBase : MonoBehaviour
         }
 
         renderersVisuales = GetComponentsInChildren<Renderer>(true);
+        lucesPropias = GetComponentsInChildren<Light>(true);
+        AsegurarHitboxSolida();
         collidersPropios = GetComponentsInChildren<Collider>(true);
-        CalcularMedidasCuerpo();
 
         BuscarJugador();
 
@@ -123,9 +97,71 @@ public abstract class EnemyBase : MonoBehaviour
         ActualizarColorLuz();
     }
 
+    /// <summary>
+    /// Garantiza que la hitbox sólida de disparo coincida con el modelo visual del enemigo
+    /// (desactiva colliders desfasados o crea un BoxCollider centrado si solo hay triggers).
+    /// </summary>
+    protected void AsegurarHitboxSolida()
+    {
+        if (renderersVisuales == null) return;
+
+        bool tieneVisual = false;
+        Bounds visuales = default;
+        for (int i = 0; i < renderersVisuales.Length; i++)
+        {
+            Renderer r = renderersVisuales[i];
+            if (r == null || !r.enabled || !r.gameObject.activeInHierarchy) continue;
+            if (!tieneVisual) { visuales = r.bounds; tieneVisual = true; }
+            else visuales.Encapsulate(r.bounds);
+        }
+        if (!tieneVisual) return;
+
+        bool esHashtag = this is EnemyHashtag;
+        Collider[] todos = GetComponentsInChildren<Collider>(true);
+        bool tieneAlineado = false;
+
+        for (int i = 0; i < todos.Length; i++)
+        {
+            Collider c = todos[i];
+            if (c == null || !c.enabled || c.isTrigger || !c.gameObject.activeInHierarchy) continue;
+            if (esHashtag && c is SphereCollider) continue; // SphereCollider lo usa Hashtag como trigger de buff
+
+            float desfase = Vector3.Distance(c.bounds.center, visuales.center);
+            if (desfase > 0.55f)
+            {
+                c.enabled = false;
+            }
+            else
+            {
+                tieneAlineado = true;
+            }
+        }
+
+        if (!tieneAlineado)
+        {
+            BoxCollider box = GetComponent<BoxCollider>();
+            if (box == null) box = gameObject.AddComponent<BoxCollider>();
+            box.enabled = true;
+            box.isTrigger = false;
+            box.center = transform.InverseTransformPoint(visuales.center);
+
+            Vector3 s = transform.lossyScale;
+            float sx = Mathf.Max(0.05f, Mathf.Abs(s.x));
+            float sy = Mathf.Max(0.05f, Mathf.Abs(s.y));
+            float sz = Mathf.Max(0.05f, Mathf.Abs(s.z));
+            box.size = new Vector3(
+                Mathf.Max(0.95f, visuales.size.x) / sx,
+                Mathf.Max(1.25f, visuales.size.y) / sy,
+                Mathf.Max(0.95f, visuales.size.z) / sz
+            );
+        }
+    }
+
     public virtual void ReiniciarPosicion()
     {
         muerto = false;
+        tiempoAturdido = 0f;
+        estadoMecanico = "";
         vidaActual = vidaMaxima;
         transform.position = posicionOrigen;
         gameObject.SetActive(true);
@@ -133,12 +169,18 @@ public abstract class EnemyBase : MonoBehaviour
 
     protected virtual void Update()
     {
+        if (tiempoAturdido > 0f)
+        {
+            tiempoAturdido = Mathf.Max(0f, tiempoAturdido - Time.deltaTime);
+            if (tiempoAturdido <= 0f)
+                ActualizarColorLuz();
+        }
+
         if (jugador == null && !muerto)
             BuscarJugador();
 
-        // Contacto por cercanía: funciona aunque el collider del enemigo no sea trigger
-        // o esté en un objeto hijo (en esos casos OnTriggerEnter nunca se dispara).
-        if (!muerto && mataAlTocar && TocandoJugador())
+        // Contacto por cercanía: un enemigo aturdido no mata al tocarlo
+        if (!muerto && mataAlTocar && !EstaAturdido && TocandoJugador())
             IntentarMatarJugador();
     }
 
@@ -155,11 +197,35 @@ public abstract class EnemyBase : MonoBehaviour
     public virtual void RecibirDaño(int cantidad, DamageType tipoDaño)
     {
         if (muerto) return;
+
+        // El buff de Hashtag actúa como escudo contra disparos normales;
+        // un disparo sobrecargado lo atraviesa.
+        if (buffeado && !(this is EnemyHashtag) && tipoDaño != DamageType.Cargado)
+        {
+            NotificarEscudoBloqueo();
+            return;
+        }
+
         tiempoUltimoDañoRecibido = Time.unscaledTime;
         vidaActual = Mathf.Max(0, vidaActual - cantidad);
 
         if (vidaActual <= 0)
             Morir();
+    }
+
+    public virtual void Aturdir(float segundos)
+    {
+        if (muerto || segundos <= 0f) return;
+        tiempoAturdido = Mathf.Max(tiempoAturdido, segundos);
+        AplicarTinteLuz(new Color(1f, 0.85f, 0.15f), 2.5f);
+        OnAturdido();
+    }
+
+    protected virtual void OnAturdido() { }
+
+    protected void NotificarEscudoBloqueo()
+    {
+        tiempoEscudoBloqueo = Time.unscaledTime;
     }
 
     protected virtual void Morir()
@@ -182,7 +248,7 @@ public abstract class EnemyBase : MonoBehaviour
             for (int i = 0; i < renderersVisuales.Length; i++)
             {
                 Renderer r = renderersVisuales[i];
-                if (r == null || !r.enabled) continue;
+                if (r == null || !r.enabled || !r.gameObject.activeInHierarchy) continue;
                 if (!tiene) { b = r.bounds; tiene = true; }
                 else b.Encapsulate(r.bounds);
             }
@@ -193,7 +259,7 @@ public abstract class EnemyBase : MonoBehaviour
             for (int i = 0; i < collidersPropios.Length; i++)
             {
                 Collider c = collidersPropios[i];
-                if (c == null || !c.enabled || c.isTrigger) continue;
+                if (c == null || !c.enabled || c.isTrigger || !c.gameObject.activeInHierarchy) continue;
                 if (!tiene) { b = c.bounds; tiene = true; }
                 else b.Encapsulate(c.bounds);
             }
@@ -229,7 +295,10 @@ public abstract class EnemyBase : MonoBehaviour
             };
         }
 
-        float ancho = 112f;
+        string estado = ObtenerEtiquetaEstado();
+        string textoTitulo = string.IsNullOrEmpty(estado) ? ObtenerNombreBarra() : ObtenerNombreBarra() + " " + estado;
+
+        float ancho = string.IsNullOrEmpty(estado) ? 112f : 172f;
         float altoBarra = 10f;
         float altoTotal = 28f;
         float x = sp.x - ancho * 0.5f;
@@ -243,9 +312,11 @@ public abstract class EnemyBase : MonoBehaviour
         else if (ratio <= 0.70f) colorRelleno = new Color(1f, 0.70f, 0.15f, 0.95f);
 
         bool impactoReciente = (Time.unscaledTime - tiempoUltimoDañoRecibido) < 0.22f;
-        Color colorBorde = impactoReciente
-            ? new Color(1f, 0.25f, 0.30f, 1f)
-            : new Color(0.15f, 0.85f, 1f, 0.9f);
+        bool escudoReciente = (Time.unscaledTime - tiempoEscudoBloqueo) < 0.55f;
+        Color colorBorde = new Color(0.15f, 0.85f, 1f, 0.9f);
+        if (escudoReciente) colorBorde = new Color(1f, 0.65f, 0.15f, 1f);
+        else if (EstaAturdido) colorBorde = new Color(1f, 0.85f, 0.2f, 1f);
+        else if (impactoReciente) colorBorde = new Color(1f, 0.25f, 0.30f, 1f);
 
         Color previo = GUI.color;
 
@@ -259,10 +330,12 @@ public abstract class EnemyBase : MonoBehaviour
         GUI.DrawTexture(new Rect(x - 4f, y, 1.5f, altoTotal), Texture2D.whiteTexture);
         GUI.DrawTexture(new Rect(x + ancho + 2.5f, y, 1.5f, altoTotal), Texture2D.whiteTexture);
 
-        // Nombre del enemigo
-        estiloNombreBarra.normal.textColor = new Color(0.85f, 0.95f, 1f, 0.95f);
+        // Nombre del enemigo y estado
+        estiloNombreBarra.normal.textColor = escudoReciente ? new Color(1f, 0.75f, 0.25f, 1f) :
+                                             EstaAturdido ? new Color(1f, 0.9f, 0.3f, 1f) :
+                                             new Color(0.85f, 0.95f, 1f, 0.95f);
         GUI.color = Color.white;
-        GUI.Label(new Rect(x - 4f, y + 1f, ancho + 8f, 14f), ObtenerNombreBarra(), estiloNombreBarra);
+        GUI.Label(new Rect(x - 4f, y + 1f, ancho + 8f, 14f), textoTitulo, estiloNombreBarra);
 
         // Fondo de barra
         float barY = y + 15f;
@@ -283,6 +356,15 @@ public abstract class EnemyBase : MonoBehaviour
             GUI.DrawTexture(new Rect(x + seg * i - 0.75f, barY, 1.5f, altoBarra), Texture2D.whiteTexture);
 
         GUI.color = previo;
+    }
+
+    private string ObtenerEtiquetaEstado()
+    {
+        if (Time.unscaledTime - tiempoEscudoBloqueo < 0.65f) return "[ESCUDO]";
+        if (EstaAturdido) return "[ATURDIDO]";
+        if (!string.IsNullOrEmpty(estadoMecanico)) return estadoMecanico;
+        if (buffeado && !(this is EnemyHashtag)) return "[ESCUDO #]";
+        return "";
     }
 
     private string ObtenerNombreBarra()
@@ -325,42 +407,13 @@ public abstract class EnemyBase : MonoBehaviour
     /// </summary>
     protected bool TocandoJugador()
     {
-        if (jugador == null) return false;
+        if (jugadorCollider == null) return false;
         if (Time.deltaTime <= 0f) return false;   // juego en pausa (hackeo, menú...)
 
-        // Punto del jugador más cercano al enemigo (no depende del tamaño del renderer)
-        Vector3 puntoJugador = jugadorCollider != null
-            ? jugadorCollider.ClosestPoint(CentroCuerpo)
-            : jugador.position;
+        Bounds limites = ObtenerLimitesVisuales();
+        limites.Expand(margenContacto * 2f);
 
-        if (Vector3.Distance(CentroCuerpo, puntoJugador) > radioContacto) return false;
-
-        // Una pared entre los dos = no hay contacto (evita matar a través de paredes)
-        return LineaDeVistaLibre();
-    }
-
-    /// <summary>True si no hay ninguna pared entre el enemigo y el jugador.</summary>
-    protected bool LineaDeVistaLibre()
-    {
-        if (jugador == null) return false;
-
-        Vector3 origen = CentroCuerpo;
-        Vector3 objetivo = jugadorCollider != null ? jugadorCollider.bounds.center : jugador.position;
-        Vector3 d = objetivo - origen;
-        float dist = d.magnitude;
-        if (dist < 0.05f) return true;
-        d /= dist;
-
-        RaycastHit[] golpes = Physics.RaycastAll(origen, d, dist, capasObstaculo, QueryTriggerInteraction.Ignore);
-        for (int i = 0; i < golpes.Length; i++)
-        {
-            Collider c = golpes[i].collider;
-            if (c.transform.IsChildOf(transform)) continue;
-            if (c.CompareTag("Player") || c.GetComponentInParent<PlayerController>() != null) continue;
-            if (c.GetComponentInParent<EnemyBase>() != null) continue;
-            return false;   // algo sólido en medio
-        }
-        return true;
+        return jugadorCollider.bounds.Intersects(limites);
     }
 
     /// <summary>
@@ -388,7 +441,7 @@ public abstract class EnemyBase : MonoBehaviour
     /// <summary>Comprueba si hay algo sólido en el camino (ignora al propio enemigo, a otros enemigos y al jugador).</summary>
     protected bool HayObstaculo(Vector3 direccion, float distancia)
     {
-        RaycastHit[] golpes = Physics.SphereCastAll(CentroCuerpo, radioEfectivo, direccion,
+        RaycastHit[] golpes = Physics.SphereCastAll(transform.position, radioColision, direccion,
                                                     distancia + 0.02f, capasObstaculo,
                                                     QueryTriggerInteraction.Ignore);
 
@@ -400,39 +453,14 @@ public abstract class EnemyBase : MonoBehaviour
             if (c.transform.IsChildOf(transform)) continue;          // sus propios cubos y colliders
             if (c.CompareTag("Player")) continue;
             if (c.GetComponentInParent<EnemyBase>() != null) continue; // otros enemigos
+            if (c.GetComponentInParent<ProyectilPistola>() != null) continue;
+            if (c.GetComponentInParent<OrbeAlgoritmo>() != null) continue;
 
             // Al moverse en horizontal, el suelo y el techo no lo frenan
             bool superficieHorizontal = Mathf.Abs(Vector3.Dot(golpes[i].normal, Vector3.up)) > 0.9f;
             if (movimientoHorizontal && superficieHorizontal) continue;
 
             return true;
-        }
-
-        // Refuerzo: el SphereCast NO detecta una pared que ya toca la esfera al empezar
-        // (por eso a veces los enemigos "atraviesan" paredes). Un rayo desde el centro sí la ve.
-        return RayoDeFrenteBloqueado(direccion, distancia);
-    }
-
-    /// <summary>Rayo hacia donde se mueve: True si hay una pared justo adelante.</summary>
-    private bool RayoDeFrenteBloqueado(Vector3 direccion, float distancia)
-    {
-        RaycastHit[] golpes = Physics.RaycastAll(CentroCuerpo, direccion, radioEfectivo + distancia + 0.02f,
-                                                 capasObstaculo, QueryTriggerInteraction.Ignore);
-        bool movimientoHorizontal = Mathf.Abs(direccion.y) < 0.2f;
-
-        for (int i = 0; i < golpes.Length; i++)
-        {
-            Collider c = golpes[i].collider;
-            if (c.transform.IsChildOf(transform)) continue;
-            if (c.CompareTag("Player")) continue;
-            if (c.GetComponentInParent<EnemyBase>() != null) continue;
-
-            bool superficieHorizontal = Mathf.Abs(Vector3.Dot(golpes[i].normal, Vector3.up)) > 0.9f;
-            if (movimientoHorizontal && superficieHorizontal) continue;
-
-            // Solo cuenta si la pared está de frente (si se aleja de ella, se le deja moverse)
-            if (Vector3.Dot(golpes[i].normal, direccion) < -0.2f)
-                return true;
         }
         return false;
     }
@@ -448,26 +476,30 @@ public abstract class EnemyBase : MonoBehaviour
     {
         Color colorObjetivo = colorLuzNormal;
         if (buffeado) colorObjetivo = colorLuzBuffeado;
+        AplicarTinteLuz(colorObjetivo, 2.5f);
+    }
 
-        // 1. Cambiar la luz
+    protected void AplicarTinteLuz(Color colorObjetivo, float intensidadEmision)
+    {
         if (luzPropia != null)
-        {
             luzPropia.color = colorObjetivo;
+
+        if (lucesPropias != null)
+        {
+            for (int i = 0; i < lucesPropias.Length; i++)
+            {
+                if (lucesPropias[i] != null && lucesPropias[i] != luzPropia)
+                    lucesPropias[i].color = colorObjetivo;
+            }
         }
 
-        // 2. Cambiar la emisión del material de la esfera
         if (materialInstancia != null)
         {
             materialInstancia.EnableKeyword("_EMISSION");
-            
-            // Multiplicamos el color por intensidad para que brille
-            materialInstancia.SetColor("_EmissionColor", colorObjetivo * 2.5f);
-            
-            // Si es URP, actualizamos también el color base
+            materialInstancia.SetColor("_EmissionColor", colorObjetivo * intensidadEmision);
+
             if (materialInstancia.HasProperty("_BaseColor"))
-            {
                 materialInstancia.SetColor("_BaseColor", colorObjetivo * 0.5f);
-            }
         }
     }
-}
+}

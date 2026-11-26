@@ -5,12 +5,13 @@ using UnityEngine.UI;
 /// Ajustes del juego. Todo se guarda en PlayerPrefs.
 ///  · Calidad gráfica: Alta / Media / Baja.
 ///  · Resolución: lista de mayor a menor.
-///  · Volumen maestro y sensibilidad del ratón.
+///  · Pantalla completa, volumen maestro y sensibilidad del ratón.
 public class SettingsManager : MonoBehaviour
 {
     [Header("UI — Controles")]
     public Dropdown calidadDropdown;
     public Dropdown resolucionDropdown;
+    public Toggle pantallaCompletaToggle;
     public Slider volumenSlider;
     public Slider sensibilidadSlider;
 
@@ -22,6 +23,7 @@ public class SettingsManager : MonoBehaviour
         IniciarSensibilidad();
         ConfigurarCalidad();
         ConfigurarResoluciones();
+        IniciarPantallaCompleta();
     }
 
     private void IniciarVolumen()
@@ -37,6 +39,13 @@ public class SettingsManager : MonoBehaviour
         if (sensibilidadSlider == null) return;
         sensibilidadSlider.value = PlayerPrefs.GetFloat(AjustesJuego.CLAVE_SENSIBILIDAD, 0.15f);
         sensibilidadSlider.onValueChanged.AddListener(CambiarSensibilidad);
+    }
+
+    private void IniciarPantallaCompleta()
+    {
+        if (pantallaCompletaToggle == null) return;
+        pantallaCompletaToggle.isOn = Screen.fullScreen;
+        pantallaCompletaToggle.onValueChanged.AddListener(CambiarPantallaCompleta);
     }
 
     // ── Calidad gráfica: Alta / Media / Baja ─────────────────────
@@ -84,6 +93,11 @@ public class SettingsManager : MonoBehaviour
     public void CambiarResolucion(int indice)
     {
         AjustesJuego.AplicarResolucion(indice);
+    }
+
+    public void CambiarPantallaCompleta(bool activa)
+    {
+        AjustesJuego.AplicarPantallaCompleta(activa);
     }
 
     public void CambiarVolumen(float valor)
