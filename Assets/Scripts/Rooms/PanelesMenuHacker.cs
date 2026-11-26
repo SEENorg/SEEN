@@ -289,24 +289,34 @@ public class PanelesMenuHacker : MonoBehaviour
 
         Encabezado(panel, columna, "TituloAjustes", "AJUSTES", "[ CONFIGURACIÓN DEL SISTEMA ]");
 
-        Selectable[] controles = new Selectable[5];
+        // La opción "pantalla completa" ya no existe: si la escena todavía trae su etiqueta
+        // y su casilla, se esconden para que no aparezcan en el menú
+        OcultarSiExiste(panel, "LblPantalla");
+        OcultarSiExiste(panel, "TogglePantallaCompleta");
+
+        Selectable[] controles = new Selectable[4];
         controles[0] = Fila(panel, columna, 0, "LblCalidad", "DropdownCalidad", 175f);
         controles[1] = Fila(panel, columna, 1, "LblResolucion", "DropdownResolucion", 100f);
-        controles[2] = Fila(panel, columna, 2, "LblPantalla", "TogglePantallaCompleta", 25f);
-        controles[3] = Fila(panel, columna, 3, "LblVolumen", "SliderVolumen", -50f);
-        controles[4] = Fila(panel, columna, 4, "LblSensibilidad", "SliderSensibilidad", -125f);
+        controles[2] = Fila(panel, columna, 2, "LblVolumen", "SliderVolumen", 25f);
+        controles[3] = Fila(panel, columna, 3, "LblSensibilidad", "SliderSensibilidad", -50f);
 
         Transform volver = panel.transform.Find("BotonVolver");
-        if (volver != null) botonVolverAjustes = PrepararBotonVolver(volver, columna, new Vector2(0f, -225f));
+        if (volver != null) botonVolverAjustes = PrepararBotonVolver(volver, columna, new Vector2(0f, -150f));
 
         // Arriba / abajo recorre las filas; izquierda / derecha mueve los sliders
-        Selectable[] orden = new Selectable[6];
-        for (int i = 0; i < 5; i++) orden[i] = controles[i];
-        orden[5] = botonVolverAjustes;
+        Selectable[] orden = new Selectable[5];
+        for (int i = 0; i < 4; i++) orden[i] = controles[i];
+        orden[4] = botonVolverAjustes;
         ConectarVertical(orden);
 
         Transform nota = panel.transform.Find("NotaAjustes");
-        if (nota != null) PrepararNota(nota, columna, new Vector2(0f, -290f));
+        if (nota != null) PrepararNota(nota, columna, new Vector2(0f, -215f));
+    }
+
+    private void OcultarSiExiste(GameObject panel, string nombre)
+    {
+        Transform t = panel.transform.Find(nombre);
+        if (t != null) t.gameObject.SetActive(false);
     }
 
     /// <summary>Mete la etiqueta y el control en una fila redondeada que se ilumina al seleccionarse.</summary>

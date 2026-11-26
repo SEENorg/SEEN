@@ -1,37 +1,34 @@
 using UnityEngine;
 
 /// <summary>
-/// NOTIFICACIÓN: acecha al jugador, telegrafía una carga brillante en rojo/naranja
-/// y ejecuta una embestida rápida en línea recta.
-/// Si el jugador la esquiva o le acierta un disparo sobrecargado, queda aturdida.
+/// NOTIFICACIÓN: persigue al jugador cuando lo detecta y lo mata al alcanzarlo.
+/// Versión estable: no tiembla encima del jugador, esquiva las paredes en vez de
+/// quedarse pegado, no persigue a otro piso y no se aleja de su zona.
 /// </summary>
 public class EnemyNotificacion : EnemyBase
 {
-    private enum Estado { Acechando, Cargando, Embestida }
-
     [Header("Persecución")]
     [SerializeField] private float velocidad = 3.5f;
     [SerializeField] private float distanciaDeteccion = 15f;
     [SerializeField] private float velocidadRotacion = 5f;
 
+    [Tooltip("Se detiene a esta distancia del jugador (evita que tiemble encima de él)")]
+    [SerializeField] private float distanciaParada = 1.2f;
+
+    [Tooltip("Si el jugador está más arriba o más abajo que esto, no lo persigue (otro piso, ascensor, plataforma)")]
+    [SerializeField] private float diferenciaAlturaMaxima = 3f;
+
+    [Header("Zona (para que no se vaya del cuarto)")]
+    [Tooltip("Hasta dónde se puede alejar del punto donde empezó (metros). 0 = sin límite")]
+    [SerializeField] private float radioMaximo = 25f;
+
     [Header("Ataque")]
-    [SerializeField] private float radioAtaque = 2f;
+    [SerializeField] private float radioAtaque = 2f; // Un poco más grande por si acaso
     [SerializeField] private float cooldownAtaque = 1.5f;
 
-    [Header("Embestida (mecánica activa)")]
-    [SerializeField] private float distanciaEmbestida = 8.5f;
-    [SerializeField] private float tiempoCargaEmbestida = 0.65f;
-    [SerializeField] private float duracionEmbestida = 0.45f;
-    [SerializeField] private float velocidadEmbestida = 11.5f;
-    [SerializeField] private float cooldownEmbestida = 3.0f;
-    [SerializeField] private float aturdimientoTrasEmbestida = 1.3f;
-
     private float tiempoUltimoAtaque;
-    private float tiempoUltimaEmbestida = -10f;
     private float alturaFijaY;
-    private Estado estado = Estado.Acechando;
-    private float temporizadorEstado;
-    private Vector3 direccionEmbestida = Vector3.forward;
+    private float ladoEsquivar = 1f;   // hacia qué lado rodea una pared (+1 / -1)
 
     protected override void Start()
     {
@@ -39,145 +36,83 @@ public class EnemyNotificacion : EnemyBase
         alturaFijaY = transform.position.y;
     }
 
-    public override void ReiniciarPosicion()
-    {
-        estado = Estado.Acechando;
-        temporizadorEstado = 0f;
-        tiempoUltimaEmbestida = -10f;
-        base.ReiniciarPosicion();
-        ActualizarColorLuz();
-    }
-
-    protected override void OnAturdido()
-    {
-        estado = Estado.Acechando;
-        temporizadorEstado = 0f;
-        estadoMecanico = "";
-    }
-
-    public override void RecibirDaño(int cantidad, DamageType tipoDaño)
-    {
-        int vidaAntes = vidaActual;
-        base.RecibirDaño(cantidad, tipoDaño);
-
-        if (muerto || vidaActual >= vidaAntes) return;
-
-        // Disparo sobrecargado mientras carga o embiste corta el ataque y la aturde
-        if (tipoDaño == DamageType.Cargado && (estado == Estado.Cargando || estado == Estado.Embestida))
-        {
-            tiempoUltimaEmbestida = Time.time;
-            Aturdir(1.8f);
-        }
-    }
-
     protected override void Update()
     {
         base.Update();
         if (muerto || jugador == null || !PuedeMoverse) return;
+        if (Time.deltaTime <= 0f) return;   // juego en pausa
 
+        // Distancia real al jugador
         float dist = Vector3.Distance(transform.position, jugador.position);
-
-        if (estado == Estado.Cargando)
-        {
-            ActualizarCarga();
-            return;
-        }
-
-        if (estado == Estado.Embestida)
-        {
-            ActualizarEmbestida();
-            return;
-        }
-
-        estadoMecanico = "";
         if (dist > distanciaDeteccion) return;
 
-        // Iniciar carga si está a distancia de embestida
-        if (dist <= distanciaEmbestida && Time.time - tiempoUltimaEmbestida >= cooldownEmbestida)
+        // No persigue a otro piso (si no, trata de atravesar techos y suelos)
+        if (Mathf.Abs(jugador.position.y - alturaFijaY) > diferenciaAlturaMaxima) return;
+
+        // Sin pared en medio: si hay una, se queda quieto en vez de pegarse a ella
+        // (no sabe rodear cuartos, así que solo persigue cuando puede ir en línea recta)
+        if (!LineaDeVistaLibre()) return;
+
+        Vector3 destino = new Vector3(jugador.position.x, alturaFijaY, jugador.position.z);
+        Vector3 haciaJugador = destino - transform.position;
+        haciaJugador.y = 0f;
+
+        // 1. Movimiento: solo si todavía no llegó junto al jugador
+        if (haciaJugador.magnitude > distanciaParada && !FueraDeLaZona(haciaJugador.normalized))
+            MoverEsquivando(destino, velocidad);
+
+        // 2. Rotación (solo si no está justo encima)
+        if (haciaJugador.sqrMagnitude > 0.01f)
         {
-            IniciarCarga();
-            return;
+            Quaternion rotacionObjetivo = Quaternion.LookRotation(haciaJugador);
+            transform.rotation = Quaternion.Slerp(transform.rotation, rotacionObjetivo, velocidadRotacion * Time.deltaTime);
         }
 
-        // Persecución con ligero zig-zag para que no camine rígida
-        Vector3 hacia = new Vector3(jugador.position.x - transform.position.x, 0f, jugador.position.z - transform.position.z);
-        Vector3 dir = hacia.sqrMagnitude > 0.001f ? hacia.normalized : transform.forward;
-        Vector3 lateral = Vector3.Cross(Vector3.up, dir) * Mathf.Sin(Time.time * 3.5f) * 0.45f;
-        Vector3 destino = transform.position + (dir + lateral).normalized * 2f;
-        destino.y = alturaFijaY;
-
-        MoverHacia(destino, velocidad);
-        RotarHacia(hacia);
-
+        // 3. Atacar
         if (dist <= radioAtaque && Time.time - tiempoUltimoAtaque > cooldownAtaque)
         {
             tiempoUltimoAtaque = Time.time;
-            IntentarMatarJugador();
+            Atacar();
         }
     }
 
-    private void IniciarCarga()
+    // Va directo al destino; si una pared lo frena, prueba a rodearla (en vez de quedarse pegado o temblar)
+    private bool MoverEsquivando(Vector3 destino, float vel)
     {
-        estado = Estado.Cargando;
-        temporizadorEstado = tiempoCargaEmbestida;
-        estadoMecanico = "[¡CARGANDO!]";
-        ActualizarDireccionEmbestida();
-        AplicarTinteLuz(new Color(1f, 0.25f, 0.05f), 4f);
-    }
+        if (MoverHacia(destino, vel)) return true;
 
-    private void ActualizarCarga()
-    {
-        temporizadorEstado -= Time.deltaTime;
-        estadoMecanico = "[¡CARGANDO!]";
+        Vector3 dir = destino - transform.position;
+        dir.y = 0f;
+        dir.Normalize();
 
-        // Ajusta puntería al comienzo de la carga; los últimos 0.15s fija trayectoria para permitir esquiva
-        if (temporizadorEstado > 0.15f)
-            ActualizarDireccionEmbestida();
-
-        RotarHacia(direccionEmbestida, 12f);
-
-        if (temporizadorEstado <= 0f)
+        float[] giros = { 50f, 90f };
+        for (int i = 0; i < giros.Length; i++)
         {
-            estado = Estado.Embestida;
-            temporizadorEstado = duracionEmbestida;
-            estadoMecanico = "[¡EMBESTIDA!]";
+            Vector3 desvio = Quaternion.AngleAxis(giros[i] * ladoEsquivar, Vector3.up) * dir;
+            if (MoverHacia(transform.position + desvio, vel * 0.8f))
+                return true;
         }
+
+        // No pudo por ese lado: la próxima vez lo intenta por el otro
+        ladoEsquivar = -ladoEsquivar;
+        return false;
     }
 
-    private void ActualizarEmbestida()
+    // True si el siguiente paso lo alejaría más allá del radio máximo de su zona
+    private bool FueraDeLaZona(Vector3 direccion)
     {
-        temporizadorEstado -= Time.deltaTime;
-        estadoMecanico = "[¡EMBESTIDA!]";
+        if (radioMaximo <= 0f) return false;
 
-        Vector3 destino = transform.position + direccionEmbestida * velocidadEmbestida * Time.deltaTime;
-        destino.y = alturaFijaY;
+        Vector3 actual = transform.position - posicionOrigen;
+        actual.y = 0f;
+        Vector3 siguiente = transform.position + direccion * 0.3f - posicionOrigen;
+        siguiente.y = 0f;
 
-        bool avanzo = MoverHacia(destino, velocidadEmbestida);
-        RotarHacia(direccionEmbestida, 14f);
-
-        if (!avanzo || temporizadorEstado <= 0f)
-        {
-            estado = Estado.Acechando;
-            tiempoUltimaEmbestida = Time.time;
-            estadoMecanico = "";
-            Aturdir(aturdimientoTrasEmbestida);
-        }
+        return siguiente.magnitude > radioMaximo && siguiente.magnitude > actual.magnitude;
     }
 
-    private void ActualizarDireccionEmbestida()
+    private void Atacar()
     {
-        Vector3 hacia = new Vector3(jugador.position.x - transform.position.x, 0f, jugador.position.z - transform.position.z);
-        if (hacia.sqrMagnitude > 0.001f)
-            direccionEmbestida = hacia.normalized;
-    }
-
-    private void RotarHacia(Vector3 direccion, float factor = 1f)
-    {
-        direccion.y = 0f;
-        if (direccion.sqrMagnitude > 0.01f)
-        {
-            Quaternion rotacionObjetivo = Quaternion.LookRotation(direccion);
-            transform.rotation = Quaternion.Slerp(transform.rotation, rotacionObjetivo, velocidadRotacion * factor * Time.deltaTime);
-        }
+        IntentarMatarJugador();
     }
 }

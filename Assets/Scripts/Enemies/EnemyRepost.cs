@@ -30,13 +30,9 @@ public class EnemyRepost : EnemyBase
     [SerializeField] private float velocidadDeriva = 1f;
     [SerializeField] private float radioDeriva = 3f;
 
-    [Header("Evasión")]
-    [SerializeField] private float distanciaSaltoEvasivo = 1.6f;
-
     // Lista de todos los Reposts activos (para que se esquiven entre sí)
     private static readonly List<EnemyRepost> todos = new List<EnemyRepost>();
 
-    private readonly List<EnemyRepost> copiasVivas = new List<EnemyRepost>();
     private int duplicadosGenerados;
     private bool esCopia;   // las copias NO se vuelven a duplicar
     private Vector3 centroDeriva;
@@ -56,20 +52,7 @@ public class EnemyRepost : EnemyBase
         centroDeriva = transform.position;
         if (!centroAsignado) centroLimite = transform.position;
         alturaFijaY = transform.position.y;
-        if (esCopia) estadoMecanico = "[COPIA]";
         ElegirNuevoDestino();
-    }
-
-    public override void ReiniciarPosicion()
-    {
-        if (esCopia)
-        {
-            Destroy(gameObject);
-            return;
-        }
-        LimpiarCopias();
-        duplicadosGenerados = 0;
-        base.ReiniciarPosicion();
     }
 
     protected override void Update()
@@ -118,87 +101,34 @@ public class EnemyRepost : EnemyBase
     {
         if (muerto) return;
 
-        int vidaAntes = vidaActual;
-        base.RecibirDaño(cantidad, tipoDaño);
-
-        bool impactoAplicado = vidaActual < vidaAntes || (muerto && vidaAntes > 0);
-        if (!impactoAplicado || muerto) return;
-
-        if (tipoDaño == DamageType.Cargado)
-        {
-            // El disparo sobrecargado impide la duplicación y aturde un instante
-            Aturdir(0.65f);
-            return;
-        }
-
-        if (!esCopia)
-        {
-            SaltoLateral();
+        // Solo el original se multiplica; las copias reciben daño y mueren normal
+        if (tipoDaño != DamageType.Cargado && !esCopia)
             Duplicar();
-        }
-    }
 
-    protected override void OnMuerte()
-    {
-        LimpiarCopias();
-    }
-
-    private void LimpiarCopias()
-    {
-        for (int i = 0; i < copiasVivas.Count; i++)
-        {
-            if (copiasVivas[i] != null)
-                Destroy(copiasVivas[i].gameObject);
-        }
-        copiasVivas.Clear();
-    }
-
-    private void SaltoLateral()
-    {
-        if (jugador == null) return;
-        Vector3 hacia = jugador.position - transform.position;
-        hacia.y = 0f;
-        if (hacia.sqrMagnitude < 0.001f) return;
-
-        Vector3 lateral = Vector3.Cross(Vector3.up, hacia.normalized);
-        if (Random.value < 0.5f) lateral = -lateral;
-
-        if (!HayObstaculo(lateral, distanciaSaltoEvasivo) && !SeSaldriaDeLaZona(lateral))
-        {
-            transform.position += lateral * distanciaSaltoEvasivo;
-        }
-        else if (!HayObstaculo(-lateral, distanciaSaltoEvasivo) && !SeSaldriaDeLaZona(-lateral))
-        {
-            transform.position += -lateral * distanciaSaltoEvasivo;
-        }
+        base.RecibirDaño(cantidad, tipoDaño);
     }
 
     private void Duplicar()
     {
         if (duplicadosGenerados >= maxCopias) return;
 
+        // Si no tiene prefab asignado (pasa en otros niveles), se clona a sí mismo
+        GameObject molde = prefabRepost != null ? prefabRepost : gameObject;
+
         duplicadosGenerados++;
+        // Misma altura que el padre
         Vector3 punto = BuscarPuntoLibre();
         punto.y = transform.position.y;
+        GameObject nuevo = Instantiate(molde, punto, Quaternion.identity);
 
-        GameObject plantilla = prefabRepost != null ? prefabRepost : gameObject;
-        GameObject nuevo = Instantiate(plantilla, punto, transform.rotation);
-        nuevo.name = gameObject.name + "_Copia";
-        nuevo.transform.localScale = transform.localScale * 0.78f;
-
+        // Marcar la copia: no se duplica y tiene poca vida
         EnemyRepost copia = nuevo.GetComponent<EnemyRepost>();
         if (copia != null)
         {
             copia.esCopia = true;
-            copia.duplicadosGenerados = copia.maxCopias;
-            copia.centroLimite = centroLimite;
+            copia.centroLimite = centroLimite;     // misma sala que el original
             copia.centroAsignado = true;
-            copia.vidaMaxima = Mathf.Max(1, vidaCopias);
-            copia.vidaActual = copia.vidaMaxima;
-            copia.velocidadPersecucion = velocidadPersecucion * 1.35f;
-            copia.estadoMecanico = "[COPIA]";
-            copia.buffeado = false;
-            copiasVivas.Add(copia);
+            copia.vidaMaxima = Mathf.Max(1, vidaCopias);   // se aplica en su Start()
         }
     }
 
