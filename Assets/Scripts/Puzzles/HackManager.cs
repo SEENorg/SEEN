@@ -65,6 +65,8 @@ public class HackManager : MonoBehaviour, IContextoHack
     private float tiempoTransicion;   // para avance entre módulos (tiempo real)
     private IPuzzle puzzleActual;
     private HackableType tipoActual;
+    private static bool tieneUltimoTipo;
+    private static HackableType ultimoTipoJugado;
 
     // Colores
     private readonly Color colFondo = new Color(0.02f, 0.03f, 0.04f, 0.95f);
@@ -194,7 +196,7 @@ public class HackManager : MonoBehaviour, IContextoHack
         frameApertura = Time.frameCount;
 
         int cantidad = (mods != null && mods.Length > 0) ? mods.Length : 1;
-        if (tutorial || ContieneCodigoSecreto(mods))
+        if (tutorial || DificultadBase == 0 || ContieneCodigoSecreto(mods))
         {
             if (mods != null && mods.Length > 0)
                 modulos = mods;
@@ -203,14 +205,29 @@ public class HackManager : MonoBehaviour, IContextoHack
         }
         else
         {
-            // CodigoSecreto no sale al azar: solo aparece si el terminal lo trae en su lista
+            // CodigoSecreto no sale al azar: solo aparece si el terminal lo trae en su lista.
+            // Nunca se repite el mismo tipo dos veces seguidas (ni dentro del terminal ni entre terminales).
             var disponibles = new List<HackableType>();
             foreach (HackableType t in Enum.GetValues(typeof(HackableType)))
                 if (t != HackableType.CodigoSecreto) disponibles.Add(t);
 
             modulos = new HackableType[cantidad];
             for (int i = 0; i < cantidad; i++)
-                modulos[i] = disponibles[UnityEngine.Random.Range(0, disponibles.Count)];
+            {
+                var candidatos = new List<HackableType>();
+                for (int c = 0; c < disponibles.Count; c++)
+                {
+                    HackableType cand = disponibles[c];
+                    if (i == 0 && tieneUltimoTipo && cand == ultimoTipoJugado) continue;
+                    if (i > 0 && cand == modulos[i - 1]) continue;
+                    candidatos.Add(cand);
+                }
+                if (candidatos.Count == 0) candidatos.AddRange(disponibles);
+
+                modulos[i] = candidatos[UnityEngine.Random.Range(0, candidatos.Count)];
+                ultimoTipoJugado = modulos[i];
+                tieneUltimoTipo = true;
+            }
         }
         onCompletado = onResuelto;
         esTutorial = tutorial;
@@ -270,7 +287,15 @@ public class HackManager : MonoBehaviour, IContextoHack
     bool IContextoHack.InputBloqueado => bloqueoInput > 0f;
     bool IContextoHack.EnTransicion => tiempoTransicion > 0f;
     void IContextoHack.MostrarFeedback(string texto, bool exito) => MostrarFeedback(texto, exito);
-    void IContextoHack.CompletarModulo() { tiempoTransicion = 0.9f; }
+    void IContextoHack.CompletarModulo()
+    {
+        if (tipoActual != HackableType.CodigoSecreto)
+        {
+            ultimoTipoJugado = tipoActual;
+            tieneUltimoTipo = true;
+        }
+        tiempoTransicion = 0.9f;
+    }
     void IContextoHack.Regenerar() { RegenerarActual(); }
     Coroutine IContextoHack.IniciarCorrutina(IEnumerator rutina) => StartCoroutine(rutina);
 
@@ -566,12 +591,13 @@ public class HackManager : MonoBehaviour, IContextoHack
         switch (tipo)
         {
             case HackableType.DescifrarCodigo:
-                return "El código interceptado está cifrado con un desplazamiento César muy simple: +1.\n\n" +
-                       "Cada letra del código está UNA letra antes de la original. Para recuperar " +
-                       "la palabra, avanza cada letra 1 lugar en el abecedario.\n\n" +
-                       "Ejemplo:  'B'  =  'C'     'M'  =  'N'\n\n" +
-                       "Puedes abrir la tabla de ayuda con TAB.\n" +
-                       "Escribe la palabra original en las casillas (una letra en cada una) y presiona VERIFICAR.";
+                return "El código interceptado está cifrado con un desplazamiento César variable (+1 a +5, " +
+                       "indicado en el encabezado del módulo).\n\n" +
+                       "Para recuperar la palabra original, avanza cada letra del código esa misma cantidad de " +
+                       "lugares en el abecedario.\n\n" +
+                       "Ejemplo (+1): 'B' → 'C'    |    Ejemplo (+3): 'B' → 'E'\n\n" +
+                       "Puedes abrir la rueda de ayuda con TAB y girarla al desplazamiento indicado.\n" +
+                       "Escribe la palabra original en las casillas y presiona VERIFICAR.";
 
             case HackableType.UnirCables:
                 return "Cada cable de ORIGEN (izquierda) tiene su pareja en DESTINO (derecha): " +

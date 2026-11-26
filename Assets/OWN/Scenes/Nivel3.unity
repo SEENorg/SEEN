@@ -32398,7 +32398,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LevelInfo
   nombreNivel: "Nivel 3 \u2014 El N\xFAcleo"
-  escenaSiguiente: 
+  escenaSiguiente: Nivel4
   dificultad: 2
 --- !u!1001 &2009095174
 PrefabInstance:

@@ -62,9 +62,14 @@ private InputAction reloadAction;
                Mouse.current.leftButton.wasPressedThisFrame;
     }
     public bool AtaquePresionado()
-{
-    return attackAction.WasPressedThisFrame();
-}
+    {
+        return attackAction.WasPressedThisFrame();
+    }
+
+    public bool AtaqueMantenido()
+    {
+        return attackAction != null && attackAction.IsPressed();
+    }
 
 public bool InteraccionPresionada()
 {

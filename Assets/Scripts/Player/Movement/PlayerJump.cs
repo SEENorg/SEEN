@@ -78,6 +78,12 @@ public class PlayerJump
         jumpsLeft = maxJumps;
     }
 
+    /// <summary>Garantiza al menos un salto en el aire tras soltar el gancho.</summary>
+    public void RestaurarSaltoAereo()
+    {
+        if (jumpsLeft < 1) jumpsLeft = 1;
+    }
+
     /// <summary>Salta si hay un salto pendiente en el buffer y quedan saltos. Se llama en FixedUpdate.</summary>
     public void IntentarSaltar(Rigidbody rb, Vector3 posicionJugador)
     {

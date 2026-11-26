@@ -8,6 +8,7 @@ public interface IPlayerInput
     bool SaltoPresionado();
     bool DashPresionado();
     bool AtaquePresionado();
+    bool AtaqueMantenido();
     bool RecargaPresionada();
     bool InteraccionPresionada();
 

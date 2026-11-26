@@ -3915,8 +3915,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 313073c1bb9e8494581b626a7e4d10c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HackTerminal
-  modulos: 01000000
-  nombreAcceso: PUERTA 1
+  modulos: 0200000003000000
+  nombreAcceso: PUERTA 3
   resuelto: 0
   textoPrompt: Presione E para hackear
   esTutorial: 1
@@ -20253,8 +20253,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 313073c1bb9e8494581b626a7e4d10c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HackTerminal
-  modulos: 02000000
-  nombreAcceso: PUERTA 3
+  modulos: 0400000005000000
+  nombreAcceso: PUERTA 4
   resuelto: 0
   textoPrompt: Presione E para hackear
   esTutorial: 1
@@ -32126,7 +32126,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 313073c1bb9e8494581b626a7e4d10c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HackTerminal
-  modulos: 01000000
+  modulos: 0000000001000000
   nombreAcceso: PUERTA 2
   resuelto: 0
   textoPrompt: Presione E para hackear

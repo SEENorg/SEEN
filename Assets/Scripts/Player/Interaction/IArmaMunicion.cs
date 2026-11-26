@@ -12,6 +12,9 @@ public interface IArmaMunicion
     /// <summary>De 0 a 1 mientras recarga.</summary>
     float ProgresoRecarga { get; }
 
+    /// <summary>De 0 a 1 mientras mantiene el botón para disparo sobrecargado.</summary>
+    float ProgresoCarga { get; }
+
     /// <summary>Sube en 1 cada vez que se dispara (el HUD lo usa para animar).</summary>
     int DisparosRealizados { get; }
 

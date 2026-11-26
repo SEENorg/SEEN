@@ -27,10 +27,13 @@ public class Antivirus : MonoBehaviour
 
     [Header("Estado")]
     [SerializeField] private bool persiguiendo = true;
+    [Tooltip("Si está activo, espera a que el jugador recoja el gancho antes de perseguir")]
+    public bool esperarGancho = false;
 
     private Transform jugador;
     private Vector3 posicionInicial;
     private float temporizador;
+    private bool activado;
     private readonly System.Collections.Generic.List<Transform> cubos = new System.Collections.Generic.List<Transform>();
     private Light luz;
 
@@ -42,6 +45,15 @@ public class Antivirus : MonoBehaviour
     private void Start()
     {
         posicionInicial = transform.position;
+        if (esperarGancho)
+        {
+            persiguiendo = false;
+            activado = false;
+        }
+        else
+        {
+            activado = persiguiendo;
+        }
         ConstruirAmalgama();
 
         PlayerController pc = Object.FindFirstObjectByType<PlayerController>();
@@ -156,12 +168,32 @@ public class Antivirus : MonoBehaviour
         }
     }
 
+    /// <summary>Activa la persecución cuando el jugador recoge el gancho.</summary>
+    public void ActivarPersecucion()
+    {
+        activado = true;
+        temporizador = 0f;
+        persiguiendo = true;
+    }
+
     /// <summary>Reinicia la persecución (al reaparecer en un checkpoint).</summary>
     public void Reiniciar()
     {
         transform.position = posicionInicial;
         temporizador = 0f;
-        persiguiendo = true;
+        persiguiendo = !esperarGancho || activado;
+    }
+
+    /// <summary>Reposiciona el Antivirus detrás del punto de respawn del jugador.</summary>
+    public void ReiniciarEnCheckpoint(Vector3 puntoRespawnJugador)
+    {
+        if (puntoRespawnJugador.z < -5f)
+            transform.position = posicionInicial;
+        else
+            transform.position = new Vector3(puntoRespawnJugador.x, puntoRespawnJugador.y + 1.8f, puntoRespawnJugador.z - 22f);
+
+        temporizador = 0f;
+        persiguiendo = !esperarGancho || activado;
     }
 
     /// <summary>Detiene la persecución (nivel completado).</summary>

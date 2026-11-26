@@ -21,16 +21,16 @@ public class PanelesMenuHacker : MonoBehaviour
     private const float AnchoFila = 600f;
     private const float AltoFila = 62f;
     private const float AnchoControl = 260f;
-    private const float AnchoTarjeta = 160f;
+    private const float AnchoTarjeta = 144f;
     private const float AltoTarjeta = 220f;
-    private const float SeparacionTarjetas = 190f;
+    private const float SeparacionTarjetas = 160f;
 
     [Tooltip("Menú cuyos paneles se cambian. Si está vacío, se usa el MainMenuManager de este objeto.")]
     [SerializeField] private MainMenuManager menu;
 
     [Header("Niveles")]
     [Tooltip("Texto pequeño debajo del número de cada tarjeta.")]
-    [SerializeField] private string[] descripcionesNivel = { "SECTOR DE ENTRADA", "RED INTERNA", "NÚCLEO DEL SISTEMA" };
+    [SerializeField] private string[] descripcionesNivel = { "SECTOR DE ENTRADA", "RED INTERNA", "NÚCLEO DEL SISTEMA", "ESCAPE DEL ANTIVIRUS" };
     [Tooltip("Si está apagado, el nivel se carga directo, sin cinemática.")]
     [SerializeField] private bool usarCinematica = true;
 
@@ -107,10 +107,10 @@ public class PanelesMenuHacker : MonoBehaviour
 
         Encabezado(panel, columna, "TituloNiveles", "NIVELES", "[ SELECCIONA UN NODO DE ACCESO ]");
 
-        botonesNivel = new Button[3];
-        textosEntrar = new Text[3];
-        Button[] deEscena = { menu.botonNivel1, menu.botonNivel2, menu.botonNivel3 };
-        for (int i = 0; i < 3; i++)
+        botonesNivel = new Button[4];
+        textosEntrar = new Text[4];
+        Button[] deEscena = { menu.botonNivel1, menu.botonNivel2, menu.botonNivel3, menu.botonNivel4 };
+        for (int i = 0; i < 4; i++)
         {
             Button boton = deEscena[i];
             if (boton == null)
@@ -118,9 +118,16 @@ public class PanelesMenuHacker : MonoBehaviour
                 Transform buscado = panel.transform.Find("BotonNivel" + (i + 1));
                 if (buscado != null) boton = buscado.GetComponent<Button>();
             }
+            if (boton == null && i == 3)
+            {
+                GameObject go4 = new GameObject("BotonNivel4", typeof(RectTransform), typeof(Image), typeof(Button));
+                go4.transform.SetParent(panel.transform, false);
+                boton = go4.GetComponent<Button>();
+                menu.botonNivel4 = boton;
+            }
             if (boton == null) continue;
             botonesNivel[i] = boton;
-            float x = (i - 1) * SeparacionTarjetas;
+            float x = (i - 1.5f) * SeparacionTarjetas;
             PrepararTarjetaNivel(boton, i, columna, new Vector2(x, 40f));
         }
 
@@ -128,6 +135,7 @@ public class PanelesMenuHacker : MonoBehaviour
         if (botonesNivel[0] != null) ReemplazarClic(botonesNivel[0], EntrarNivel1);
         if (botonesNivel[1] != null) ReemplazarClic(botonesNivel[1], EntrarNivel2);
         if (botonesNivel[2] != null) ReemplazarClic(botonesNivel[2], EntrarNivel3);
+        if (botonesNivel[3] != null) ReemplazarClic(botonesNivel[3], EntrarNivel4);
 
         Transform volver = panel.transform.Find("BotonVolverNiveles");
         if (volver != null) botonVolverNiveles = PrepararBotonVolver(volver, columna, new Vector2(0f, -170f));
@@ -180,8 +188,7 @@ public class PanelesMenuHacker : MonoBehaviour
         imagenLinea.color = colorMagenta;
         imagenLinea.raycastTarget = false;
 
-        string descripcion = "";
-        if (descripcionesNivel != null && indice < descripcionesNivel.Length) descripcion = descripcionesNivel[indice];
+        string descripcion = ObtenerDescripcionNivel(indice);
         Text textoDescripcion = HackUI.CrearTexto(t, "Descripcion", descripcion, 13, TextAnchor.MiddleCenter,
                                                   new Vector2(0f, -55f), new Vector2(AnchoTarjeta - 16f, 34f), colorTextoSuave);
         textoDescripcion.horizontalOverflow = HorizontalWrapMode.Wrap;
@@ -195,16 +202,30 @@ public class PanelesMenuHacker : MonoBehaviour
         elemento.Configurar(t, 1.18f, borde, colorBorde, HackUI.ColAcento, textoNumero, Color.white, HackUI.ColAcento);
     }
 
-    /// <summary>1 ↔ 2 ↔ 3 con izquierda/derecha; abajo va a VOLVER y de VOLVER se sube a la tarjeta 2.</summary>
+    private string ObtenerDescripcionNivel(int indice)
+    {
+        if (descripcionesNivel != null && indice >= 0 && indice < descripcionesNivel.Length && !string.IsNullOrEmpty(descripcionesNivel[indice]))
+            return descripcionesNivel[indice];
+        switch (indice)
+        {
+            case 0: return "SECTOR DE ENTRADA";
+            case 1: return "RED INTERNA";
+            case 2: return "NÚCLEO DEL SISTEMA";
+            case 3: return "ESCAPE DEL ANTIVIRUS";
+            default: return "";
+        }
+    }
+
+    /// <summary>1 ↔ 2 ↔ 3 ↔ 4 con izquierda/derecha; abajo va a VOLVER y de VOLVER se sube a la tarjeta 2.</summary>
     private void ConectarNavegacionNiveles()
     {
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 4; i++)
         {
             if (botonesNivel[i] == null) continue;
             Navigation navegacion = new Navigation();
             navegacion.mode = Navigation.Mode.Explicit;
-            navegacion.selectOnLeft = botonesNivel[(i + 2) % 3];
-            navegacion.selectOnRight = botonesNivel[(i + 1) % 3];
+            navegacion.selectOnLeft = botonesNivel[(i + 3) % 4];
+            navegacion.selectOnRight = botonesNivel[(i + 1) % 4];
             navegacion.selectOnDown = botonVolverNiveles;
             botonesNivel[i].navigation = navegacion;
         }
@@ -213,7 +234,7 @@ public class PanelesMenuHacker : MonoBehaviour
         {
             Navigation navegacionVolver = new Navigation();
             navegacionVolver.mode = Navigation.Mode.Explicit;
-            navegacionVolver.selectOnUp = botonesNivel[1];
+            navegacionVolver.selectOnUp = botonesNivel[1] != null ? botonesNivel[1] : botonesNivel[0];
             botonVolverNiveles.navigation = navegacionVolver;
         }
     }
@@ -227,6 +248,7 @@ public class PanelesMenuHacker : MonoBehaviour
     private void EntrarNivel1() { Entrar(1); }
     private void EntrarNivel2() { Entrar(2); }
     private void EntrarNivel3() { Entrar(3); }
+    private void EntrarNivel4() { Entrar(4); }
 
     private void Entrar(int numero)
     {
@@ -237,8 +259,7 @@ public class PanelesMenuHacker : MonoBehaviour
             return;
         }
 
-        string descripcion = "";
-        if (descripcionesNivel != null && numero - 1 < descripcionesNivel.Length) descripcion = descripcionesNivel[numero - 1];
+        string descripcion = ObtenerDescripcionNivel(numero - 1);
         CinematicaGlitch.Reproducir(menu, numero, descripcion);
     }
 
@@ -250,7 +271,7 @@ public class PanelesMenuHacker : MonoBehaviour
         if (EventSystem.current != null) actual = EventSystem.current.currentSelectedGameObject;
         bool parpadeo = Mathf.Repeat(Time.unscaledTime, 0.8f) < 0.55f;
 
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < botonesNivel.Length && i < textosEntrar.Length; i++)
         {
             if (botonesNivel[i] == null || textosEntrar[i] == null) continue;
             textosEntrar[i].enabled = botonesNivel[i].gameObject == actual && parpadeo;

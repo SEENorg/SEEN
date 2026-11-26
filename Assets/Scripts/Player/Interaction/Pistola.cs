@@ -18,6 +18,12 @@ public class Pistola : MonoBehaviour, IInteractuable, IArmaMunicion
     [SerializeField] private float alcanceMaximo = 45f;
     [SerializeField] private int danoPorDisparo = 1;
 
+    [Header("Disparo Sobrecargado (mantener)")]
+    [SerializeField] private float tiempoParaSobrecarga = 0.5f;
+    [SerializeField] private int danoSobrecargado = 2;
+    [SerializeField] private int costoBalasSobrecarga = 2;
+    [SerializeField] private float velocidadProyectilSobrecargado = 54f;
+
     [Header("Munición")]
     [SerializeField] private int capacidadCargador = 10;
     [SerializeField] private float duracionRecarga = 1.3f;
@@ -32,8 +38,10 @@ public class Pistola : MonoBehaviour, IInteractuable, IArmaMunicion
     private const float InicioEnderezar = 0.82f;
     private const float BajadaCargador = 0.28f;
     private const float EmisionRiel = 2.5f;
+    private const float UmbralInicioCarga = 0.12f;
 
     private readonly Color colorEnergia = new Color(0.15f, 0.85f, 1f);
+    private readonly Color colorSobrecarga = new Color(1f, 0.72f, 0.15f);
     private readonly Vector3 posicionEnCamara = new Vector3(0.32f, -0.25f, 0.55f);
     private readonly Vector3 posicionCargador = new Vector3(0f, -0.20f, -0.125f);
 
@@ -51,6 +59,8 @@ public class Pistola : MonoBehaviour, IInteractuable, IArmaMunicion
     private bool recargando;
     private float tiempoRecarga;
     private bool cargadorLleno;
+    private bool cargandoDisparo;
+    private float tiempoCarga;
     private float retrocesoActual;
     private float golpeCargador;
     private float destelloDisparo;
@@ -104,6 +114,17 @@ public class Pistola : MonoBehaviour, IInteractuable, IArmaMunicion
             // Las balas "entran" mientras el cargador sube
             float t = tiempoRecarga / duracionRecarga;
             return Mathf.Clamp01((t - InicioMeterCargador) / (FinMeterCargador - InicioMeterCargador));
+        }
+    }
+
+    public float ProgresoCarga
+    {
+        get
+        {
+            if (!cargandoDisparo || recargando || municionActual <= 0) return 0f;
+            if (tiempoCarga <= UmbralInicioCarga) return 0f;
+            float span = Mathf.Max(0.05f, tiempoParaSobrecarga - UmbralInicioCarga);
+            return Mathf.Clamp01((tiempoCarga - UmbralInicioCarga) / span);
         }
     }
 
@@ -230,7 +251,7 @@ public class Pistola : MonoBehaviour, IInteractuable, IArmaMunicion
         if (hud == null) hud = gameObject.AddComponent<HUDMunicion>();
         hud.Configurar(this);
 
-        GameFeedback.Mensaje("Pistola equipada — Clic izquierdo / X para disparar, R / RB para recargar");
+        GameFeedback.Mensaje("Pistola equipada — Pulsa para disparo rápido, MANTÉN para disparo sobrecargado (rompe escudos)");
     }
 
     // ── Cada frame ──────────────────────────────────────────────────
@@ -254,22 +275,58 @@ public class Pistola : MonoBehaviour, IInteractuable, IArmaMunicion
 
         if (Time.timeScale <= 0f || HackManager.Abierto || PauseMenu.Pausado || CipherWheel.Abierta ||
             GameFeedback.NivelCompletadoVisible || GameFeedback.GameOverVisible || PantallaControles.Visible)
+        {
+            cargandoDisparo = false;
+            tiempoCarga = 0f;
             return;
+        }
         if (entrada == null) return;
 
-        if (entrada.RecargaPresionada()) EmpezarRecarga();
-
-        if (entrada.AtaquePresionado() && Time.unscaledTime >= tiempoProximoDisparo && !recargando)
+        if (entrada.RecargaPresionada())
         {
-            tiempoProximoDisparo = Time.unscaledTime + cooldownDisparo;
-            if (municionActual > 0)
+            cargandoDisparo = false;
+            tiempoCarga = 0f;
+            EmpezarRecarga();
+        }
+
+        if (recargando)
+        {
+            cargandoDisparo = false;
+            tiempoCarga = 0f;
+            return;
+        }
+
+        if (!cargandoDisparo)
+        {
+            if (entrada.AtaquePresionado() && Time.unscaledTime >= tiempoProximoDisparo)
             {
-                Disparar();
+                if (municionActual > 0)
+                {
+                    cargandoDisparo = true;
+                    tiempoCarga = 0f;
+                }
+                else
+                {
+                    tiempoProximoDisparo = Time.unscaledTime + cooldownDisparo;
+                    intentosSinMunicion++;
+                    if (recargaAutomatica) EmpezarRecarga();
+                }
+            }
+        }
+        else
+        {
+            if (entrada.AtaqueMantenido())
+            {
+                tiempoCarga += dt;
             }
             else
             {
-                intentosSinMunicion++;
-                if (recargaAutomatica) EmpezarRecarga();
+                bool cargado = tiempoCarga >= tiempoParaSobrecarga;
+                cargandoDisparo = false;
+                tiempoCarga = 0f;
+                tiempoProximoDisparo = Time.unscaledTime + cooldownDisparo;
+                if (municionActual > 0)
+                    Disparar(cargado);
             }
         }
     }
@@ -340,10 +397,13 @@ public class Pistola : MonoBehaviour, IInteractuable, IArmaMunicion
                 bajadaCargador = 1f - Suave((t - InicioMeterCargador) / (FinMeterCargador - InicioMeterCargador));
         }
 
+        float carga = ProgresoCarga;
         Vector3 posicion = posicionEnCamara;
-        posicion += new Vector3(-0.04f * inclinacion, -0.07f * inclinacion + 0.015f * golpeCargador, -retrocesoActual);
+        posicion += new Vector3(-0.04f * inclinacion, -0.07f * inclinacion + 0.015f * golpeCargador, -retrocesoActual - 0.03f * carga);
+        if (carga >= 1f)
+            posicion += new Vector3(Mathf.Sin(Time.time * 45f) * 0.003f, Mathf.Cos(Time.time * 55f) * 0.003f, 0f);
         transform.localPosition = posicion;
-        transform.localRotation = Quaternion.Euler(-18f * inclinacion - 6f * golpeCargador - retrocesoActual * 60f,
+        transform.localRotation = Quaternion.Euler(-18f * inclinacion - 6f * golpeCargador - retrocesoActual * 60f - 4f * carga,
                                                    -8f * inclinacion, 32f * inclinacion);
 
         if (cargador != null)
@@ -354,15 +414,24 @@ public class Pistola : MonoBehaviour, IInteractuable, IArmaMunicion
         }
     }
 
-    /// <summary>El riel brilla al disparar, se apaga sin balas o recargando, y destella al quedar cargado.</summary>
+    /// <summary>El riel brilla al disparar, se apaga sin balas o recargando, y cambia a dorado al sobrecargar.</summary>
     private void AplicarEnergia()
     {
         if (materialEnergia == null) return;
 
+        Color colorActual = colorEnergia;
         float intensidad = EmisionRiel;
+        float carga = ProgresoCarga;
+
         if (recargando && !cargadorLleno)
         {
             intensidad = 0.35f + 0.25f * Mathf.Sin(Time.time * 30f);
+        }
+        else if (carga > 0f)
+        {
+            colorActual = Color.Lerp(colorEnergia, colorSobrecarga, carga);
+            intensidad = Mathf.Lerp(EmisionRiel, 6f, carga);
+            if (carga >= 1f) intensidad += Mathf.Sin(Time.time * 18f) * 1.2f;
         }
         else if (municionActual <= 0)
         {
@@ -374,7 +443,7 @@ public class Pistola : MonoBehaviour, IInteractuable, IArmaMunicion
         }
 
         intensidad += golpeCargador * 6f + destelloDisparo * 3f;
-        materialEnergia.SetColor("_EmissionColor", colorEnergia * intensidad);
+        materialEnergia.SetColor("_EmissionColor", colorActual * intensidad);
     }
 
     private static float Suave(float t)
@@ -385,15 +454,16 @@ public class Pistola : MonoBehaviour, IInteractuable, IArmaMunicion
 
     // ── Disparo ─────────────────────────────────────────────────────
 
-    private void Disparar()
+    private void Disparar(bool cargado)
     {
         Camera camara = Camera.main;
         if (camara == null || municionActual <= 0) return;
 
-        municionActual--;
+        int costo = cargado ? Mathf.Min(costoBalasSobrecarga, municionActual) : 1;
+        municionActual -= costo;
         disparosRealizados++;
-        retrocesoActual = 0.08f;
-        destelloDisparo = 1f;
+        retrocesoActual = cargado ? 0.14f : 0.08f;
+        destelloDisparo = cargado ? 1.6f : 1f;
 
         Vector3 origenCamara = camara.transform.position;
         Vector3 direccionCamara = camara.transform.forward;
@@ -428,7 +498,10 @@ public class Pistola : MonoBehaviour, IInteractuable, IArmaMunicion
         proyectilGO.transform.position = origenProyectil;
         proyectilGO.transform.rotation = Quaternion.LookRotation(direccionProyectil);
         ProyectilPistola proyectil = proyectilGO.AddComponent<ProyectilPistola>();
-        proyectil.Inicializar(direccionProyectil, velocidadProyectil, alcanceMaximo, danoPorDisparo);
+        DamageType tipoDano = cargado ? DamageType.Cargado : DamageType.Normal;
+        float vel = cargado ? velocidadProyectilSobrecargado : velocidadProyectil;
+        int dano = cargado ? danoSobrecargado : danoPorDisparo;
+        proyectil.Inicializar(direccionProyectil, vel, alcanceMaximo, dano, tipoDano);
     }
 
     private static bool EsDelJugador(Collider c)
@@ -467,19 +540,25 @@ public class ProyectilPistola : MonoBehaviour
     private float distanciaMaxima = 45f;
     private float radio = 0.12f;
     private int dano = 1;
+    private DamageType tipoDano = DamageType.Normal;
     private float distanciaRecorrida;
 
-    public void Inicializar(Vector3 direccionInicial, float velocidadInicial, float maximaDistancia, int cantidadDano)
+    public void Inicializar(Vector3 direccionInicial, float velocidadInicial, float maximaDistancia,
+                            int cantidadDano, DamageType tipo = DamageType.Normal)
     {
         direccion = direccionInicial.normalized;
         velocidad = velocidadInicial;
         distanciaMaxima = maximaDistancia;
         dano = cantidadDano;
+        tipoDano = tipo;
+
+        bool cargado = tipoDano == DamageType.Cargado;
+        if (cargado) radio = 0.22f;
 
         GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         visual.name = "Pulso";
         visual.transform.SetParent(transform, false);
-        visual.transform.localScale = new Vector3(0.14f, 0.14f, 0.42f);
+        visual.transform.localScale = cargado ? new Vector3(0.28f, 0.28f, 0.72f) : new Vector3(0.14f, 0.14f, 0.42f);
         Object.Destroy(visual.GetComponent<Collider>());
 
         MeshRenderer malla = visual.GetComponent<MeshRenderer>();
@@ -488,11 +567,11 @@ public class ProyectilPistola : MonoBehaviour
             Shader shader = Shader.Find("Universal Render Pipeline/Lit");
             if (shader == null) shader = Shader.Find("Standard");
             Material material = new Material(shader);
-            Color cian = new Color(0.2f, 0.9f, 1f);
-            material.color = cian;
-            if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", cian);
+            Color color = cargado ? new Color(1f, 0.72f, 0.15f) : new Color(0.2f, 0.9f, 1f);
+            material.color = color;
+            if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", color);
             material.EnableKeyword("_EMISSION");
-            material.SetColor("_EmissionColor", cian * 4f);
+            material.SetColor("_EmissionColor", color * (cargado ? 5.5f : 4f));
             malla.sharedMaterial = material;
         }
     }
@@ -512,8 +591,16 @@ public class ProyectilPistola : MonoBehaviour
             if (c.CompareTag("Player") || c.GetComponentInParent<PlayerController>() != null) continue;
             if (c.GetComponentInParent<Pistola>() != null || c.GetComponentInParent<ProyectilPistola>() != null) continue;
 
+            OrbeAlgoritmo orbe = c.GetComponentInParent<OrbeAlgoritmo>();
+            if (orbe != null)
+            {
+                orbe.DestruirPorDisparo();
+                Destroy(gameObject);
+                return;
+            }
+
             EnemyBase enemigo = c.GetComponentInParent<EnemyBase>();
-            if (enemigo != null) enemigo.RecibirDaño(dano, DamageType.Normal);
+            if (enemigo != null) enemigo.RecibirDaño(dano, tipoDano);
 
             Destroy(gameObject);
             return;

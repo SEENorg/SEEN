@@ -48,9 +48,9 @@ public class RespawnOnFall : MonoBehaviour
     {
         spawnPoint = point + Vector3.up * 0.5f;
 
-        // El antivirus vuelve a su posición original al tomar un checkpoint
+        // El antivirus vuelve detrás del checkpoint al tomarlo
         Antivirus av = Object.FindFirstObjectByType<Antivirus>();
-        if (av != null) av.Reiniciar();
+        if (av != null) av.ReiniciarEnCheckpoint(spawnPoint);
     }
 
     /// <summary>Reaparece al jugador. Público para que los hazards también lo llamen.</summary>
@@ -63,9 +63,12 @@ public class RespawnOnFall : MonoBehaviour
         }
         transform.position = spawnPoint;
 
-        // Saltos, buffers, dash y agachado vuelven a su estado inicial
+        // Saltos, buffers, dash, gancho y agachado vuelven a su estado inicial
         if (jugador != null) jugador.ResetEstado();
         if (VidaJugador.Instancia != null) VidaJugador.Instancia.RestaurarVida();
+
+        Antivirus av = Object.FindFirstObjectByType<Antivirus>();
+        if (av != null) av.ReiniciarEnCheckpoint(spawnPoint);
 
         EnemyBase[] enemigos = Object.FindObjectsByType<EnemyBase>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         for (int i = 0; i < enemigos.Length; i++)

@@ -146,7 +146,7 @@ public class HUDMunicion : MonoBehaviour
         // Cápsulas de balas (a la derecha del número)
         DibujarBalas(new Rect(panel.x + 196f, panel.y + 44f, panel.width - 214f, 52f), actual, capacidad, colorEstado);
 
-        // Pie: barra de recarga o tecla para recargar
+        // Pie: barra de recarga, barra de sobrecarga o tecla para recargar
         Rect pie = new Rect(panel.x + 18f, panel.yMax - 34f, panel.width - 36f, 22f);
         if (arma.Recargando)
         {
@@ -155,11 +155,20 @@ public class HUDMunicion : MonoBehaviour
             if (arma.ProgresoRecarga > 0.05f)
                 pincel.Caja(new Rect(barra.x, barra.y, barra.width * arma.ProgresoRecarga, barra.height), colorAcento);
         }
+        else if (arma.ProgresoCarga > 0.05f)
+        {
+            Rect barra = new Rect(pie.x, pie.y + 9f, pie.width, 6f);
+            pincel.Caja(barra, colorApagado);
+            Color colorCarga = arma.ProgresoCarga >= 1f ? new Color(1f, 0.72f, 0.15f) : colorAcento;
+            pincel.Caja(new Rect(barra.x, barra.y, barra.width * arma.ProgresoCarga, barra.height), colorCarga);
+            string aviso = arma.ProgresoCarga >= 1f ? "¡SOBRECARGA LISTA! (suelta)" : "CARGANDO SOBRECARGA...";
+            pincel.Texto(new Rect(pie.x, pie.y - 8f, pie.width, 16f), aviso, 12, colorCarga, TextAnchor.MiddleCenter, true);
+        }
         else
         {
             Color colorAyuda = new Color(colorTexto.r, colorTexto.g, colorTexto.b, 0.55f);
             if (alerta) colorAyuda = new Color(colorEstado.r, colorEstado.g, colorEstado.b, 0.5f + 0.5f * latido);
-            pincel.Texto(pie, "[R]  /  [RB]   RECARGAR", 14, colorAyuda, TextAnchor.MiddleCenter, true);
+            pincel.Texto(pie, "[R]/[RB] RECARGAR  ·  MANTÉN DISPARO: SOBRECARGA", 12, colorAyuda, TextAnchor.MiddleCenter, true);
         }
 
         pincel.TerminarEscala();

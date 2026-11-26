@@ -6,8 +6,8 @@ using UnityEngine.InputSystem;
 #endif
 
 /// <summary>
-/// Minijuego: descifrar un código César SIMPLE (desplazamiento +1). Se muestra una palabra cifrada;
-/// para descifrarla hay que avanzar cada letra 1 lugar (B pasa a ser C).
+/// Minijuego: descifrar un código César con desplazamiento variable (+1 a +5). Se muestra una
+/// palabra cifrada; para descifrarla hay que avanzar cada letra la cantidad indicada.
 /// Las palabras las da un IBancoPalabras (por defecto, buen uso de redes sociales).
 /// Mientras este puzzle está en pantalla (Activo), la tabla de ayuda se abre con TAB.
 ///
@@ -27,8 +27,11 @@ public class PuzzleDescifrar : IPuzzle
     private const float DuracionError = 0.8f;
     private const char Vacia = ' ';
 
-    // Cuántas letras hay que AVANZAR para descifrar (B → C con 1)
-    private const int Desplazamiento = 1;
+    // Cuántas letras hay que AVANZAR para descifrar (varía entre +1 y +5)
+    private static readonly int[] DesplazamientosDisponibles = { 1, 2, 3, 4, 5 };
+    private static int ultimoDesplazamiento = 0;
+    public static int DesplazamientoActual { get; private set; } = 1;
+    private int desplazamiento = 1;
 
     private readonly Color colorCasilla = new Color(0.06f, 0.13f, 0.18f);
     private readonly Color colorCasillaActual = new Color(0.09f, 0.24f, 0.32f);
@@ -69,15 +72,29 @@ public class PuzzleDescifrar : IPuzzle
         Activo = true;
         cajas = new CajasRedondeadasUI();
         ctx.MostrarMarco(false);
-        tarjeta = new TarjetaHackUI(ctx, cajas, AnchoTarjeta, AltoTarjeta,
-                                    "DESCIFRADO CÉSAR +" + Desplazamiento + ": AVANZA CADA LETRA 1 LUGAR (B → C)");
+        // Elegir desplazamiento César aleatorio entre +1 y +5 sin repetir el último usado
+        int candidato = DesplazamientosDisponibles[Random.Range(0, DesplazamientosDisponibles.Length)];
+        if (candidato == ultimoDesplazamiento && DesplazamientosDisponibles.Length > 1)
+        {
+            int idx = System.Array.IndexOf(DesplazamientosDisponibles, candidato);
+            candidato = DesplazamientosDisponibles[(idx + Random.Range(1, DesplazamientosDisponibles.Length)) % DesplazamientosDisponibles.Length];
+        }
+        desplazamiento = candidato;
+        ultimoDesplazamiento = desplazamiento;
+        DesplazamientoActual = desplazamiento;
+
+        char ejDestino = (char)('A' + ((1 + desplazamiento) % 26));
+        string txtLugares = desplazamiento == 1 ? "1 LUGAR" : (desplazamiento + " LUGARES");
+        string subtitulo = "DESCIFRADO CÉSAR +" + desplazamiento + ": AVANZA CADA LETRA " + txtLugares + " (B → " + ejDestino + ")";
+
+        tarjeta = new TarjetaHackUI(ctx, cajas, AnchoTarjeta, AltoTarjeta, subtitulo);
 
         // Nivel: tutorial (0) fácil → Nivel 3 (2 o más) difícil; define qué tan larga es la palabra
         int nivel = Mathf.Clamp(ctx.DificultadBase + ctx.IndiceModulo, 0, 5);
         palabra = banco.ObtenerPalabra(nivel);
 
-        // Se cifra RETROCEDIENDO 1 letra; el jugador descifra AVANZANDO 1 (si ve B, es C)
-        string codigoCifrado = Desplazar(palabra, -Desplazamiento);
+        // Se cifra RETROCEDIENDO 'desplazamiento' letras; el jugador descifra AVANZANDO ese mismo número
+        string codigoCifrado = Desplazar(palabra, -desplazamiento);
 
         respuesta = new char[palabra.Length];
         for (int i = 0; i < respuesta.Length; i++) respuesta[i] = Vacia;
@@ -223,7 +240,7 @@ public class PuzzleDescifrar : IPuzzle
         if (respuesta[cursor] == Vacia)
         {
             // Empieza desde la letra del código, que es la pista natural
-            actual = palabra[cursor] - 'A' - Desplazamiento - direccion;
+            actual = palabra[cursor] - 'A' - desplazamiento - direccion;
         }
         else
         {

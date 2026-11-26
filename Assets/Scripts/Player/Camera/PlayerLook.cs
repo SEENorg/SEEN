@@ -35,6 +35,14 @@ public class PlayerLook
         AsegurarCamara(jugador);
     }
 
+    public void FijarYaw(float nuevoYaw)
+    {
+        yaw = nuevoYaw;
+        pitch = 0f;
+        if (playerCamera != null)
+            playerCamera.localRotation = Quaternion.identity;
+    }
+
     private void AsegurarCamara(Transform jugador)
     {
         if (playerCamera == null)

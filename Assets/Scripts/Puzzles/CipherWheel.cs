@@ -434,7 +434,7 @@ public class CipherWheel : MonoBehaviour
             // Para descifrar se AVANZA 'avance' letras (paso 25 → +1)
             int avance = ((-paso + 13) % 26 + 26) % 26 - 13;
             string signo = avance > 0 ? "+" : "";
-            textoDesplazamiento.text = $"Desplazamiento: {signo}{avance}";
+            textoDesplazamiento.text = $"Desplazamiento rueda: {signo}{avance}  (Código: +{PuzzleDescifrar.DesplazamientoActual})";
         }
 
         if (textoEjemplo != null)

@@ -19,6 +19,7 @@ public class MainMenuManager : MonoBehaviour
     public Button botonNivel1;
     public Button botonNivel2;
     public Button botonNivel3;
+    public Button botonNivel4;
 
     [Header("Ajustes")]
     public SettingsManager ajustes;
@@ -79,12 +80,13 @@ private EventSystem eventSystem;
 }
     }
 
-    /// <summary>Carga un nivel por su número (1-3).</summary>
+    /// <summary>Carga un nivel por su número (1-4).</summary>
     public void IrANivel(int numero)
     {
         string escena = numero == 1 ? "Juego" :
                         numero == 2 ? "Nivel2" :
-                        numero == 3 ? "Nivel3" : "Juego";
+                        numero == 3 ? "Nivel3" :
+                        numero == 4 ? "Nivel4" : "Juego";
 
         Time.timeScale = 1f;
         Boot.PermitirInicioEscena = true;
@@ -101,6 +103,7 @@ private EventSystem eventSystem;
     public void CargarNivel1() { IrANivel(1); }
     public void CargarNivel2() { IrANivel(2); }
     public void CargarNivel3() { IrANivel(3); }
+    public void CargarNivel4() { IrANivel(4); }
 
     public void MostrarAjustes()
 {

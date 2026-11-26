@@ -53,6 +53,8 @@ public class LevelGoal : MonoBehaviour
         }
 
         completed = true;
+        Antivirus av = FindFirstObjectByType<Antivirus>();
+        if (av != null) av.Detener();
         if (retrasoFinal > 0f)
             Invoke(nameof(Finalizar), retrasoFinal);
         else

@@ -27,6 +27,9 @@ public class LevelInfo : MonoBehaviour
         // ── Integración: Registrar nivel y dificultad en Diccionario ──
         var edDiff = EstructurasDatosJuego.Instancia;
         if (edDiff != null) edDiff.SetearDificultadNivel(nombreNivel, dificultad);
+
+        // Solidez anti no-clip, Puerta 5 del tutorial y diseño arquitectónico ampliado
+        ArquitecturaNivel.Inicializar(dificultad);
     }
 }
 
