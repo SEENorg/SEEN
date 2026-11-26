@@ -27,16 +27,48 @@ public abstract class EnemyBase : MonoBehaviour
     [SerializeField] protected Color colorLuzBuffeado = new Color(1f, 0.4f, 0f); // Naranja
 
     [Header("Contacto con el jugador")]
-    [Tooltip("Distancia extra alrededor del enemigo que cuenta como tocar al jugador")]
-    [SerializeField] protected float margenContacto = 0.3f;
+    [Tooltip("Distancia (en metros) a la que el enemigo mata al jugador")]
+    [SerializeField] protected float radioContacto = 1.0f;
     [Tooltip("Segundos mínimos entre dos muertes causadas por este enemigo")]
     [SerializeField] protected float cooldownContacto = 1f;
 
     [Header("Colisión con el entorno")]
     [Tooltip("Capas que el enemigo no puede atravesar (paredes, suelo, plataformas)")]
     [SerializeField] protected LayerMask capasObstaculo = ~0;
-    [Tooltip("Radio con el que se comprueba el choque contra el entorno")]
+    [Tooltip("Si está activo, el radio y el centro del choque se toman del collider del enemigo (recomendado)")]
+    [SerializeField] protected bool usarMedidasDelCollider = true;
+    [Tooltip("Solo se usa si 'Usar Medidas Del Collider' está desactivado, o si el enemigo no tiene collider")]
     [SerializeField] protected float radioColision = 0.6f;
+
+    private float radioEfectivo;        // radio real usado en los choques
+    private Vector3 centroCuerpoLocal;  // centro del collider, relativo al enemigo
+    private bool tieneCentroCuerpo;
+
+    /// <summary>Centro real del cuerpo (el del collider, aunque esté corrido del pivote).</summary>
+    protected Vector3 CentroCuerpo
+    {
+        get { return tieneCentroCuerpo ? transform.TransformPoint(centroCuerpoLocal) : transform.position; }
+    }
+
+    /// <summary>Mide el collider propio: de ahí salen el radio y el centro de los choques.</summary>
+    private void CalcularMedidasCuerpo()
+    {
+        radioEfectivo = radioColision;
+        tieneCentroCuerpo = false;
+        if (!usarMedidasDelCollider) return;
+
+        for (int i = 0; i < collidersPropios.Length; i++)
+        {
+            Collider c = collidersPropios[i];
+            if (c == null || c.isTrigger || !c.enabled) continue;
+
+            Bounds b = c.bounds;
+            radioEfectivo = Mathf.Max(0.3f, Mathf.Max(b.extents.x, b.extents.z));
+            centroCuerpoLocal = transform.InverseTransformPoint(b.center);
+            tieneCentroCuerpo = true;
+            return;
+        }
+    }
 
     [Header("Activación por puerta")]
     [Tooltip("Si se asigna una puerta, el enemigo no se mueve hasta que esa puerta se abra")]
@@ -78,6 +110,7 @@ public abstract class EnemyBase : MonoBehaviour
 
         renderersVisuales = GetComponentsInChildren<Renderer>(true);
         collidersPropios = GetComponentsInChildren<Collider>(true);
+        CalcularMedidasCuerpo();
 
         BuscarJugador();
 
@@ -292,17 +325,42 @@ public abstract class EnemyBase : MonoBehaviour
     /// </summary>
     protected bool TocandoJugador()
     {
-        if (jugadorCollider == null) return false;
+        if (jugador == null) return false;
         if (Time.deltaTime <= 0f) return false;   // juego en pausa (hackeo, menú...)
 
-        Bounds limites;
-        if (esferaRenderer != null)
-            limites = esferaRenderer.bounds;
-        else
-            limites = new Bounds(transform.position, Vector3.one);
-        limites.Expand(margenContacto * 2f);
+        // Punto del jugador más cercano al enemigo (no depende del tamaño del renderer)
+        Vector3 puntoJugador = jugadorCollider != null
+            ? jugadorCollider.ClosestPoint(CentroCuerpo)
+            : jugador.position;
 
-        return jugadorCollider.bounds.Intersects(limites);
+        if (Vector3.Distance(CentroCuerpo, puntoJugador) > radioContacto) return false;
+
+        // Una pared entre los dos = no hay contacto (evita matar a través de paredes)
+        return LineaDeVistaLibre();
+    }
+
+    /// <summary>True si no hay ninguna pared entre el enemigo y el jugador.</summary>
+    protected bool LineaDeVistaLibre()
+    {
+        if (jugador == null) return false;
+
+        Vector3 origen = CentroCuerpo;
+        Vector3 objetivo = jugadorCollider != null ? jugadorCollider.bounds.center : jugador.position;
+        Vector3 d = objetivo - origen;
+        float dist = d.magnitude;
+        if (dist < 0.05f) return true;
+        d /= dist;
+
+        RaycastHit[] golpes = Physics.RaycastAll(origen, d, dist, capasObstaculo, QueryTriggerInteraction.Ignore);
+        for (int i = 0; i < golpes.Length; i++)
+        {
+            Collider c = golpes[i].collider;
+            if (c.transform.IsChildOf(transform)) continue;
+            if (c.CompareTag("Player") || c.GetComponentInParent<PlayerController>() != null) continue;
+            if (c.GetComponentInParent<EnemyBase>() != null) continue;
+            return false;   // algo sólido en medio
+        }
+        return true;
     }
 
     /// <summary>
@@ -330,7 +388,7 @@ public abstract class EnemyBase : MonoBehaviour
     /// <summary>Comprueba si hay algo sólido en el camino (ignora al propio enemigo, a otros enemigos y al jugador).</summary>
     protected bool HayObstaculo(Vector3 direccion, float distancia)
     {
-        RaycastHit[] golpes = Physics.SphereCastAll(transform.position, radioColision, direccion,
+        RaycastHit[] golpes = Physics.SphereCastAll(CentroCuerpo, radioEfectivo, direccion,
                                                     distancia + 0.02f, capasObstaculo,
                                                     QueryTriggerInteraction.Ignore);
 
@@ -348,6 +406,33 @@ public abstract class EnemyBase : MonoBehaviour
             if (movimientoHorizontal && superficieHorizontal) continue;
 
             return true;
+        }
+
+        // Refuerzo: el SphereCast NO detecta una pared que ya toca la esfera al empezar
+        // (por eso a veces los enemigos "atraviesan" paredes). Un rayo desde el centro sí la ve.
+        return RayoDeFrenteBloqueado(direccion, distancia);
+    }
+
+    /// <summary>Rayo hacia donde se mueve: True si hay una pared justo adelante.</summary>
+    private bool RayoDeFrenteBloqueado(Vector3 direccion, float distancia)
+    {
+        RaycastHit[] golpes = Physics.RaycastAll(CentroCuerpo, direccion, radioEfectivo + distancia + 0.02f,
+                                                 capasObstaculo, QueryTriggerInteraction.Ignore);
+        bool movimientoHorizontal = Mathf.Abs(direccion.y) < 0.2f;
+
+        for (int i = 0; i < golpes.Length; i++)
+        {
+            Collider c = golpes[i].collider;
+            if (c.transform.IsChildOf(transform)) continue;
+            if (c.CompareTag("Player")) continue;
+            if (c.GetComponentInParent<EnemyBase>() != null) continue;
+
+            bool superficieHorizontal = Mathf.Abs(Vector3.Dot(golpes[i].normal, Vector3.up)) > 0.9f;
+            if (movimientoHorizontal && superficieHorizontal) continue;
+
+            // Solo cuenta si la pared está de frente (si se aleja de ella, se le deja moverse)
+            if (Vector3.Dot(golpes[i].normal, direccion) < -0.2f)
+                return true;
         }
         return false;
     }
@@ -385,4 +470,4 @@ public abstract class EnemyBase : MonoBehaviour
             }
         }
     }
-}
+}

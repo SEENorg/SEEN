@@ -45,9 +45,20 @@ private InputAction reloadAction;
         return jumpAction.WasPressedThisFrame();
     }
 
+    /// <summary>
+    /// Dash: la acción "Sprint" del Input System, y además SIEMPRE Shift o clic derecho
+    /// directo del teclado/ratón. Así el dash funciona aunque el mapa de controles
+    /// (Input Actions) cambie o no tenga Shift asignado.
+    /// </summary>
     public bool DashPresionado()
     {
-        return sprintAction.WasPressedThisFrame();
+        if (sprintAction != null && sprintAction.WasPressedThisFrame()) return true;
+
+        Keyboard kb = Keyboard.current;
+        Mouse mouse = Mouse.current;
+        bool shift = kb != null && (kb.leftShiftKey.wasPressedThisFrame || kb.rightShiftKey.wasPressedThisFrame);
+        bool clicDerecho = mouse != null && mouse.rightButton.wasPressedThisFrame;
+        return shift || clicDerecho;
     }
 
     public bool LiberarCursorPresionado()

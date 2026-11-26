@@ -129,7 +129,15 @@ mirada.Mirar(lookInput, esMando);
         mirada.ManejarCursor(entrada.LiberarCursorPresionado(), entrada.CapturarCursorPresionado());
 
         dash.ActualizarCooldown();
-        salto.RegistrarEntrada(entrada.SaltoPresionado());
+
+        bool saltoPresionado = entrada.SaltoPresionado();
+        salto.RegistrarEntrada(saltoPresionado);
+        if (saltoPresionado)
+        {
+            // ── Integración: Registrar salto en Pila (solo cuando realmente se presiona saltar) ──
+            var edJump = EstructurasDatosJuego.Instancia;
+            if (edJump != null) edJump.RegistrarAccionJugador("Salto ejecutado (evasión de amenaza)");
+        }
 
         if (entrada.DashPresionado() && dash.PuedeIniciar())
         {
@@ -151,10 +159,6 @@ mirada.Mirar(lookInput, esMando);
             movimiento.Mover(rb, moveInput, mirada.Yaw, suelo.EstaEnSuelo);
             suelo.TransportarConPlataforma(rb);
             salto.IntentarSaltar(rb, transform.position);
-
-            // ── Integración: Registrar salto en Pila ──
-            var edJump = EstructurasDatosJuego.Instancia;
-            if (edJump != null) edJump.RegistrarAccionJugador("Salto ejecutado (evasión de amenaza)");
         }
 
         dash.ActualizarFisica();
@@ -201,6 +205,12 @@ mirada.Mirar(lookInput, esMando);
     }
 
     // ─────────────────────────────────────────────────── Reaparición y Muerte
+
+    /// <summary>Cambia la sensibilidad del mouse al instante (la usa el menú de pausa).</summary>
+    public void AplicarSensibilidad(float valor)
+    {
+        mirada.MouseSensitivity = valor;
+    }
 
     public void ResetEstado()
     {

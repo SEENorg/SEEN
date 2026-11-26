@@ -102,7 +102,7 @@ public class EnemyRepost : EnemyBase
         if (muerto) return;
 
         // Solo el original se multiplica; las copias reciben daño y mueren normal
-        if (tipoDaño != DamageType.Cargado && !esCopia && prefabRepost != null)
+        if (tipoDaño != DamageType.Cargado && !esCopia)
             Duplicar();
 
         base.RecibirDaño(cantidad, tipoDaño);
@@ -111,13 +111,15 @@ public class EnemyRepost : EnemyBase
     private void Duplicar()
     {
         if (duplicadosGenerados >= maxCopias) return;
-        if (prefabRepost == null) return;
+
+        // Si no tiene prefab asignado (pasa en otros niveles), se clona a sí mismo
+        GameObject molde = prefabRepost != null ? prefabRepost : gameObject;
 
         duplicadosGenerados++;
         // Misma altura que el padre
         Vector3 punto = BuscarPuntoLibre();
         punto.y = transform.position.y;
-        GameObject nuevo = Instantiate(prefabRepost, punto, Quaternion.identity);
+        GameObject nuevo = Instantiate(molde, punto, Quaternion.identity);
 
         // Marcar la copia: no se duplica y tiene poca vida
         EnemyRepost copia = nuevo.GetComponent<EnemyRepost>();

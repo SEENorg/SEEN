@@ -14,7 +14,6 @@ public static class AjustesJuego
     public const string CLAVE_PERFIL_GRAFICO = "perfilGrafico";
     public const string CLAVE_VOLUMEN = "volumen";
     public const string CLAVE_SENSIBILIDAD = "sensibilidad";
-    public const string CLAVE_PANTALLA_COMPLETA = "pantallaCompleta";
     public const string CLAVE_RESOLUCION = "resolucion";
 
     /// <summary>Aplica el perfil gráfico (sombras, cascadas, VSync, AA, calidad).</summary>
@@ -79,17 +78,6 @@ public static class AjustesJuego
     public static float SensibilidadGuardada
     {
         get { return PlayerPrefs.GetFloat(CLAVE_SENSIBILIDAD, 0.15f); }
-    }
-
-    public static void AplicarPantallaCompleta(bool activa)
-    {
-        Screen.fullScreen = activa;
-        PlayerPrefs.SetInt(CLAVE_PANTALLA_COMPLETA, activa ? 1 : 0);
-    }
-
-    public static bool PantallaCompletaGuardada
-    {
-        get { return Screen.fullScreen; }
     }
 
     // ── Resoluciones (índices descendentes: 0 = la más alta) ──────
